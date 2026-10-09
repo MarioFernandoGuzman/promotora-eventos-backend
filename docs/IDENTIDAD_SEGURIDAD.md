@@ -100,3 +100,16 @@ con passwordActual y passwordNuevo → nuevo login con passwordNuevo → actuali
 La sesión limitada no permite listar/consultar perfiles ni crear otros administradores.
 Los errores usan ProblemDetails: 400 validación, 401 sesión/contraseña, 403 propiedad/rol,
 404 usuario ausente, 409 correo/estado en conflicto y 422 regla de contraseña/empresa.
+
+## F3-05: límites y CORS
+
+Login: 5 solicitudes/minuto/IP. Registro: 10/minuto/IP. Ventanas y contadores independientes,
+sin cola de espera. Configuración: RateLimiting:LoginPermitLimit y RateLimiting:RegistroPermitLimit (1–1000).
+El límite devuelve 429 application/problem+json con traceId y Retry-After en segundos.
+Se usa la IP de la conexión, no headers enviados por el cliente. El contador es local a cada instancia;
+una futura publicación con múltiples réplicas deberá aplicar también un límite compartido en el proxy.
+
+Cors:AllowedOrigins es una lista explícita, por ejemplo variable de entorno
+`Cors__AllowedOrigins__0=https://frontend.example.test`. Sin lista no se permiten orígenes externos;
+Swagger en el mismo origen sigue funcionando. No se aceptan comodines, rutas, slash final ni cookies cross-origin.
+El frontend se decide en F11; aquí no se fija ninguno. CORS controla el navegador, no reemplaza autenticación.

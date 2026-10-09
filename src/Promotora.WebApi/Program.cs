@@ -43,6 +43,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
 }
 
 builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);
+builder.Services.AddIdentityHttpProtection(builder.Configuration);
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
 builder.Services.AddExceptionHandler<UnexpectedExceptionHandler>();
@@ -89,6 +90,9 @@ app.UseStatusCodePages(async context =>
     problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
     await response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json", cancellationToken: context.HttpContext.RequestAborted);
 });
+app.UseRouting();
+app.UseCors(IdentityHttpProtection.Cors);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 if (app.Environment.IsDevelopment())

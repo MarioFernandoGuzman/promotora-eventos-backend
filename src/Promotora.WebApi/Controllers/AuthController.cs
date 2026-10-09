@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Promotora.Application.Identity.Registration;
 using Promotora.Application.Identity.Sessions;
 using Promotora.Application.Shared.Handlers;
@@ -15,6 +16,8 @@ public sealed class AuthController(ICommandHandler<CrearUsuarioCommand, UsuarioD
     ICommandHandler<LogoutCommand, Unit> logout) : ApiControllerBase
 {
     [HttpPost("registro")]
+    [EnableRateLimiting(IdentityHttpProtection.Registro)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [AllowAnonymous]
     [ProducesResponseType<UsuarioDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -24,6 +27,8 @@ public sealed class AuthController(ICommandHandler<CrearUsuarioCommand, UsuarioD
             request.Apellido, RolUsuario.CLIENTE, new PerfilNuevo(request.FechaNacimiento, request.Telefono)), ct));
 
     [HttpPost("login")]
+    [EnableRateLimiting(IdentityHttpProtection.Login)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [AllowAnonymous]
     [ProducesResponseType<TokenDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
