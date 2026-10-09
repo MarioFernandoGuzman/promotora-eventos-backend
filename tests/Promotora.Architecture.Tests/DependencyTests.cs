@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Xml.Linq;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using NetArchTest.Rules;
 using Promotora.Application.Shared.Ports;
 using Promotora.Domain.Shared;
@@ -89,6 +91,21 @@ public sealed class DependencyTests
 
     private static string Describe(NetArchTest.Rules.TestResult result) =>
         "Dependencias prohibidas en: " + string.Join(", ", result.FailingTypeNames ?? []);
+
+    [Fact]
+    public void CadaOperacionExplicitaAutenticacionOPublicaAnonima()
+    {
+        var controllers = WebApi.GetTypes().Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(ControllerBase)));
+        foreach (var controller in controllers)
+        {
+            foreach (var method in controller.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                         .Where(method => method.GetCustomAttributes<HttpMethodAttribute>().Any()))
+            {
+                Assert.True(method.GetCustomAttributes<AuthorizeAttribute>().Any() || controller.GetCustomAttributes<AuthorizeAttribute>().Any()
+                    || method.GetCustomAttributes<AllowAnonymousAttribute>().Any(), $"{controller.Name}.{method.Name} requiere permiso explícito.");
+            }
+        }
+    }
 
     private static string ProjectPath(string project)
     {

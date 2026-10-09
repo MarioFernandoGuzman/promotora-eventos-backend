@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
+using Promotora.Application.Identity.Ports;
+using Promotora.Application.Identity.Sessions;
 using Promotora.Infrastructure;
+using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Shared.Health;
 using Promotora.WebApi.Errors;
+using Promotora.WebApi.Identity;
 using Promotora.WebApi.Middleware;
 using Serilog;
 using Serilog.Events;
@@ -16,10 +20,36 @@ builder.Services.AddSerilog(configuration => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}"));
 builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionString("Promotora"));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUsuarioActual, HttpUsuarioActual>();
+builder.Services.AddHostedService<BootstrapAdminService>();
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "promotora";
+var audience = builder.Configuration["Jwt:Audience"] ?? "promotora-api";
+byte[]? jwtKey = null;
+if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora")))
+{
+    try
+    {
+        jwtKey = Convert.FromBase64String(builder.Configuration["Jwt:SigningKey"] ?? "");
+    }
+    catch (FormatException)
+    {
+        throw new InvalidOperationException("Jwt:SigningKey debe ser una clave externa Base64 de al menos 32 bytes.");
+    }
+
+    builder.Services.AddIdentitySessions(jwtKey, issuer, audience, new SesionOptions(
+        builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
+    builder.Services.AddIdentityManagement();
+    builder.Services.AddIdentityRegistration();
+}
+
+builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);
+builder.Services.AddIdentityHttpProtection(builder.Configuration);
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
 builder.Services.AddExceptionHandler<UnexpectedExceptionHandler>();
-builder.Services.AddControllers().ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
+builder.Services.AddControllers(options => options.Conventions.Add(new Microsoft.AspNetCore.Mvc.ApplicationModels.RouteTokenTransformerConvention(new LowercaseRouteTransformer())))
+    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
 {
     var problem = new ValidationProblemDetails(context.ModelState)
     {
@@ -33,12 +63,18 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options => options
     return response;
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => options.SwaggerDoc("v1", new OpenApiInfo
+builder.Services.AddSwaggerGen(options =>
 {
-    Title = "Promotora de Eventos API",
-    Version = "v1",
-    Description = "API versionada. Los endpoints de negocio se incorporan desde la Fase 3."
-}));
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Promotora de Eventos API",
+        Version = "v1",
+        Description = "Identidad: registro, altas, login, refresh con rotación y logout. Consulta docs/IDENTIDAD_SEGURIDAD.md para ejemplos y permisos."
+    });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
+    options.OperationFilter<BearerOperationFilter>();
+    options.SchemaFilter<IdentityExamplesFilter>();
+});
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 
 var app = builder.Build();
@@ -57,6 +93,11 @@ app.UseStatusCodePages(async context =>
     problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
     await response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json", cancellationToken: context.HttpContext.RequestAborted);
 });
+app.UseRouting();
+app.UseCors(IdentityHttpProtection.Cors);
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

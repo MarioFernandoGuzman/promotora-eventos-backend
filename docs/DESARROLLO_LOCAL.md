@@ -50,12 +50,21 @@ $connection['Database'] = 'promotora'
 $connection['Username'] = 'promotora_runtime'
 $connection['Password'] = $env:PROMOTORA_DB_PASSWORD
 $env:ConnectionStrings__Promotora = $connection.ConnectionString
+
+# Fase 3: clave JWT y primer administrador, fuera del repositorio.
+$jwtKey = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+dotnet user-secrets set 'Jwt:SigningKey' $jwtKey --project src/Promotora.WebApi
+$jwtKey = $null
+dotnet user-secrets set 'Bootstrap:AdminEmail' 'admin@example.test' --project src/Promotora.WebApi
+$bootstrapPassword = Read-Host 'Contraseña inicial del administrador (12–128 caracteres)' -MaskInput
+dotnet user-secrets set 'Bootstrap:AdminPassword' $bootstrapPassword --project src/Promotora.WebApi
+$bootstrapPassword = $null
 dotnet run --project src/Promotora.WebApi
 ```
 
 Alternativa: guardar `ConnectionStrings:Promotora` en user-secrets de WebApi y Worker con `dotnet user-secrets set 'ConnectionStrings:Promotora' (Read-Host 'Cadena de conexión restringida' -MaskInput) --project src/Promotora.WebApi` y repetir cambiando el proyecto a `src/Promotora.Worker`. Los secretos quedan fuera del repositorio. No imprimir la conexión ni usar `user-secrets list` para compartir capturas. No se requiere OpenAI en Fase 2.
 
-Abrir [Swagger UI](http://localhost:5080/swagger). Por ahora el documento tiene `paths: {}`: no hay CRUD, login ni ventas implementados. Los health checks son técnicos y están fuera del catálogo Swagger. Los futuros controllers heredan `ApiControllerBase`, cuya ruta es `/api/v1/[controller]`; la serialización usa camelCase. Los `Result` fallidos se convierten en 400/401/403/404/409/422/429 con ProblemDetails. Excepciones inesperadas devuelven 500 genérico; el log registra tipo de excepción y correlación, sin mensajes privados ni payloads.
+Abrir [Swagger UI](http://localhost:5080/swagger). Fase 3 incorpora 11 operaciones de identidad: registro, altas por administrador, login/refresh/logout, consulta/edición/baja y cambio de contraseña. Seguir [IDENTIDAD_SEGURIDAD.md](IDENTIDAD_SEGURIDAD.md) para el cambio obligatorio inicial, permisos y ejemplos. El bootstrap solo crea el SUPERADMIN si no existe ninguno; cambiar su configuración no cambia la contraseña de uno existente. Los health checks son técnicos y están fuera del catálogo Swagger. Los controllers heredan `ApiControllerBase`, con rutas `/api/v1/...` en minúsculas y JSON camelCase. Los `Result` fallidos se convierten en 400/401/403/404/409/422/429 con ProblemDetails. Excepciones inesperadas devuelven 500 genérico; el log registra tipo de excepción y correlación, sin mensajes privados ni payloads.
 
 Desde otra terminal:
 
@@ -91,7 +100,7 @@ Con los puertos locales 5432, 5672, 15672, 1025, 8025 y 5080 libres, ejecutar ad
 pwsh -NoProfile -File scripts/Test-Compose.ps1 -WithApi
 ```
 
-El script usa un proyecto Compose temporal con datos en tmpfs, claves aleatorias solo en memoria, migraciones de solo lectura y login restringido. Arranca la API compilada en Kestrel, comprueba ambos health checks, Swagger UI/documento, RabbitMQ management y MailHog. Retira únicamente su proceso, contenedores y red; no elimina volúmenes ni toca datos locales. Restaura las variables de entorno originales. Esta prueba también se ejecuta en CI tras el build.
+El script usa un proyecto Compose temporal con datos en tmpfs, claves aleatorias solo en memoria, migraciones de solo lectura y login restringido. Arranca la API compilada en Kestrel, comprueba ambos health checks, Swagger UI/documento, bootstrap, login limitado, cambio de contraseña, consulta autorizada, RabbitMQ management y MailHog. Retira únicamente su proceso, contenedores y red; no elimina volúmenes ni toca datos locales. Restaura las variables de entorno originales. Esta prueba también se ejecuta en CI tras el build.
 
 Para repetir la prueba temporal mientras tienes Compose local funcionando, primero `docker compose stop`; no ejecutar pruebas con puertos ocupados. La suite Testcontainers usa puertos aleatorios y puede ejecutarse mientras Compose local está activo.
 
@@ -105,7 +114,7 @@ dotnet build -warnaserror
 dotnet format --verify-no-changes
 ```
 
-Los cinco proyectos de pruebas usan xUnit v3 y Microsoft.Testing.Platform. No hay endpoints de negocio todavía.
+Los cinco proyectos de pruebas usan xUnit v3 y Microsoft.Testing.Platform. Identidad está implementada en Fase 3; ventas, finanzas, IA y reportería siguen el orden del plan.
 
 F2-04 incorpora `Result<T>`/`Error`, contratos de comandos y queries y sus decoradores FluentValidation. Registrar futuros handlers con `AddCommandHandler` / `AddQueryHandler` y sus `IValidator<T>` para pasar siempre por validación. `IClock` devuelve UTC y usa `TimeProvider` inyectado. `IUnitOfWork.ExecuteInTransactionAsync` confirma solo un Result exitoso y revierte ante fallo/excepción/cancelación; no admite transacciones anidadas. No incluye reintentos automáticos: las futuras operaciones que mezclen pagos/efectos externos deben controlar su idempotencia antes de reintentar la transacción.
 
