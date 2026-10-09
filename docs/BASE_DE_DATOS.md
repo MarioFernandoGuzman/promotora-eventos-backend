@@ -2,7 +2,7 @@
 
 Motor: **PostgreSQL 16** con extensión **pgvector**. Migraciones: **Flyway** (`database/migrations/V*.sql`).
 
-Este documento explica el modelo **objetivo (v2)**: el script original más las correcciones de la revisión. Es la referencia que deben consultar las personas y los agentes de IA antes de escribir entidades, repositorios o SQL.
+Este documento explica el modelo **objetivo (v2)**: el script original más las correcciones de la revisión. Las migraciones de `database/migrations/` son la fuente de verdad del esquema implementado. Consulta este documento antes de escribir entidades, repositorios o SQL. Si aquí falta un tipo, clave o nulabilidad de una tabla existente, sigue [`referencia/schema_v1.sql`](referencia/schema_v1.sql), aplicando las correcciones v2. Ese script es solo referencia histórica: nunca se ejecuta ni se mueve a las migraciones. Para tablas nuevas, sigue lo descrito aquí y anota cada suposición en el encabezado de la migración. F1-11 regenerará el diccionario completo a partir de las migraciones.
 
 **Leyenda**
 
@@ -11,7 +11,7 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 | ✅ | Existe tal cual en el script original (v1) |
 | 🔧 | Existe en v1 y cambia en v2 |
 | ➕ | Tabla o columna nueva en v2 |
-| ➕* | Ajuste menor añadido para completar el diseño (no estaba en la revisión original; confírmalo) |
+| ➕* | Ajuste menor añadido para completar el diseño; confirmado en F1-01 |
 
 > El script con `DROP TABLE` de v1 es solo para desarrollo. En v2 el esquema se construye con migraciones Flyway; **nunca se ejecutan `DROP` contra una BD con datos**.
 
@@ -19,11 +19,11 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 
 ## 1. Visión general
 
-25 tablas agrupadas por módulo (coinciden con los módulos de código):
+26 tablas agrupadas por módulo (coinciden con los módulos de código):
 
 | Módulo | Tablas | Propósito |
 |---|---|---|
-| Identity | `usuarios`, `clientes`, `administradores`, `duenos_recinto` | Cuentas, roles y perfiles |
+| Identity | `usuarios`, `clientes`, `administradores`, `duenos_recinto`, `refresh_tokens` | Cuentas, roles, perfiles y renovación de sesión |
 | Venues | `recintos`, `localidades` | Lugares físicos y sus zonas (mapa) |
 | Catalog | `categorias_evento`, `presentadores`, `eventos`, `evento_presentadores`, `tipos_entrada` | Qué se vende y a qué precio/cupo |
 | Ticketing | `compras`, `detalle_compra`, `boletos` | Venta y emisión de boletos |
@@ -33,7 +33,7 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 | Audit / Messaging | `logs_auditoria`, `notificaciones`, `outbox_mensajes`, `mensajes_procesados` | Auditoría y mensajería confiable |
 | BI | esquema `bi` (vistas) | Reportería y Power BI |
 
-### Ajustes menores añadidos (➕*) — confirmar
+### Ajustes menores añadidos (➕*) — confirmados (F1-01)
 1. `activo BOOLEAN NOT NULL DEFAULT true` en `recintos`, `localidades`, `presentadores`, `categorias_evento`, `tipos_entrada` (permite "eliminar" sin borrar historia).
 2. Estado `EXPIRADA` en `compras` (distingue "no pagó a tiempo" de "cancelada por el usuario").
 3. `compras.evento_id` (una compra = un evento; simplifica finanzas y reportes).
@@ -49,6 +49,8 @@ erDiagram
   USUARIOS ||--o| CLIENTES : "perfil"
   USUARIOS ||--o| ADMINISTRADORES : "perfil"
   USUARIOS ||--o| DUENOS_RECINTO : "perfil"
+  USUARIOS ||--o{ REFRESH_TOKENS : "sesión"
+  REFRESH_TOKENS |o--o{ REFRESH_TOKENS : "reemplazo"
   DUENOS_RECINTO ||--o{ RECINTOS : posee
   RECINTOS ||--o{ LOCALIDADES : contiene
   RECINTOS ||--o{ EVENTOS : "sede de"
@@ -65,14 +67,15 @@ erDiagram
   DETALLE_COMPRA ||--o{ BOLETOS : emite
   USUARIOS |o--o{ BOLETOS : "valida"
   COMPRAS ||--o{ PAGOS : "se paga con"
-  DUENOS_RECINTO |o--o| CUENTAS_FINANCIERAS : "tiene"
+  DUENOS_RECINTO |o--o{ CUENTAS_FINANCIERAS : "tiene por moneda"
   CUENTAS_FINANCIERAS ||--o{ MOVIMIENTOS_FINANCIEROS : registra
   COMPRAS |o--o{ MOVIMIENTOS_FINANCIEROS : origina
   EVENTOS ||--o{ RESENAS : recibe
   CLIENTES ||--o{ RESENAS : escribe
   USUARIOS |o--o{ LOGS_AUDITORIA : genera
   USUARIOS |o--o{ LOGS_AGENTE_IA : consulta
-  USUARIOS ||--o{ NOTIFICACIONES : recibe
+  USUARIOS |o--o{ NOTIFICACIONES : recibe
+  USUARIOS ||--o{ DOCUMENTOS_RAG : "subido_por"
   DOCUMENTOS_RAG ||--o{ CHUNKS_RAG : "se divide en"
 ```
 
@@ -88,11 +91,11 @@ erDiagram
 | Claves | `GENERATED ALWAYS AS IDENTITY` en lugar de `SERIAL`. Tablas de alto volumen: `BIGINT` |
 | IDs públicos | `compras` y `boletos` tienen `public_id UUID` (`gen_random_uuid()`, `UNIQUE`). La API **nunca** expone el ID entero de estas tablas (evita enumeración) |
 | Nombres | `snake_case`, español, plural en tablas |
-| Borrado | Datos transaccionales y financieros: **nunca `DELETE`**, solo cambio de estado. Catálogos: baja lógica con `activo = false` |
-| FK | `ON DELETE RESTRICT` por defecto. `CASCADE` solo en relaciones de pertenencia pura (perfil→usuario, chunk→documento, reseña→evento) |
+| Borrado | Usuarios, datos transaccionales y financieros: **nunca `DELETE`**, solo cambio de estado. Usuarios: `estado = INACTIVO`. Catálogos: baja lógica con `activo = false` |
+| FK | `ON DELETE RESTRICT` por defecto y en toda FK hacia `usuarios`, incluidos perfiles, logs y notificaciones. `CASCADE` solo en relaciones de pertenencia pura autorizadas (chunk→documento, reseña→evento) |
 | Dinero | `NUMERIC(10,2)` en compras/detalle/pagos; `NUMERIC(12,2)` en cuentas/movimientos. Moneda por defecto **GTQ** |
 | Estados | `VARCHAR` + `CHECK` (no ENUM nativo) para poder cambiarlos con migraciones simples |
-| Rol único | Cada usuario tiene **un** rol (`usuarios.rol`) y exactamente una fila en la tabla de perfil correspondiente. Invariante validada en la aplicación (y con trigger opcional). Si algún día un usuario necesita varios roles, se migra a `usuarios_roles` |
+| Rol único | Cada usuario tiene **un** rol (`usuarios.rol`) y exactamente una fila en la tabla de perfil correspondiente. Validación en aplicación y constraint trigger **obligatorio**, `DEFERRABLE INITIALLY DEFERRED`, que verifica la invariante al COMMIT. Si algún día un usuario necesita varios roles, se migra a `usuarios_roles` |
 
 ---
 
@@ -108,19 +111,37 @@ Cuenta de acceso de cualquier persona. Es el discriminador de rol.
 | id | INT identity | PK |
 | email | VARCHAR(150) | NOT NULL, UNIQUE (normalizar a minúsculas) |
 | password_hash | VARCHAR(255) | NOT NULL — hash con sal (Argon2/BCrypt/PBKDF2) |
+| debe_cambiar_password ➕ | BOOLEAN | NOT NULL DEFAULT false; true para el SUPERADMIN inicial |
 | nombre, apellido | VARCHAR(100) | NOT NULL |
 | rol | VARCHAR(20) | CHECK ∈ `CLIENTE`, `ADMINISTRADOR`, `DUENO_RECINTO` |
 | estado | VARCHAR(20) | DEFAULT `ACTIVO`; CHECK ∈ `ACTIVO`, `INACTIVO`, `SUSPENDIDO` |
 | fecha_registro | TIMESTAMPTZ | DEFAULT now() |
 
 #### `clientes` ✅ · `administradores` ✅ · `duenos_recinto` ✅
-Perfiles 1:1 con `usuarios` (`usuario_id` UNIQUE, `ON DELETE CASCADE`).
+Perfiles 1:1 con `usuarios` (`usuario_id INT NOT NULL UNIQUE`, `ON DELETE RESTRICT`). Nunca se borra físicamente un usuario; su baja es `estado = INACTIVO`.
 
 | Tabla | Columnas propias |
 |---|---|
 | clientes | `fecha_nacimiento DATE`, `telefono VARCHAR(20)` |
 | administradores | `nivel_acceso` ∈ `ESTANDAR`, `SUPERADMIN` (DEFAULT `ESTANDAR`) |
 | duenos_recinto | `empresa VARCHAR(150) NOT NULL`, `nit VARCHAR(20)` |
+
+#### `refresh_tokens` ➕
+Renovación de sesión con rotación obligatoria. Solo se almacena el hash SHA-256 del token, nunca el token en claro. Si se reutiliza un token ya revocado, se revoca toda su familia y se audita.
+
+| Columna | Tipo | Restricciones / notas |
+|---|---|---|
+| id | BIGINT identity | PK |
+| usuario_id | INT | NOT NULL, FK `usuarios`, ON DELETE RESTRICT |
+| token_hash | VARCHAR(255) | NOT NULL UNIQUE; hash SHA-256 del token |
+| familia_id | UUID | NOT NULL |
+| expira_en | TIMESTAMPTZ | NOT NULL |
+| revocado_en | TIMESTAMPTZ | NULL |
+| reemplazado_por_id | BIGINT | NULL, FK `refresh_tokens`, ON DELETE RESTRICT |
+| ip_origen | VARCHAR(45) | NULL |
+| fecha_creacion | TIMESTAMPTZ | NOT NULL DEFAULT now() |
+
+Índices por `usuario_id` y `familia_id`. Se crea en `V1__identidad.sql`.
 
 ---
 
@@ -227,6 +248,7 @@ Cabecera de una orden. Nunca se borra.
 | fecha_compra | TIMESTAMPTZ | DEFAULT now() |
 | estado | VARCHAR(20) | DEFAULT `PENDIENTE`; ∈ `PENDIENTE`, `PROCESANDO`, `COMPLETADA`, `CANCELADA`, `FALLIDA`, `EXPIRADA`➕* |
 | **expira_en** ➕ | TIMESTAMPTZ | Hasta cuándo se mantiene la reserva sin pago |
+| **procesando_desde** ➕ | TIMESTAMPTZ | NULL; se fija al ganar la transición PENDIENTE → PROCESANDO |
 | **idempotency_key** ➕ | VARCHAR(100) | UNIQUE — un reintento no duplica la compra |
 | **moneda** ➕ | CHAR(3) | DEFAULT `GTQ` |
 | **subtotal**, **impuestos**, **comision_plataforma** ➕ | NUMERIC(10,2) | DEFAULT 0, ≥ 0 (regla de quién asume IVA/comisión: decisión D-11) |
@@ -280,14 +302,19 @@ Intentos de cobro de una compra (una compra puede tener varios si el primero fal
 | fecha TIMESTAMPTZ | |
 
 #### `cuentas_financieras` ➕
-Dónde "vive" el dinero. Una cuenta `PLATAFORMA` (comisiones) y una `DUENO` por cada dueño de recinto (ventas).
+Dónde "vive" el dinero. Por moneda: una cuenta `PLATAFORMA` (comisiones), una `IMPUESTOS` (IVA) y una `DUENO` por dueño de recinto (ventas).
 
 | Columna | Notas |
 |---|---|
-| tipo | ∈ `PLATAFORMA`, `DUENO` |
-| dueno_id | FK `duenos_recinto`, NULL si es PLATAFORMA. CHECK `(tipo='DUENO') = (dueno_id IS NOT NULL)`; UNIQUE (`dueno_id`, `moneda`) |
+| tipo | ∈ `PLATAFORMA`, `DUENO`, `IMPUESTOS` |
+| dueno_id | FK `duenos_recinto`, NULL para PLATAFORMA/IMPUESTOS. CHECK `(tipo='DUENO') = (dueno_id IS NOT NULL)`; UNIQUE (`dueno_id`, `moneda`) para DUENO |
 | moneda CHAR(3) | DEFAULT `GTQ` |
 | saldo NUMERIC(12,2) | Siempre igual a `SUM(movimientos_financieros.monto)` de esa cuenta |
+| estado | ∈ `ACTIVA`, `CERRADA`; DEFAULT `ACTIVA` |
+| fecha_cierre | TIMESTAMPTZ NULL |
+
+Índices únicos parciales: `UNIQUE(moneda) WHERE tipo='PLATAFORMA'` y `UNIQUE(moneda) WHERE tipo='IMPUESTOS'`.
+Solo se cierra una cuenta DUENO con saldo = 0. PLATAFORMA e IMPUESTOS no se cierran. Un trigger rechaza movimientos en cuentas CERRADA.
 
 #### `movimientos_financieros` ➕ (ledger inmutable)
 Cada cambio de dinero es una fila. **Solo `INSERT`** (se revoca `UPDATE`/`DELETE`).
@@ -296,16 +323,18 @@ Cada cambio de dinero es una fila. **Solo `INSERT`** (se revoca `UPDATE`/`DELETE
 |---|---|
 | cuenta_id | FK `cuentas_financieras` |
 | compra_id | FK `compras`, NULL en liquidaciones manuales |
-| tipo | ∈ `VENTA`, `COMISION`, `LIQUIDACION`, `REEMBOLSO` |
+| tipo | ∈ `VENTA`, `COMISION`, `IMPUESTO`, `LIQUIDACION`, `REEMBOLSO` |
 | monto NUMERIC(12,2) | **Con signo**: positivo suma al saldo, negativo resta. CHECK ≠ 0 |
 | descripcion ➕* | texto libre |
 | fecha | TIMESTAMPTZ |
 
 | Evento de negocio | Movimientos |
 |---|---|
-| Compra completada | `VENTA` +subtotal en cuenta del dueño · `COMISION` +comision_plataforma en cuenta PLATAFORMA |
-| Reembolso | `REEMBOLSO` negativo en la(s) misma(s) cuenta(s) |
+| Compra completada | `VENTA` +subtotal en cuenta del dueño · `COMISION` +comision_plataforma en PLATAFORMA · `IMPUESTO` +impuestos en IMPUESTOS |
+| Reembolso | `REEMBOLSO` revierte los tres componentes en las mismas cuentas |
 | Liquidación al dueño | `LIQUIDACION` negativo en la cuenta del dueño (retiro) |
+
+Al completar una compra, la suma de sus movimientos de cobro debe igualar `compras.total` (antes de reembolsos). Los componentes de monto cero no generan movimientos, por el CHECK ≠ 0. La comisión es un cargo al cliente; el IVA se muestra aparte. Su tasa se configura en appsettings y el cálculo pertenece a Domain. La facturación electrónica queda fuera de alcance.
 
 ---
 
@@ -340,6 +369,7 @@ Fragmentos de cada documento con su vector.
 #### `logs_agente_ia` 🔧
 Bitácora de cada consulta al agente.
 Columnas v1: `usuario_id` (NULL si anónimo), `consulta`, `respuesta`, `fuentes_citadas JSONB`, `tiempo_respuesta_ms`, `fecha_hora`.
+`usuario_id` referencia `usuarios` con ON DELETE RESTRICT. Solo INSERT: REVOKE de UPDATE/DELETE y trigger que bloquea ambas operaciones.
 Nuevas ➕: `session_id UUID`, `modelo VARCHAR`, `tokens_entrada INT`, `tokens_salida INT`, `estado` ∈ `OK`, `SIN_CONTEXTO`, `ERROR`, `RECHAZADA`.
 
 ---
@@ -348,12 +378,13 @@ Nuevas ➕: `session_id UUID`, `modelo VARCHAR`, `tokens_entrada INT`, `tokens_s
 
 #### `logs_auditoria` 🔧
 Quién hizo qué. `BIGINT`, solo `INSERT` (se revoca `UPDATE`/`DELETE` al rol de la aplicación).
-Columnas: `usuario_id` (SET NULL), `entidad_afectada`, **`entidad_id` ➕ VARCHAR(50)**, `accion`, `detalle JSONB`, `ip_origen`, `fecha_hora`.
+Columnas: `usuario_id` (nullable, FK `usuarios` ON DELETE RESTRICT), `entidad_afectada`, **`entidad_id` ➕ VARCHAR(50)**, `accion`, `detalle JSONB`, `ip_origen`, `fecha_hora`. Solo INSERT: además del REVOKE, un trigger bloquea UPDATE/DELETE.
 `accion` 🔧 ampliada: `CREATE`, `UPDATE`, `DELETE`, `LOGIN`, `LOGOUT`, `LOGIN_FAILED`, `PURCHASE`, `PAYMENT`, `REFUND`, `VALIDATE`, `MODERATE`, `EXPORT`, `INGEST`.
 Índices: `usuario_id`, (`entidad_afectada`, `entidad_id`), `fecha_hora`.
 
 #### `notificaciones` ✅
 Evidencia de que el flujo asíncrono corrió (correos de confirmación, bienvenida). `tipo`, `estado` ∈ `PENDIENTE`, `ENVIADO`, `FALLIDO`, `mensaje`, `fecha_creacion`, `fecha_envio`. Índices por `estado` y 🔧 `usuario_id`.
+`usuario_id` referencia `usuarios` con ON DELETE RESTRICT.
 
 #### `outbox_mensajes` ➕
 Patrón **Outbox**: el mensaje se guarda en la misma transacción que el cambio de negocio y un proceso lo publica después a RabbitMQ.
@@ -384,7 +415,7 @@ pagos:     PENDIENTE → APROBADO → REEMBOLSADO
 resenas:   PENDIENTE → APROBADA | RECHAZADA
 documentos_rag: PENDIENTE → INDEXADO | ERROR      INDEXADO → INACTIVO
 ```
-Al pasar una compra a `FALLIDA`, `EXPIRADA` o `CANCELADA` se **devuelve el cupo** una sola vez.
+Toda transición de estado usa UPDATE condicional con el estado esperado. Solo quien gana (1 fila afectada) devuelve el cupo, en la misma transacción. Al pasar a FALLIDA, EXPIRADA o CANCELADA se devuelve una sola vez. La expiración y la cancelación por el usuario solo proceden desde PENDIENTE; cancelar en PROCESANDO responde 409. En reembolsos se devuelve únicamente el cupo de boletos que pasaron de VALIDO a ANULADO.
 
 ---
 
@@ -398,9 +429,11 @@ Se implementan con **triggers en PostgreSQL** (red de seguridad) y se validan ta
 | 2 | Por evento, la suma de `cupo_total` de los tipos de una localidad ≤ `localidades.capacidad` |
 | 3 | La suma de `localidades.capacidad` de un recinto ≤ `recintos.capacidad_total` |
 | 4 | Los `tipos_entrada` de un `detalle_compra` son del mismo evento que `compras.evento_id` |
-| 5 | Un usuario tiene exactamente una fila de perfil acorde a su `rol` |
+| 5 | Un usuario tiene exactamente una fila de perfil acorde a su `rol`; constraint trigger obligatorio DEFERRABLE INITIALLY DEFERRED, validado al COMMIT |
 | 6 | `movimientos_financieros` y `logs_*` no admiten `UPDATE` ni `DELETE` |
 | 7 | `cuentas_financieras.saldo` = suma de sus movimientos (verificado por prueba y por reporte de conciliación) |
+| 8 | Solo cuentas DUENO con saldo cero pueden cerrarse; PLATAFORMA/IMPUESTOS no se cierran; trigger rechaza movimientos en cuentas CERRADA |
+| 9 | Al completar una compra, sus movimientos de cobro suman `compras.total`; un reembolso revierte los tres componentes |
 
 ---
 
@@ -418,12 +451,16 @@ Se ejecuta dentro de la misma transacción que crea la compra y el registro de o
 ### 7.2 Compra de alta demanda
 1. `INSERT compras` (`PENDIENTE`, `expira_en`, `idempotency_key`) + `INSERT detalle_compra` + reserva atómica + `INSERT outbox_mensajes` → **commit**.
 2. Relay publica `compra.procesar` y marca `publicado = true`.
-3. Consumidor (idempotente vía `mensajes_procesados`): `INSERT pagos` → si aprobado: `INSERT boletos`, `INSERT movimientos_financieros`, actualizar saldos, compra `COMPLETADA`, outbox `compra.completada`.
+3. Consumidor (idempotente vía `mensajes_procesados`) toma la compra con `UPDATE compras SET estado='PROCESANDO', procesando_desde=now() WHERE id=@id AND estado='PENDIENTE'`; 0 filas ⇒ ACK y omitir. La referencia ante la pasarela es `compras.public_id` para un cobro idempotente. `INSERT pagos` → si aprobado: emisión idempotente de boletos, movimientos VENTA/COMISION/IMPUESTO, saldos, transición condicional a COMPLETADA y outbox `compra.completada`.
 4. Si rechazado/error: compra `FALLIDA` y devolución de cupo.
 5. Consumidor de notificación: envía correo y `INSERT notificaciones`.
 
 ### 7.3 Expiración
 Job periódico: `compras` en `PENDIENTE` con `expira_en < now()` → `EXPIRADA` + devolución de cupo, todo en una transacción, con bloqueo (`FOR UPDATE SKIP LOCKED`) para que dos workers no devuelvan dos veces.
+La transición exige `WHERE estado='PENDIENTE'`; solo el ganador devuelve cupo. Cancelar por el usuario exige el mismo estado; en PROCESANDO responde 409.
+
+#### Recuperación de compras PROCESANDO (F6-11)
+Un job recupera compras cuyo tiempo desde `procesando_desde` supera el timeout configurable (5 minutos por defecto). Consulta el pago por referencia `compras.public_id`: con pago APROBADO completa y emite boletos idempotentemente; de lo contrario pasa condicionalmente a FALLIDA y devuelve el cupo una sola vez en la misma transacción. Una prueba cubre la carrera procesar/expirar/cancelar.
 
 ### 7.4 Validación en puerta
 ```sql
@@ -442,6 +479,8 @@ Consulta: embedding de la pregunta → `ORDER BY embedding <=> :q LIMIT k` (solo
 
 Los de v1 se conservan. Nuevos recomendados:
 
+También obligatorios: `refresh_tokens(usuario_id)`, `refresh_tokens(familia_id)` y `compras(procesando_desde) WHERE estado='PROCESANDO'`; índices únicos parciales de cuentas PLATAFORMA/IMPUESTOS por moneda (§4.5). Los índices v1 que referencian columnas eliminadas, como `eventos.presentador_id`, se reemplazan por los de la relación v2.
+
 `eventos(estado)` · `eventos(categoria_id)` · `eventos(creado_por)` · `compras(estado)` · `compras(evento_id)` · `compras(expira_en) WHERE estado='PENDIENTE'` · `boletos(estado)` · `boletos(public_id)` · `tipos_entrada(localidad_id)` · `notificaciones(usuario_id)` · `logs_auditoria(usuario_id)` · `logs_auditoria(entidad_afectada, entidad_id)` · `movimientos_financieros(cuenta_id, fecha)` · `pagos(compra_id)` · `outbox_mensajes(id) WHERE publicado=false` · HNSW sobre `chunks_rag.embedding`.
 
 ---
@@ -451,7 +490,7 @@ Los de v1 se conservan. Nuevos recomendados:
 | Rol PostgreSQL | Permisos |
 |---|---|
 | `flyway` | DDL (solo para migraciones) |
-| `promotora_app` | DML sobre tablas operativas. **Sin** `UPDATE`/`DELETE` en `movimientos_financieros`, `logs_auditoria`, `logs_agente_ia` |
+| `promotora_app` | DML sobre tablas operativas. **Sin DELETE en usuarios** y sin DELETE en compras, detalle_compra, boletos y pagos. **Sin** `UPDATE`/`DELETE` en `movimientos_financieros`, `logs_auditoria`, `logs_agente_ia`; triggers bloquean también estas operaciones en ledger y ambos logs |
 | `bi_reader` | Solo `SELECT` sobre el esquema `bi`. Sin acceso a tablas operativas |
 
 ---
@@ -486,7 +525,7 @@ El requisito pide CRUD completo en 12–15 entidades núcleo. Para datos que no 
 
 | # | Entidad | C | R | U | D (cómo) |
 |---|---|:-:|:-:|:-:|---|
-| 1 | usuarios (+ perfiles cliente/admin/dueño) | ✔ | ✔ | ✔ | `estado = INACTIVO` |
+| 1 | usuarios (+ perfiles cliente/admin/dueño) | ✔ | ✔ | ✔ | `estado = INACTIVO`; nunca DELETE físico; FKs a usuarios RESTRICT |
 | 2 | recintos | ✔ | ✔ | ✔ | `activo = false` |
 | 3 | localidades (+ geometría) | ✔ | ✔ | ✔ | `activo = false` |
 | 4 | categorias_evento | ✔ | ✔ | ✔ | `activo = false` |
@@ -498,7 +537,7 @@ El requisito pide CRUD completo en 12–15 entidades núcleo. Para datos que no 
 | 10 | boletos | ✔ (emisión) | ✔ | ✔ (validar/datos) | `estado = ANULADO` |
 | 11 | resenas | ✔ | ✔ | ✔ | `estado = RECHAZADA` / el autor la retira |
 | 12 | pagos | ✔ | ✔ | ✔ (estado) | `estado = REEMBOLSADO` |
-| 13 | cuentas_financieras | ✔ | ✔ | ✔ | cierre lógico |
+| 13 | cuentas_financieras | ✔ | ✔ | ✔ | `estado = CERRADA`, `fecha_cierre`; solo DUENO con saldo cero |
 | 14 | documentos_rag | ✔ | ✔ | ✔ (nueva versión) | `estado = INACTIVO` |
 | 15 | movimientos_financieros | ✔ | ✔ | — | — (inmutable; ajuste = nuevo movimiento) |
 
@@ -510,27 +549,29 @@ Solo escritura / consulta (no cuentan como CRUD): `detalle_compra` (parte de com
 
 | Archivo | Contenido |
 |---|---|
-| `V1__identidad.sql` | `usuarios`, `clientes`, `administradores`, `duenos_recinto` |
+| `V1__identidad.sql` | `usuarios` (incluye `debe_cambiar_password`), `clientes`, `administradores`, `duenos_recinto`, `refresh_tokens` |
 | `V2__recintos.sql` | `recintos`, `localidades` (con geometría y color) |
 | `V3__catalogo_eventos.sql` | `categorias_evento`, `presentadores`, `eventos`, `evento_presentadores`, `tipos_entrada` |
-| `V4__ventas.sql` | `compras`, `detalle_compra`, `boletos` |
+| `V4__ventas.sql` | `compras` (incluye `procesando_desde`), `detalle_compra`, `boletos` |
 | `V5__finanzas.sql` | `pagos`, `cuentas_financieras`, `movimientos_financieros` |
 | `V6__resenas.sql` | `resenas` |
 | `V7__auditoria_ia_rag.sql` | `CREATE EXTENSION vector`, `documentos_rag`, `chunks_rag`, `logs_auditoria`, `logs_agente_ia` |
 | `V8__mensajeria.sql` | `notificaciones`, `outbox_mensajes`, `mensajes_procesados` |
-| `V9__indices_triggers_permisos.sql` | Índices, triggers de integridad (§6), roles y `REVOKE` |
-| `V10__seed_catalogos.sql` | Categorías de evento, cuenta PLATAFORMA, admin inicial |
+| `V9__indices_triggers_permisos.sql` | Índices, constraint trigger diferido de perfil, triggers de integridad (§6), cuentas cerradas e inmutabilidad de ledger/logs; roles y `REVOKE` |
+| `V10__seed_catalogos.sql` | Solo categorías de evento y cuentas PLATAFORMA e IMPUESTOS (GTQ); nunca usuarios ni credenciales |
 | `R__bi_vistas.sql` | Vistas `bi.*` (repetible), rol `bi_reader` |
 
 Datos de prueba (eventos, recintos, compras de ejemplo) en `database/seed-dev/`, **fuera** de las migraciones de producción.
 
+El primer SUPERADMIN se crea al arrancar la API, solo si no existe ninguno, leyendo `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno. Se crea con `debe_cambiar_password = true`. Nunca se siembra en una migración ni se incluyen sus credenciales en el repo (F3-01).
+
 ---
 
-## 13. Decisiones abiertas que afectan a la BD
+## 13. Decisiones confirmadas que afectan a la BD
 
-| ID | Tema | Por defecto en este documento |
+| ID | Tema | Valor confirmado |
 |---|---|---|
-| D-08 | ¿Asientos numerados? | No: solo localidades con cupo. Si se piden, nueva tabla `asientos` |
+| D-08 | ¿Asientos numerados? | No: solo localidades con cupo |
 | D-11 | ¿Quién asume IVA y comisión? | La comisión se cobra al cliente como cargo por servicio; el IVA se muestra aparte |
 | D-12 | Un rol por usuario | Sí (`usuarios.rol` + una fila de perfil) |
-| D-07 | Refresh tokens | Si se aprueban: tabla `refresh_tokens` (usuario_id, hash, expira_en, revocado) → 26 tablas |
+| D-07 | Refresh tokens | Sí: tabla `refresh_tokens` definida en §4.1 → 26 tablas |
