@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: promotora
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Proporciona POSTGRES_PASSWORD por variable de entorno}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d promotora"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: promotora
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Proporciona RABBITMQ_PASSWORD por variable de entorno}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+
+  flyway:
+    image: flyway/flyway:latest
+    profiles: [tools]
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/promotora
+      FLYWAY_USER: postgres
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:?Proporciona POSTGRES_PASSWORD por variable de entorno}
+      FLYWAY_CONNECT_RETRIES: "20"
+      FLYWAY_CLEAN_DISABLED: "true"
+    volumes:
+      - ./database/migrations:/flyway/sql:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: info
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
