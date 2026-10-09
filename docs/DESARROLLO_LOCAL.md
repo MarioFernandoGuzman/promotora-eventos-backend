@@ -52,9 +52,17 @@ $connection['Password'] = $env:PROMOTORA_DB_PASSWORD
 $env:ConnectionStrings__Promotora = $connection.ConnectionString
 
 # Fase 3: clave JWT y primer administrador, fuera del repositorio.
-$jwtKey = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
-dotnet user-secrets set 'Jwt:SigningKey' $jwtKey --project src/Promotora.WebApi
-$jwtKey = $null
+$jwtKeyBytes = New-Object byte[] 32
+$jwtRng = [Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $jwtRng.GetBytes($jwtKeyBytes)
+    $jwtKey = [Convert]::ToBase64String($jwtKeyBytes)
+    dotnet user-secrets set 'Jwt:SigningKey' $jwtKey --project src/Promotora.WebApi
+} finally {
+    $jwtRng.Dispose()
+    $jwtKey = $null
+    [Array]::Clear($jwtKeyBytes, 0, $jwtKeyBytes.Length)
+}
 dotnet user-secrets set 'Bootstrap:AdminEmail' 'admin@example.test' --project src/Promotora.WebApi
 $bootstrapPassword = Read-Host 'Contraseña inicial del administrador (12–128 caracteres)' -MaskInput
 dotnet user-secrets set 'Bootstrap:AdminPassword' $bootstrapPassword --project src/Promotora.WebApi
