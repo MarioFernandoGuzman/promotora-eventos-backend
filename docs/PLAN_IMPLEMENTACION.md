@@ -104,7 +104,7 @@ Implementación y validación local de F2-01–F2-07 documentadas en [`VALIDACIO
 - [x] **F3-01** Registro de cliente (crea `usuarios` + `clientes`) y alta de admin/dueño por administrador. Al arrancar la API, si no existe ningún SUPERADMIN, crear el primero leyendo `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno, con `debe_cambiar_password = true`; nunca en migraciones ni con credenciales en el repo.
 - [x] **F3-02** Login con JWT y refresh tokens: hash SHA-256 del token, rotación en cada refresh; reutilizar uno revocado revoca toda la familia y se audita. Contraseñas con hash seguro con sal; exigir cambio cuando debe_cambiar_password sea true.
 - [x] **F3-03** Policies RBAC: `Cliente`, `Administrador`, `DuenoRecinto` + verificación de propiedad.
-- [ ] **F3-04** CRUD de usuarios/perfiles (baja = `INACTIVO`), cambio de contraseña.
+- [x] **F3-04** CRUD de usuarios/perfiles (baja = `INACTIVO`), cambio de contraseña.
 - [ ] **F3-05** Rate limiting en login/registro; CORS.
 - [ ] **F3-06** `IAuditLogger` y registro de LOGIN/LOGOUT/LOGIN_FAILED y CRUD de usuarios en `logs_auditoria`.
 - [ ] **F3-07** Pruebas: acceso denegado por rol y por propiedad.

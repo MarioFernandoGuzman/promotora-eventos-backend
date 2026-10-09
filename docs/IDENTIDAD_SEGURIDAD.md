@@ -76,3 +76,27 @@ Cliente y dueño solo gestionan su usuario/perfil; administrador habilitado pued
 El rol y estado actuales se vuelven a consultar en Application: una claim por sí sola no autoriza la propiedad.
 Las altas de perfiles privilegiados usan policy Administrador y comprobación adicional en el handler.
 Un ADMINISTRADOR no recibe permisos de CLIENTE/DUENO automáticamente; no hay herencia implícita de roles.
+
+## F3-04: usuarios/perfiles y contraseña
+
+| Ruta | Permiso | Comportamiento |
+|---|---|---|
+| GET /api/v1/usuarios?page=1&pageSize=20 | Administrador | Lista ordenada por ID; page 1–100.000, pageSize 1–100, items/total |
+| GET /api/v1/usuarios/{id} | Propietario o administrador | Usuario y perfil, nunca hashes ni tokens |
+| PUT /api/v1/usuarios/{id} | Propietario o administrador | Reemplaza email/nombre/apellido y campos del perfil correspondiente |
+| DELETE /api/v1/usuarios/{id} | Propietario o administrador | UPDATE condicional a INACTIVO y revocación de sesiones; conserva perfil/historial |
+| PUT /api/v1/usuarios/{id}/password | Solo propietario, incluida sesión limitada | passwordActual/passwordNuevo; revoca sesiones y quita cambio obligatorio |
+
+El cuerpo de edición contiene email/nombre/apellido y, para cliente, fechaNacimiento/telefono;
+para dueño, empresa/nit. Un dueño requiere empresa. No acepta cambios de rol ni nivel de acceso.
+Los campos de otro perfil no se aplican. Cambiar el correo revoca sesiones; después se inicia sesión con el correo nuevo.
+La baja repetida por un administrador devuelve éxito sin otra auditoría. El usuario dado de baja pierde acceso inmediatamente.
+Los locks sobre actor y destinatario se toman por ID ascendente para evitar inversiones de orden.
+La alta privilegiada vuelve a comprobar al administrador bajo lock, evitando carreras con su baja.
+
+Para el primer inicio: login con admin@example.test y tu contraseña inicial → copiar accessToken
+en **Authorize** de Swagger (solo el token, sin escribir Bearer) → PUT /usuarios/{usuarioId}/password
+con passwordActual y passwordNuevo → nuevo login con passwordNuevo → actualizar Authorize.
+La sesión limitada no permite listar/consultar perfiles ni crear otros administradores.
+Los errores usan ProblemDetails: 400 validación, 401 sesión/contraseña, 403 propiedad/rol,
+404 usuario ausente, 409 correo/estado en conflicto y 422 regla de contraseña/empresa.

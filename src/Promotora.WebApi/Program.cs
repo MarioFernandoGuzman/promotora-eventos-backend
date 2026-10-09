@@ -39,6 +39,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
 
     builder.Services.AddIdentitySessions(jwtKey, issuer, audience, new SesionOptions(
         builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
+    builder.Services.AddIdentityManagement();
 }
 
 builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);

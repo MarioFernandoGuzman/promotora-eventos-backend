@@ -12,7 +12,7 @@ using Promotora.Infrastructure.Shared.Persistence;
 
 namespace Promotora.Infrastructure.Identity.Persistence;
 
-public sealed class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWork unitOfWork, IAuditLogger audit) : IUsuarioRepository
+public sealed partial class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWork unitOfWork, IAuditLogger audit) : IUsuarioRepository
 {
     public async Task<Usuario?> FindByIdAsync(int id, CancellationToken ct) =>
         (await db.Usuarios.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct))?.ToDomain();
@@ -26,6 +26,16 @@ public sealed class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWork unitO
         {
             return await unitOfWork.ExecuteInTransactionAsync(async token =>
             {
+                if (!bootstrap && usuario.Rol != RolUsuario.CLIENTE && actorId is int adminId)
+                {
+                    await db.Database.SqlQuery<int>($"SELECT id AS \"Value\" FROM public.usuarios WHERE id = {adminId} FOR UPDATE").ToListAsync(token);
+                    var actor = await FindByIdAsync(adminId, token);
+                    if (actor is not { EsAdministradorHabilitado: true })
+                    {
+                        return Result<UsuarioDto>.Failure(new Error("identity.forbidden", "Se requiere un administrador habilitado.", ErrorType.Forbidden));
+                    }
+                }
+
                 if (bootstrap)
                 {
                     // Lock de transacción compartido por todas las instancias, sin nuevas tablas.
