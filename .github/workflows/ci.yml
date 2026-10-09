@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Compila, formatea y prueba. Los pasos se saltan solos mientras no exista la
+  # solución (Fases 0-1), pero el job siempre corre para poder exigirlo en la
+  # protección de ramas.
+  build-test:
+    name: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ¿Existe la solución?
+        id: sln
+        run: |
+          if ls *.sln >/dev/null 2>&1 || ls *.slnx >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Aún no hay solución .NET; se omiten build y test."
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.sln.outputs.exists == 'true'
+        with:
+          dotnet-version: 10.0.x   # si usan .NET 8, cambiar a 8.0.x
+
+      - name: Restore
+        if: steps.sln.outputs.exists == 'true'
+        run: dotnet restore
+
+      - name: Format (verificación)
+        if: steps.sln.outputs.exists == 'true'
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Build
+        if: steps.sln.outputs.exists == 'true'
+        run: dotnet build --no-restore -warnaserror -c Release
+
+      # Docker ya está disponible en ubuntu-latest para Testcontainers
+      # (Postgres+pgvector, RabbitMQ). Incluye pruebas de arquitectura.
+      - name: Test
+        if: steps.sln.outputs.exists == 'true'
+        run: dotnet test --no-build -c Release --logger "trx;LogFileName=test-results.trx"
+
+      - name: Subir resultados de pruebas
+        if: always() && steps.sln.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/test-results.trx"
+          if-no-files-found: ignore
+
+  # Verifica que las migraciones Flyway aplican desde cero sobre Postgres + pgvector.
+  migraciones:
+    name: migraciones
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: promotora
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ¿Hay migraciones?
+        id: mig
+        run: |
+          if ls database/migrations/*.sql >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Aún no hay migraciones; se omite."
+          fi
+
+      - name: Flyway migrate
+        if: steps.mig.outputs.exists == 'true'
+        run: |
+          docker run --rm --network host \
+            -v "$GITHUB_WORKSPACE/database/migrations:/flyway/sql" \
+            flyway/flyway:latest \
+            -url=jdbc:postgresql://localhost:5432/promotora \
+            -user=postgres -password=postgres \
+            -connectRetries=10 \
+            migrate
+
+      - name: Flyway validate
+        if: steps.mig.outputs.exists == 'true'
+        run: |
+          docker run --rm --network host \
+            -v "$GITHUB_WORKSPACE/database/migrations:/flyway/sql" \
+            flyway/flyway:latest \
+            -url=jdbc:postgresql://localhost:5432/promotora \
+            -user=postgres -password=postgres \
+            validate
