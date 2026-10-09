@@ -28,3 +28,17 @@ SELECT * FROM bi.vw_ocupacion_localidad;
 ```
 
 Resultado esperado en una BD nueva: seis categorías, dos cuentas base GTQ con saldo cero, dos usuarios inactivos y cuatro tipos de entrada. Ocupación inicial: 0 %. No hay compras, pagos, movimientos ni boletos generados por este seed.
+
+## Validación completa reproducible
+
+Requiere Docker operativo y PowerShell 7 (`pwsh`). Desde la raíz:
+
+```powershell
+pwsh -File .\database\seed-dev\validar-fase1.ps1
+```
+
+El validador crea un PostgreSQL temporal sin puertos publicados ni volúmenes persistentes. Usa las imágenes y los argumentos Flyway de CI; en Windows sustituye la red host por la red del contenedor para mantener localhost:5432. Las credenciales públicas del PostgreSQL temporal son las mismas del job de CI, sin usar secretos de la aplicación.
+
+Comprueba esquema y diccionario, perfiles diferidos, capacidad, coherencia de compras, inmutabilidad, permisos reales de los roles, las 16 vistas, seeds repetidos y cuatro carreras. Los archivos de `verificaciones/` son pruebas, no seeds opcionales: no deben ejecutarse contra una BD de trabajo. Algunos casos intentan operaciones prohibidas para comprobar que PostgreSQL las rechaza. Las carreras confirman datos únicamente dentro del contenedor temporal.
+
+Al terminar debe aparecer `FASE 1 VALIDADA`. El contenedor creado por esa ejecución se detiene en `finally` y Docker elimina su almacenamiento efímero por `--rm`. El catálogo demo no queda instalado en ninguna otra BD. Resultado y límites de la revisión: [VALIDACION_FASE_1.md](../../docs/VALIDACION_FASE_1.md).
