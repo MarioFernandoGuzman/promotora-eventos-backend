@@ -45,10 +45,10 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | # | Requerimiento | Tareas que lo cubren | Estado |
 |---|---|---|---|
 | Q1 | CRUD completo de 12–15 entidades núcleo | F1-04, F3-*, F4-*, F5-*, F7-*, F8-*, F9-02, F12-02 | ⬜ |
-| Q2 | Base de datos real (no SQLite) | F1-*, F2-02 | ⬜ |
+| Q2 | Base de datos real (no SQLite) | F1-*, F2-02 | ✅ |
 | Q3 | Arquitectura formal, no un solo archivo | F2-01, F2-06, F12-03 | ⬜ |
-| Q4 | Backend REST en tecnología permitida (.NET) | F2-01, F2-05 | ⬜ |
-| Q5 | GitHub: ramas, PRs, historial legible | F0-04, F2-07 | ⬜ |
+| Q4 | Backend REST en tecnología permitida (.NET) | F2-01, F2-05 | ✅ |
+| Q5 | GitHub: ramas, PRs, historial legible | F0-04, F2-07 | ✅ |
 | Q6 | RabbitMQ en un flujo de negocio real y recuperación de compras atascadas | F6-01 … F6-11 (incluye recuperación y prueba de carrera) | ⬜ |
 | Q7 | Agente de IA con información pública | F9-06, F9-07 | ⬜ |
 | Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ⬜ |
@@ -94,9 +94,11 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [x] **F2-04** Base transversal: `Result<T>`, errores, `ICommandHandler/IQueryHandler`, pipeline de validación, `IClock`, `IUnitOfWork`.
 - [x] **F2-05** WebApi base: Swagger, `ProblemDetails`, versionado `/api/v1`, Serilog con CorrelationId, health checks.
 - [x] **F2-06** Pruebas de arquitectura (NetArchTest): regla de dependencia y controllers sin `DbContext`.
-- [ ] **F2-07** CI en GitHub Actions: build, test, format, arquitectura.
+- [x] **F2-07** CI en GitHub Actions: build, test, format, arquitectura.
 
 **Salida:** `docker compose up`, migrar y levantar API con Swagger vacío; CI en verde.
+
+Implementación y validación local de F2-01–F2-07 documentadas en [`VALIDACION_FASE_2.md`](VALIDACION_FASE_2.md). La ejecución remota de GitHub Actions debe confirmarse al publicar el PR; el agente no hace push ni merge.
 
 ### Fase 3 — Identidad y seguridad
 - [ ] **F3-01** Registro de cliente (crea `usuarios` + `clientes`) y alta de admin/dueño por administrador. Al arrancar la API, si no existe ningún SUPERADMIN, crear el primero leyendo `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno, con `debe_cambiar_password = true`; nunca en migraciones ni con credenciales en el repo.

@@ -74,6 +74,27 @@ El Worker se inicia con `dotnet run --project src/Promotora.Worker` en otra term
 
 `dotnet test --project tests/Promotora.Architecture.Tests` comprueba dependencias con NetArchTest, referencias de proyectos, Domain sin NuGets, controllers sin DbContext/adaptadores y base versionada. Solo el composition root de la API registra Infrastructure. Si una regla falla, corregir la dependencia; no desactivar la prueba.
 
+## Verificación completa (F2-07)
+
+```powershell
+dotnet restore
+dotnet format --verify-no-changes --no-restore
+dotnet build --no-restore -warnaserror -c Release
+dotnet test --no-build -c Release --report-trx
+```
+
+Los cinco resultados TRX quedan en `TestResults/` (ignorado por Git). El CI exige estos comandos, incluye arquitectura y mantiene el job independiente de Flyway. `.editorconfig` y `.gitattributes` fijan LF en C# para que Windows y Linux verifiquen el mismo formato.
+
+Con los puertos locales 5432, 5672, 15672, 1025, 8025 y 5080 libres, ejecutar además:
+
+```powershell
+pwsh -NoProfile -File scripts/Test-Compose.ps1 -WithApi
+```
+
+El script usa un proyecto Compose temporal con datos en tmpfs, claves aleatorias solo en memoria, migraciones de solo lectura y login restringido. Arranca la API compilada en Kestrel, comprueba ambos health checks, Swagger UI/documento, RabbitMQ management y MailHog. Retira únicamente su proceso, contenedores y red; no elimina volúmenes ni toca datos locales. Restaura las variables de entorno originales. Esta prueba también se ejecuta en CI tras el build.
+
+Para repetir la prueba temporal mientras tienes Compose local funcionando, primero `docker compose stop`; no ejecutar pruebas con puertos ocupados. La suite Testcontainers usa puertos aleatorios y puede ejecutarse mientras Compose local está activo.
+
 Esta prueba crea PostgreSQL temporal con Testcontainers, aplica las migraciones reales mediante Flyway y consulta con un login restringido. Docker debe estar encendido; no requiere Compose ni modifica la base local. Comprueba todas las columnas/vistas, defaults e IDs, perfil obligatorio, permisos, JSON, clave compuesta y persistencia/búsqueda por coseno de vectores.
 
 ## Solución (F2-01)

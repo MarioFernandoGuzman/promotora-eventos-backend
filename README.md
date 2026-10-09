@@ -16,16 +16,29 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 | [`CLAUDE.md`](CLAUDE.md) | Instrucciones específicas para Claude Code |
 | [`docs/BASE_DE_DATOS.md`](docs/BASE_DE_DATOS.md) | Modelo de datos v2 |
 | [`docs/PLAN_IMPLEMENTACION.md`](docs/PLAN_IMPLEMENTACION.md) | Fases, tareas y trazabilidad de requerimientos |
+| [`docs/DESARROLLO_LOCAL.md`](docs/DESARROLLO_LOCAL.md) | Arranque seguro de Docker, login PostgreSQL, API/Swagger y pruebas |
+| [`docs/DEPENDENCIAS.md`](docs/DEPENDENCIAS.md) | Versiones, propósito y licencias de NuGets |
 
 ## Arranque rápido
 
-> Disponible al terminar la Fase 2 del plan.
+Fase 2 implementada: solución por capas, persistencia y API base con Swagger. Preparar variables de entorno y el login restringido siguiendo [`docs/DESARROLLO_LOCAL.md`](docs/DESARROLLO_LOCAL.md).
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 docker compose run --rm flyway migrate
 dotnet run --project src/Promotora.WebApi
 ```
+
+Swagger local: `http://localhost:5080/swagger`. Todavía no hay endpoints de negocio; identidad llega en Fase 3. El Worker es un host preparado; el procesamiento de compras llega en Fase 6.
+
+```bash
+dotnet restore
+dotnet build -warnaserror -c Release
+dotnet test --no-build -c Release --report-trx
+dotnet format --verify-no-changes
+```
+
+Docker debe estar encendido para las pruebas PostgreSQL/Testcontainers. Las pruebas crean bases temporales, sin modificar datos de Compose. Arquitectura forma parte de la suite; también puede verificarse con `dotnet test --project tests/Promotora.Architecture.Tests`.
 
 ## Flujo de trabajo
 
