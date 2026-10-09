@@ -41,4 +41,7 @@ public sealed class Usuario
     }
 
     public bool PuedeAutenticarse => Estado == "ACTIVO";
+    public bool EsAdministradorHabilitado => PuedeAutenticarse && !DebeCambiarPassword && Rol == RolUsuario.ADMINISTRADOR;
+    public bool PuedeGestionarUsuario(int usuarioId) => PuedeAutenticarse && !DebeCambiarPassword && (Id == usuarioId || Rol == RolUsuario.ADMINISTRADOR);
+    public bool PuedeCambiarPassword(int usuarioId) => PuedeAutenticarse && Id == usuarioId;
 }

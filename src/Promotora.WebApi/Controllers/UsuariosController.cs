@@ -7,10 +7,10 @@ using Promotora.WebApi.Identity;
 
 namespace Promotora.WebApi.Controllers;
 
-[Authorize]
 public sealed class UsuariosController(ICommandHandler<CrearUsuarioCommand, UsuarioDto> crear) : ApiControllerBase
 {
     [HttpPost("administradores")]
+    [Authorize(Policy = IdentityPolicies.Administrador)]
     [ProducesResponseType<UsuarioDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -20,6 +20,7 @@ public sealed class UsuariosController(ICommandHandler<CrearUsuarioCommand, Usua
             request.Apellido, RolUsuario.ADMINISTRADOR, new PerfilNuevo()), ct));
 
     [HttpPost("duenos-recinto")]
+    [Authorize(Policy = IdentityPolicies.Administrador)]
     [ProducesResponseType<UsuarioDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]

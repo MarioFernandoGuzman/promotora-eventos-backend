@@ -14,7 +14,7 @@ public sealed class CrearUsuarioHandler(IUsuarioRepository repository, IPassword
         if (request.Rol != RolUsuario.CLIENTE)
         {
             var actor = actual.UsuarioId is int id ? await repository.FindByIdAsync(id, ct) : null;
-            if (actor is not { PuedeAutenticarse: true, Rol: RolUsuario.ADMINISTRADOR, DebeCambiarPassword: false })
+            if (actor is not { EsAdministradorHabilitado: true })
             {
                 return Result<UsuarioDto>.Failure(new Error("identity.forbidden", "Se requiere un administrador habilitado.", ErrorType.Forbidden));
             }

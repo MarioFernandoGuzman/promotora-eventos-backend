@@ -58,7 +58,14 @@ public static class JwtAuthentication
                 }
             };
         });
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(IdentityPolicies.Cliente, policy => policy.RequireAuthenticatedUser().RequireRole("CLIENTE").RequireClaim("password_change_required", "false"));
+            options.AddPolicy(IdentityPolicies.Administrador, policy => policy.RequireAuthenticatedUser().RequireRole("ADMINISTRADOR").RequireClaim("password_change_required", "false"));
+            options.AddPolicy(IdentityPolicies.DuenoRecinto, policy => policy.RequireAuthenticatedUser().RequireRole("DUENO_RECINTO").RequireClaim("password_change_required", "false"));
+            options.AddPolicy(IdentityPolicies.SesionCompleta, policy => policy.RequireAuthenticatedUser().RequireClaim("password_change_required", "false"));
+            options.AddPolicy(IdentityPolicies.CambioPassword, policy => policy.RequireAuthenticatedUser());
+        });
         return services;
     }
 }

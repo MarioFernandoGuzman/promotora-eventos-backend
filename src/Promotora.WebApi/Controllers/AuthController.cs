@@ -15,6 +15,7 @@ public sealed class AuthController(ICommandHandler<CrearUsuarioCommand, UsuarioD
     ICommandHandler<LogoutCommand, Unit> logout) : ApiControllerBase
 {
     [HttpPost("registro")]
+    [AllowAnonymous]
     [ProducesResponseType<UsuarioDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -23,18 +24,20 @@ public sealed class AuthController(ICommandHandler<CrearUsuarioCommand, UsuarioD
             request.Apellido, RolUsuario.CLIENTE, new PerfilNuevo(request.FechaNacimiento, request.Telefono)), ct));
 
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType<TokenDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TokenDto>> Login(LoginCommand request, CancellationToken ct) => FromResult(await login.HandleAsync(request, ct));
 
     [HttpPost("refresh")]
+    [AllowAnonymous]
     [ProducesResponseType<TokenDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TokenDto>> Refresh(RefreshCommand request, CancellationToken ct) => FromResult(await refresh.HandleAsync(request, ct));
 
-    [Authorize]
+    [Authorize(Policy = IdentityPolicies.SesionCompleta)]
     [HttpPost("logout")]
     [ProducesResponseType<Unit>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]

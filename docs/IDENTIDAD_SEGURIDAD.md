@@ -66,3 +66,13 @@ Un usuario con cambio obligatorio recibe JWT de 5 minutos y refreshToken=null.
 Las policies de F3-03 limitarán su uso al cambio de contraseña propio de F3-04.
 Tras cambiarla deberá hacer login de nuevo. Login fallido usa 401 genérico, sin indicar si el correo existe;
 la verificación de usuarios inexistentes realiza un hash de coste equivalente.
+
+## F3-03: autorización
+
+Policies Cliente/Administrador/DuenoRecinto exigen rol exacto, autenticación y contraseña inicial cambiada.
+SesionCompleta exige autenticación sin cambio pendiente. CambioPassword admite la sesión limitada,
+pero su handler comprobará que el ID solicitado sea el propio (ningún admin cambia la contraseña ajena).
+Cliente y dueño solo gestionan su usuario/perfil; administrador habilitado puede gestionar otros usuarios.
+El rol y estado actuales se vuelven a consultar en Application: una claim por sí sola no autoriza la propiedad.
+Las altas de perfiles privilegiados usan policy Administrador y comprobación adicional en el handler.
+Un ADMINISTRADOR no recibe permisos de CLIENTE/DUENO automáticamente; no hay herencia implícita de roles.
