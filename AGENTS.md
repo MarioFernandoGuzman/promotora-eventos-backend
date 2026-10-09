@@ -128,7 +128,7 @@ dotnet build -warnaserror
 dotnet test                                    # requiere Docker (Testcontainers)
 dotnet format --verify-no-changes
 dotnet run --project src/Promotora.WebApi      # API + Swagger en /swagger
-dotnet run --project src/Promotora.Worker      # consumidores + outbox relay + expiración
+dotnet run --project src/Promotora.Worker      # host desde F2; consumidores, relay y jobs en F6
 
 # Secretos (nunca en git)
 dotnet user-secrets set "OpenAI:ApiKey" "<tu-key>" --project src/Promotora.WebApi

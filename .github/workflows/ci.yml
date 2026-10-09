@@ -14,9 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  # Compila, formatea y prueba. Los pasos se saltan solos mientras no exista la
-  # solución (Fases 0-1), pero el job siempre corre para poder exigirlo en la
-  # protección de ramas.
+  # Desde Fase 2 la solución es obligatoria; no omitir verificaciones.
   build-test:
     name: build-test
     runs-on: ubuntu-latest
@@ -24,46 +22,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: ¿Existe la solución?
-        id: sln
-        run: |
-          if ls *.sln >/dev/null 2>&1 || ls *.slnx >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Aún no hay solución .NET; se omiten build y test."
-          fi
-
       - uses: actions/setup-dotnet@v4
-        if: steps.sln.outputs.exists == 'true'
         with:
-          dotnet-version: 10.0.x   # si usan .NET 8, cambiar a 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Restore
-        if: steps.sln.outputs.exists == 'true'
         run: dotnet restore
 
       - name: Format (verificación)
-        if: steps.sln.outputs.exists == 'true'
         run: dotnet format --verify-no-changes --no-restore
 
       - name: Build
-        if: steps.sln.outputs.exists == 'true'
         run: dotnet build --no-restore -warnaserror -c Release
+
+      - name: Compose Flyway y API Kestrel desde cero
+        shell: pwsh
+        run: ./scripts/Test-Compose.ps1 -WithApi
 
       # Docker ya está disponible en ubuntu-latest para Testcontainers
       # (Postgres+pgvector, RabbitMQ). Incluye pruebas de arquitectura.
       - name: Test
-        if: steps.sln.outputs.exists == 'true'
-        run: dotnet test --no-build -c Release --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test --no-build -c Release --report-trx
 
       - name: Subir resultados de pruebas
-        if: always() && steps.sln.outputs.exists == 'true'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: "**/test-results.trx"
-          if-no-files-found: ignore
+          path: "**/TestResults/*.trx"
+          if-no-files-found: error
 
   # Verifica que las migraciones Flyway aplican desde cero sobre Postgres + pgvector.
   migraciones:
