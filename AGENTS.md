@@ -5,6 +5,8 @@
 >
 > - Modelo de datos completo: [`docs/BASE_DE_DATOS.md`](docs/BASE_DE_DATOS.md)
 > - Tareas y estado de avance: [`docs/PLAN_IMPLEMENTACION.md`](docs/PLAN_IMPLEMENTACION.md)
+> - Esquema histórico solo de referencia: [`docs/referencia/schema_v1.sql`](docs/referencia/schema_v1.sql). Nunca ejecutarlo ni moverlo a migraciones.
+> - Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos en el diccionario, seguir v1 con las correcciones v2; en tablas nuevas documentar cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9.
 
 ---
 
@@ -147,17 +149,21 @@ Puertos locales de referencia: Postgres 5432 · RabbitMQ 5672 (UI 15672) · Mail
    if (filas == 0) return Result.Fail(Errores.Agotado);
    ```
    Prohibido el patrón leer-cupo → comparar en C# → guardar.
-2. **Nunca borrar datos financieros ni de compras.** Sin `DELETE` sobre `compras`, `detalle_compra`, `boletos`, `pagos`, `movimientos_financieros`, `logs_*`. Se cambia el estado (`CANCELADA`, `ANULADO`...).
+2. **Nunca borrar usuarios, datos financieros ni de compras.** Sin `DELETE` sobre `usuarios`, `compras`, `detalle_compra`, `boletos`, `pagos`, `movimientos_financieros`, `logs_*`. Se cambia el estado (`INACTIVO`, `CANCELADA`, `ANULADO`...). El rol de aplicación no tiene DELETE sobre usuarios; las FKs de perfiles, logs y notificaciones hacia usuarios son ON DELETE RESTRICT.
 3. **El ledger es inmutable.** `movimientos_financieros` solo admite `INSERT`. Una corrección es un movimiento contrario. `cuentas_financieras.saldo` se modifica en la misma transacción que el movimiento y debe igualar `SUM(monto)`.
+   Una compra completada registra VENTA (+subtotal, DUENO), COMISION (+comision_plataforma, PLATAFORMA) e IMPUESTO (+impuestos, IMPUESTOS); sus movimientos de cobro suman `compras.total` antes de reembolsos. El reembolso revierte los tres componentes. La comisión se cobra al cliente; el IVA se muestra aparte, con tasa configurable en appsettings y cálculo en Domain. Facturación electrónica fuera de alcance.
+   Por moneda existe una única cuenta PLATAFORMA y una única IMPUESTOS (índices únicos parciales); se mantiene UNIQUE(dueno_id, moneda) y CHECK `(tipo='DUENO') = (dueno_id IS NOT NULL)`. Solo DUENO con saldo cero puede pasar de ACTIVA a CERRADA, registrando fecha_cierre; PLATAFORMA/IMPUESTOS no se cierran. Un trigger rechaza movimientos en cuentas CERRADA.
 4. **Idempotencia.** `POST /api/v1/compras` exige header `Idempotency-Key` (se guarda en `compras.idempotency_key UNIQUE`; si se repite, se devuelve la compra existente). Los consumidores registran `mensajes_procesados(mensaje_id, consumidor)` en la misma transacción; si ya existe, hacen ACK y omiten.
 5. **Una compra pertenece a un solo evento** (`compras.evento_id`); todos sus `tipos_entrada` deben ser de ese evento. Máximo `eventos.max_boletos_por_compra` boletos.
-6. **Reserva con expiración.** Compra `PENDIENTE` reserva cupo y tiene `expira_en`. Si expira, falla o se cancela, el cupo se devuelve **una sola vez** (operación idempotente).
+6. **Reserva con expiración.** Compra `PENDIENTE` reserva cupo y tiene `expira_en`. Si expira, falla o se cancela, el cupo se devuelve **una sola vez** (operación idempotente). El job de expiración solo toca PENDIENTE; cancelar por el usuario solo procede desde PENDIENTE (en PROCESANDO responde 409).
 7. **Outbox.** Nunca publicar a RabbitMQ dentro de la transacción de negocio. Se escribe en `outbox_mensajes` en la misma transacción; el relay publica después.
 8. **QR firmado.** `boletos.codigo_qr` es un token HMAC-SHA256 (no adivinable). Validar entrada = `UPDATE boletos SET estado='USADO', fecha_uso=now(), validado_por=@u WHERE codigo_qr=@c AND estado='VALIDO'` (0 filas ⇒ rechazado).
 9. **Reseñas:** solo un cliente con boleto `USADO` de ese evento, una por (evento, cliente), nacen `PENDIENTE` y las modera un ADMINISTRADOR.
 10. **Autorización por propiedad.** Un DUENO_RECINTO solo gestiona sus recintos/eventos/cuentas; un CLIENTE solo ve sus compras y boletos. Verificar propiedad en el handler, no solo el rol en el controller.
 11. **Todo `TIMESTAMPTZ`; el código usa UTC** (`IClock`, nunca `DateTime.Now`).
 12. **El agente de IA nunca accede a compras, usuarios ni finanzas.** Solo datos públicos y documentos RAG indexados.
+13. **Transiciones condicionales.** Toda transición de estado es un UPDATE condicional `WHERE estado=<esperado>`. Solo quien gana (1 fila afectada) devuelve cupo, en la misma transacción. En reembolsos, el cupo devuelto es el número de boletos que pasaron de VALIDO a ANULADO.
+14. **Perfil único obligatorio.** Cada usuario tiene exactamente una fila de perfil acorde a su rol; validar en aplicación y con constraint trigger `DEFERRABLE INITIALLY DEFERRED` que verifica la invariante al COMMIT.
 
 ---
 
@@ -177,8 +183,10 @@ Flujo de compra:
 1. `POST /api/v1/compras` valida → reserva cupo atómico → crea compra `PENDIENTE` (`expira_en`) → inserta en `outbox_mensajes` (misma tx) → **202 Accepted** + `Location`.
 2. `Worker` (outbox relay, `FOR UPDATE SKIP LOCKED`) publica a `compra.procesar`.
 3. Consumidor procesa, completa y emite `compra.completada`.
+   Toma la compra con `UPDATE compras SET estado='PROCESANDO', procesando_desde=now() WHERE id=@id AND estado='PENDIENTE'`; 0 filas ⇒ ACK y omitir. La referencia ante la pasarela es `compras.public_id` para mantener el cobro idempotente.
 4. Job de expiración marca `EXPIRADA` las `PENDIENTE` vencidas y devuelve cupo.
 5. El cliente consulta `GET /api/v1/compras/{publicId}` (polling) hasta ver el estado final.
+6. Job de recuperación (F6-11): si PROCESANDO supera el timeout desde procesando_desde (configurable, 5 minutos por defecto), consulta el pago por referencia public_id. Con pago APROBADO completa y emite boletos idempotentemente; si no, pasa condicionalmente a FALLIDA y devuelve cupo una sola vez. Probar la carrera procesar/expirar/cancelar.
 
 La pasarela de pago es un **puerto**; el adaptador del proyecto es simulado (`FakePaymentGateway`, tasa de fallo configurable para pruebas).
 
@@ -198,11 +206,14 @@ La pasarela de pago es un **puerto**; el adaptador del proyecto es simulado (`Fa
 
 ## 8. Seguridad, auditoría y logs
 
-- JWT de acceso de vida corta (+ refresh token si se aprueba la decisión D-07 del plan). Policies: `Cliente`, `Administrador`, `DuenoRecinto`.
+- JWT de acceso de vida corta + refresh tokens (D-07 confirmada). Policies: `Cliente`, `Administrador`, `DuenoRecinto`.
+- `refresh_tokens` se crea en V1__identidad.sql (26 tablas en total); definición completa en BASE_DE_DATOS.md §4.1. Solo guardar token_hash SHA-256, nunca el token en claro. Cada refresh rota el token; reutilizar uno revocado revoca toda la familia y se audita.
+- El primer SUPERADMIN se crea al arrancar la API si no existe ninguno, con `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno; `usuarios.debe_cambiar_password = true` (columna NOT NULL DEFAULT false). Nunca usuarios ni credenciales en migraciones. V10__seed_catalogos.sql solo siembra categorías y cuentas PLATAFORMA/IMPUESTOS.
 - Endpoints públicos: catálogo de eventos, detalle, mapa de recinto, agente de IA (con rate limit). Todo lo demás requiere autenticación.
 - Rate limiting nativo (`AddRateLimiter`) en login, registro, compra y agente IA. CORS restringido al frontend.
 - **Auditoría:** `IAuditLogger` escribe en `logs_auditoria` (usuario, entidad, `entidad_id`, acción, detalle JSONB, IP) para: login/logout/fallos, CRUD de entidades núcleo, compra, pago, reembolso, validación de boleto, moderación, exportación de reportes, ingesta RAG.
 - **Nunca** loguear contraseñas, tokens JWT, tokens QR completos, API keys ni datos de tarjeta.
+- `logs_auditoria` y `logs_agente_ia` son solo INSERT: REVOKE de UPDATE/DELETE al rol de aplicación y triggers que bloquean ambas operaciones; usuario_id nullable con ON DELETE RESTRICT.
 - Configuración sensible solo por user-secrets / variables de entorno. `.env` en `.gitignore`.
 
 ---
@@ -240,7 +251,7 @@ La pasarela de pago es un **puerto**; el adaptador del proyecto es simulado (`Fa
 
 ## 12. Límites — NO hacer
 
-- No editar una migración Flyway ya aplicada/mergeada: crea una nueva `V<n+1>__...sql`.
+- No editar una migración Flyway ya commiteada: crea una nueva `V<n+1>__...sql`.
 - No tocar el esquema `bi` sin migración. No dar a `bi_reader` permisos sobre tablas operativas.
 - No usar `DateTime.Now`, `Thread.Sleep`, `.Result`/`.Wait()`, `async void`.
 - No lógica de negocio en controllers, entidades EF anémicas con reglas dispersas, ni consultas SQL en controllers.
@@ -249,6 +260,7 @@ La pasarela de pago es un **puerto**; el adaptador del proyecto es simulado (`Fa
 - No commitear secretos, `appsettings.*.json` con credenciales, ni binarios.
 - No inventar tablas, columnas, endpoints ni comandos: consulta `docs/BASE_DE_DATOS.md` y el plan. Si falta algo, propónlo antes de implementarlo.
 - No introducir Node.js/JavaScript ni FastAPI/Python en el backend.
+- No ejecutar el script histórico docs/referencia/schema_v1.sql. Los datos de prueba van en database/seed-dev/; ningún secreto o credencial de bootstrap en archivos versionados.
 
 ---
 
@@ -267,4 +279,13 @@ La pasarela de pago es un **puerto**; el adaptador del proyecto es simulado (`Fa
 
 ## 14. Frontend
 
-Decisión pendiente (ver plan, D-09). Sea cual sea, consume la API REST versionada y el mapa de recintos usa `localidades.geometria` (JSON con polígonos) sobre `recintos.imagen_plano_url`. Esto **no** relaja la restricción del backend.
+Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la API REST versionada y el mapa de recintos usa `localidades.geometria` (JSON con polígonos) sobre `recintos.imagen_plano_url`. Esto **no** relaja la restricción del backend.
+
+## 15. Acuerdos de trabajo vigentes
+
+- Una tarea del plan a la vez y en orden de fases. Antes de cada tarea, describir en 3–5 líneas el trabajo y los archivos; esperar «ok» si toca esquema, seguridad, mensajería o dinero.
+- D-08: sin asientos numerados. D-14: MailHog en desarrollo. OpenAI:ApiKey la gestiona el usuario con user-secrets; nunca escribirla en archivos.
+- Ramas desde develop actualizado: documentación en docs/f1-aclaraciones; PR-B F1-02/F1-03 en feature/f1-identidad-recintos-catalogo; PR-C F1-04 a F1-06 en feature/f1-ventas-finanzas-ia-mensajeria; PR-D F1-07 a F1-10 y F1-11 (después de F1-07) en feature/f1-integridad-bi-seed. Cada PR empieza después de que el usuario mergee el anterior y actualice develop.
+- Solo commits locales, pequeños y en español, Conventional Commits y cuerpo `Refs: <ID>`. Mostrar git status y mensaje antes de cada commit. Nunca push, merge ni modificar main/develop. El usuario gestiona push y PR.
+- Marcar la tarea en el plan en el mismo commit; ejecutar build/test/format cuando existan y apliquen. En F1-10 no existe docker-compose.yml: usar contenedor temporal pgvector/pgvector:pg16 y flyway/flyway sobre database/migrations con el comando de .github/workflows/ci.yml.
+- No ejecutar comandos destructivos sin confirmación. Al cerrar la fase, revisar el diff contra el criterio de salida y §§5/12, listar incumplimientos y preparar título/descripción de PR según .github/pull_request_template.md.

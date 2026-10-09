@@ -21,16 +21,20 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-04 | Mensajería | ✅ | **RabbitMQ** (no Kafka) |
 | D-05 | LLM y embeddings | ✅ | **OpenAI (ChatGPT)**; embeddings `text-embedding-3-small` → `vector(1536)` |
 | D-06 | Migraciones | ✅ | SQL con Flyway; EF Core no genera migraciones |
-| D-07 | ¿Refresh tokens además del JWT? | ⬜ pendiente | Recomendado: sí (+ tabla `refresh_tokens`) |
-| D-08 | ¿Asientos numerados? | ⬜ pendiente | Por defecto no: solo localidades con cupo |
-| D-09 | Tecnología del frontend | ⬜ pendiente | Opciones: Blazor (todo en .NET), React o Angular |
+| D-07 | ¿Refresh tokens además del JWT? | ✅ | Sí; tabla `refresh_tokens`, rotación y revocación de familia ante reutilización |
+| D-08 | ¿Asientos numerados? | ✅ | No: solo localidades con cupo |
+| D-09 | Tecnología del frontend | ⬜ pendiente hasta Fase 11 | Opciones: Blazor (todo en .NET), React o Angular |
 | D-10 | Pasarela de pago | ✅ | Adaptador simulado detrás de `IPaymentGateway` |
-| D-11 | Quién asume IVA y comisión | ⬜ pendiente | Por defecto: comisión como cargo al cliente, IVA aparte |
+| D-11 | Quién asume IVA y comisión | ✅ | Comisión como cargo al cliente; IVA aparte, tasa configurable y cálculo en Domain; cuenta IMPUESTOS (BASE_DE_DATOS.md §4.5) |
 | D-12 | Roles | ✅ | Un rol por usuario (`usuarios.rol` + perfil) |
 | D-13 | Una compra = un evento | ✅ | `compras.evento_id` |
-| D-14 | Envío de correo | ⬜ pendiente | MailHog en desarrollo; SMTP real (a definir) para la demo |
+| D-14 | Envío de correo | ✅ | MailHog en desarrollo |
 
-Las decisiones ⬜ deben cerrarse **antes** de la fase que las usa (D-08 y D-11 antes de F1; D-07 antes de F3; D-14 antes de F6; D-09 antes de F11).
+Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
+
+El modelo objetivo tiene **26 tablas**, incluida `refresh_tokens`. Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9.
+
+Entrega de Fase 1: PR-B (F1-02/F1-03) en `feature/f1-identidad-recintos-catalogo`; PR-C (F1-04 a F1-06) en `feature/f1-ventas-finanzas-ia-mensajeria`; PR-D (F1-07 a F1-10 y F1-11, ejecutada después de F1-07) en `feature/f1-integridad-bi-seed`. Cada rama parte de develop actualizado después de que el usuario mergee el PR anterior. Solo commits locales en español, con `Refs: <ID>` en el cuerpo, mostrando git status y mensaje antes de cada commit; sin push ni merge del agente y sin modificar main/develop.
 
 ---
 
@@ -45,7 +49,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | Q3 | Arquitectura formal, no un solo archivo | F2-01, F2-06, F12-03 | ⬜ |
 | Q4 | Backend REST en tecnología permitida (.NET) | F2-01, F2-05 | ⬜ |
 | Q5 | GitHub: ramas, PRs, historial legible | F0-04, F2-07 | ⬜ |
-| Q6 | RabbitMQ en un flujo de negocio real | F6-* | ⬜ |
+| Q6 | RabbitMQ en un flujo de negocio real y recuperación de compras atascadas | F6-01 … F6-11 (incluye recuperación y prueba de carrera) | ⬜ |
 | Q7 | Agente de IA con información pública | F9-06, F9-07 | ⬜ |
 | Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ⬜ |
 | Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ⬜ |
@@ -60,27 +64,28 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 ## 2. Fases y tareas
 
 ### Fase 0 — Decisiones y arranque
-- [ ] **F0-01** Cerrar decisiones D-07, D-08, D-09, D-11, D-14 (o fijar valores por defecto).
+- [x] **F0-01** Cerrar D-07, D-08, D-11 y D-14; aplazar explícitamente D-09 hasta F11-01.
 - [ ] **F0-02** Crear cuenta OpenAI y API key; guardarla fuera del repo (user-secrets).
-- [ ] **F0-03** Crear repositorio GitHub, `.gitignore` (.NET + `.env`), licencia y README inicial.
-- [ ] **F0-04** Configurar protección de `main`, rama `develop`, plantilla de PR y convención de commits.
-- [ ] **F0-05** Commitear `AGENTS.md`, `CLAUDE.md`, `docs/BASE_DE_DATOS.md` y este plan.
+- [x] **F0-03** Crear repositorio GitHub, `.gitignore` (.NET + `.env`), licencia y README inicial.
+- [x] **F0-04** Configurar protección de `main`, rama `develop`, plantilla de PR y convención de commits.
+- [x] **F0-05** Commitear `AGENTS.md`, `CLAUDE.md`, `docs/BASE_DE_DATOS.md` y este plan.
 
-**Salida:** repo creado, decisiones cerradas, archivos de agente versionados.
+**Salida:** repo creado, decisiones cerradas salvo D-09 aplazada hasta F11-01, archivos de agente versionados; F0-02 requiere confirmación del usuario.
 
 ### Fase 1 — Base de datos v2
-- [ ] **F1-01** Confirmar los ajustes menores ➕* de `BASE_DE_DATOS.md` §1.
-- [ ] **F1-02** `V1__identidad.sql` y `V2__recintos.sql` (con `geometria` y `color`).
-- [ ] **F1-03** `V3__catalogo_eventos.sql` (incluye `evento_presentadores`).
-- [ ] **F1-04** `V4__ventas.sql` (compras con `public_id`, `idempotency_key`, `expira_en`; boletos con QR firmado).
-- [ ] **F1-05** `V5__finanzas.sql` (pagos, cuentas, movimientos).
-- [ ] **F1-06** `V6__resenas.sql`, `V7__auditoria_ia_rag.sql` (pgvector + HNSW), `V8__mensajeria.sql`.
-- [ ] **F1-07** `V9__indices_triggers_permisos.sql`: índices, triggers de integridad (§6 de la BD), `REVOKE` en ledger y logs.
-- [ ] **F1-08** `R__bi_vistas.sql`: vistas `bi.*` de los 15 reportes + rol `bi_reader`.
-- [ ] **F1-09** `V10__seed_catalogos.sql` (categorías, cuenta PLATAFORMA, admin inicial) y `database/seed-dev/`.
-- [ ] **F1-10** Validar: migrar desde cero en Docker, sin errores, `flyway info` limpio.
+- [x] **F1-01** Confirmar los ajustes menores ➕* de `BASE_DE_DATOS.md` §1.
+- [x] **F1-02** `V1__identidad.sql` (incluye `refresh_tokens`, `usuarios.debe_cambiar_password` y FKs a usuarios RESTRICT) y `V2__recintos.sql` (con `geometria` y `color`).
+- [x] **F1-03** `V3__catalogo_eventos.sql` (incluye `evento_presentadores`).
+- [x] **F1-04** `V4__ventas.sql` (compras con `public_id`, `idempotency_key`, `expira_en`, `procesando_desde TIMESTAMPTZ NULL`; boletos preparados para QR firmado).
+- [x] **F1-05** `V5__finanzas.sql` (pagos, cuentas PLATAFORMA/DUENO/IMPUESTOS con estado ACTIVA/CERRADA y fecha_cierre, movimientos VENTA/COMISION/IMPUESTO/LIQUIDACION/REEMBOLSO; CHECK de dueño y UNIQUE(dueno_id, moneda)).
+- [x] **F1-06** `V6__resenas.sql`, `V7__auditoria_ia_rag.sql` (pgvector + HNSW), `V8__mensajeria.sql`.
+- [x] **F1-07** `V9__indices_triggers_permisos.sql`: índices (refresh por usuario/familia, compras por procesando_desde WHERE estado='PROCESANDO', únicos parciales PLATAFORMA/IMPUESTOS por moneda), triggers de integridad (§6 de la BD), constraint trigger de perfil DEFERRABLE INITIALLY DEFERRED al COMMIT, bloqueo de movimientos en cuentas CERRADA, triggers contra UPDATE/DELETE en ledger y ambos logs; REVOKE correspondiente y de DELETE sobre usuarios y datos de compras/financieros.
+- [x] **F1-11** Regenerar el diccionario completo en `BASE_DE_DATOS.md` (tipo, PK/FK, nulabilidad, default, CHECK) a partir de las migraciones. Ejecutar después de F1-07 y antes de F1-08.
+- [x] **F1-08** `R__bi_vistas.sql`: vistas `bi.*` de los 15 reportes + rol `bi_reader`.
+- [x] **F1-09** `V10__seed_catalogos.sql` (solo categorías y cuentas PLATAFORMA e IMPUESTOS; nunca admin ni credenciales) y datos de prueba en `database/seed-dev/`, fuera de migraciones de producción y sin secretos.
+- [x] **F1-10** Validar: migrar desde cero en un contenedor temporal Docker `pgvector/pgvector:pg16` con `flyway/flyway` sobre `database/migrations`, usando el mismo comando de `.github/workflows/ci.yml`; sin errores, `flyway info` limpio. No usar docker-compose.yml, que llega en F2-02.
 
-**Salida:** BD completa creada solo con migraciones; vistas `bi` consultables.
+**Salida:** BD completa (26 tablas) creada solo con migraciones; vistas `bi` consultables y diccionario completo regenerado desde las migraciones.
 
 ### Fase 2 — Esqueleto de la solución
 - [ ] **F2-01** Crear solución con los 5 proyectos `src/` y los 5 de `tests/` con referencias correctas.
@@ -94,8 +99,8 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 **Salida:** `docker compose up`, migrar y levantar API con Swagger vacío; CI en verde.
 
 ### Fase 3 — Identidad y seguridad
-- [ ] **F3-01** Registro de cliente (crea `usuarios` + `clientes`) y alta de admin/dueño por administrador.
-- [ ] **F3-02** Login con JWT (+ refresh token si D-07 = sí), hash seguro de contraseñas.
+- [ ] **F3-01** Registro de cliente (crea `usuarios` + `clientes`) y alta de admin/dueño por administrador. Al arrancar la API, si no existe ningún SUPERADMIN, crear el primero leyendo `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno, con `debe_cambiar_password = true`; nunca en migraciones ni con credenciales en el repo.
+- [ ] **F3-02** Login con JWT y refresh tokens: hash SHA-256 del token, rotación en cada refresh; reutilizar uno revocado revoca toda la familia y se audita. Contraseñas con hash seguro con sal; exigir cambio cuando debe_cambiar_password sea true.
 - [ ] **F3-03** Policies RBAC: `Cliente`, `Administrador`, `DuenoRecinto` + verificación de propiedad.
 - [ ] **F3-04** CRUD de usuarios/perfiles (baja = `INACTIVO`), cambio de contraseña.
 - [ ] **F3-05** Rate limiting en login/registro; CORS.
@@ -119,14 +124,14 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 **Salida:** un dueño puede crear recinto, zonas, evento y tipos de entrada; el público ve catálogo y mapa.
 
 ### Fase 5 — Venta síncrona y boletos (primero sin colas)
-- [ ] **F5-01** Dominio de compra: entidades, estados, cálculo de totales.
+- [ ] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.
 - [ ] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
 - [ ] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
 - [ ] **F5-04** Pago vía `IPaymentGateway` simulado (tasa de fallo configurable).
 - [ ] **F5-05** Emisión de boletos con token QR firmado (HMAC) y datos del asistente (obligatorios en carreras).
-- [ ] **F5-06** `GET /compras/{publicId}`, mis compras, mis boletos (con QR); cancelación.
+- [ ] **F5-06** `GET /compras/{publicId}`, mis compras, mis boletos (con QR); cancelación por usuario solo desde PENDIENTE mediante UPDATE condicional; en PROCESANDO responde 409. Solo el ganador devuelve cupo en la misma transacción.
 - [ ] **F5-07** Validación en puerta: `POST /boletos/validar` (admin/dueño), atómica.
-- [ ] **F5-08** Job/handler de expiración de compras `PENDIENTE`.
+- [ ] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
 - [ ] **F5-09** **Prueba de concurrencia:** N hilos sobre cupo K ⇒ vendidos = K exactos.
 - [ ] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.
 
@@ -136,21 +141,22 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [ ] **F6-01** Abstracciones `IMessagePublisher` y topología (exchanges, colas, retry, DLQ) declarada en código.
 - [ ] **F6-02** Outbox: escritura transaccional y **relay** en `Worker` (`SKIP LOCKED`, confirmaciones).
 - [ ] **F6-03** `POST /compras` pasa a **202 Accepted**: reserva + outbox; el cobro y la emisión ocurren en el consumidor.
-- [ ] **F6-04** `ProcesarCompraConsumer`: idempotente (`mensajes_procesados`), ACK manual, reintentos con backoff, DLQ.
+- [ ] **F6-04** `ProcesarCompraConsumer`: idempotente (`mensajes_procesados`), ACK manual, reintentos con backoff, DLQ. Toma con `UPDATE compras SET estado='PROCESANDO', procesando_desde=now() WHERE id=@id AND estado='PENDIENTE'`; 0 filas ⇒ ACK y omitir. Referencia idempotente ante la pasarela: `compras.public_id`.
 - [ ] **F6-05** Evento `compra.completada` → `EnviarConfirmacionConsumer` (correo + `notificaciones`).
 - [ ] **F6-06** Flujo `usuario.registrado` → correo de bienvenida.
 - [ ] **F6-07** Job de expiración en `Worker` con bloqueo entre instancias.
 - [ ] **F6-08** Pruebas con Testcontainers (RabbitMQ real): duplicado, fallo → DLQ, caída del consumidor.
 - [ ] **F6-09** Prueba de carga básica (p. ej. 500–1000 compras concurrentes) y evidencia de resultados.
 - [ ] **F6-10** Documentar topología con diagrama.
+- [ ] **F6-11** Job de recuperación de compras PROCESANDO cuyo tiempo desde procesando_desde supera el timeout configurable (5 minutos por defecto): consultar pago por referencia compras.public_id; con pago APROBADO completar y emitir boletos idempotentemente; si no, pasar condicionalmente a FALLIDA y devolver cupo una sola vez en la misma transacción. Prueba de carrera procesar/expirar/cancelar ⇒ cupo devuelto exactamente una vez.
 
-**Salida:** el flujo de compra corre por colas, resiste duplicados y fallos, y queda evidencia en `notificaciones` y `outbox_mensajes`.
+**Salida:** el flujo de compra corre por colas, resiste duplicados y fallos, recupera compras PROCESANDO atascadas sin duplicar cobros, boletos ni devoluciones de cupo, y queda evidencia en `notificaciones` y `outbox_mensajes`.
 
 ### Fase 7 — Finanzas
-- [ ] **F7-01** Cuentas: alta automática de cuenta `DUENO` al crear dueño; cuenta `PLATAFORMA` única.
+- [ ] **F7-01** Cuentas: alta automática de cuenta `DUENO` al crear dueño; cuentas `PLATAFORMA` e `IMPUESTOS` únicas por moneda. Cierre lógico solo de DUENO con saldo cero, estado CERRADA y fecha_cierre; PLATAFORMA/IMPUESTOS no se cierran; trigger rechaza movimientos en CERRADA.
 - [ ] **F7-02** Registro de `pagos` por intento y su estado.
-- [ ] **F7-03** Movimientos al completar compra (`VENTA` al dueño, `COMISION` a plataforma) en la misma transacción.
-- [ ] **F7-04** Reembolso: anula boletos, devuelve cupo, `REEMBOLSO` en el ledger.
+- [ ] **F7-03** Movimientos al completar compra (`VENTA` +subtotal al dueño, `COMISION` +comision_plataforma a PLATAFORMA, `IMPUESTO` +impuestos a IMPUESTOS), saldos y compra en la misma transacción; movimientos de cobro suman compras.total antes de reembolsos. Componentes cero no generan movimientos (CHECK monto ≠ 0).
+- [ ] **F7-04** Reembolso: revierte los tres componentes con REEMBOLSO en las mismas cuentas; anula condicionalmente boletos VALIDO → ANULADO y devuelve solo ese número de cupos, una sola vez en la misma transacción.
 - [ ] **F7-05** Liquidación a dueños (`LIQUIDACION`) con validación de saldo.
 - [ ] **F7-06** Consultas: estado de cuenta por dueño, extracto de movimientos con filtros.
 - [ ] **F7-07** Prueba de conciliación: `saldo == SUM(movimientos)` tras escenarios mixtos.
@@ -272,3 +278,5 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 | Alcance excesivo | Asientos numerados fuera del alcance (D-08); frontend mínimo viable primero |
 | Pasarela real no disponible | Adaptador simulado detrás de puerto (D-10) |
 | Licencias de paquetes | Revisar cada NuGet nuevo (ver `AGENTS.md` §2) |
+| IVA y alcance fiscal | Tasa configurable en appsettings y cálculo en Domain; conciliación de los tres componentes del cobro. Facturación electrónica fuera de alcance |
+| Compras atascadas o carreras de estado | F6-11: timeout configurable, consulta de pago por public_id y recuperación idempotente; toda transición usa estado esperado y solo el ganador devuelve cupo |
