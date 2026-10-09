@@ -8,6 +8,7 @@ $previousRuntimePassword = $env:PROMOTORA_DB_PASSWORD
 $previousConnection = $env:ConnectionStrings__Promotora
 $previousAspEnvironment = $env:ASPNETCORE_ENVIRONMENT
 $previousDotnetEnvironment = $env:DOTNET_ENVIRONMENT
+$previousJwtKey = $env:Jwt__SigningKey
 $apiProcess = $null
 $stdoutPath = Join-Path ([IO.Path]::GetTempPath()) ($projectName + '-api-out.log')
 $stderrPath = Join-Path ([IO.Path]::GetTempPath()) ($projectName + '-api-err.log')
@@ -54,6 +55,7 @@ services:
         $env:ConnectionStrings__Promotora = $connection.ConnectionString
         $env:ASPNETCORE_ENVIRONMENT = 'Development'
         $env:DOTNET_ENVIRONMENT = 'Development'
+        $env:Jwt__SigningKey = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
         $options = @{
             FilePath = (Get-Command dotnet).Source
             ArgumentList = @(('"' + $apiDll + '"'), '--urls', 'http://127.0.0.1:5080')
@@ -76,9 +78,9 @@ services:
         $ui = Invoke-WebRequest 'http://127.0.0.1:5080/swagger/index.html'
         $document = Invoke-RestMethod 'http://127.0.0.1:5080/swagger/v1/swagger.json'
         if ($live.StatusCode -ne 200 -or $ui.StatusCode -ne 200 -or @($document.paths.PSObject.Properties).Count -lt 3) {
-            throw 'El contrato base API/Swagger no coincide con Fase 2.'
+            throw 'El contrato API/Swagger no contiene las operaciones de identidad.'
         }
-        Write-Host 'API Kestrel: readiness/liveness 200, login restringido y Swagger sin operaciones de negocio.'
+        Write-Host 'API Kestrel: readiness/liveness 200, login restringido y Swagger con operaciones de identidad.'
     }
     $mail = Invoke-WebRequest 'http://localhost:8025/api/v2/messages'
     if ($mail.StatusCode -ne 200) { throw 'MailHog no respondió.' }
@@ -101,6 +103,7 @@ finally {
     $env:ConnectionStrings__Promotora = $previousConnection
     $env:ASPNETCORE_ENVIRONMENT = $previousAspEnvironment
     $env:DOTNET_ENVIRONMENT = $previousDotnetEnvironment
+    $env:Jwt__SigningKey = $previousJwtKey
     foreach ($path in @($stdoutPath, $stderrPath)) {
         if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
     }

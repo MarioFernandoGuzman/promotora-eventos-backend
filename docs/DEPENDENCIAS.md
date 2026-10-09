@@ -4,6 +4,8 @@ Versiones fijadas centralmente en `Directory.Packages.props`. Domain no tiene pa
 
 | Paquete | Versión | Uso | Licencia / fuente oficial |
 |---|---|---|---|
+| Microsoft.AspNetCore.Authentication.JwtBearer | 10.0.10 | Validación JWT Bearer en WebApi | [MIT](https://www.nuget.org/packages/Microsoft.AspNetCore.Authentication.JwtBearer/10.0.10) |
+| System.IdentityModel.Tokens.Jwt | 8.19.2 | Firma HS256 detrás de ITokenService; alineado con la dependencia de JwtBearer | [MIT](https://www.nuget.org/packages/System.IdentityModel.Tokens.Jwt/8.19.2) |
 | Microsoft.Extensions.Identity.Core | 10.0.10 | PasswordHasher PBKDF2 con sal aleatoria; no instala tablas Identity ni reemplaza Flyway | [MIT](https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt) |
 | Microsoft.Extensions.Hosting | 10.0.10 | Host del Worker | [MIT](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT) |
 | xunit.v3 | 4.0.1 | Pruebas en los cinco proyectos | [Apache-2.0](https://github.com/xunit/xunit/blob/main/LICENSE) |

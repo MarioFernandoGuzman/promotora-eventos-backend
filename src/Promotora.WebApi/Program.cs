@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Promotora.Application.Identity.Ports;
+using Promotora.Application.Identity.Sessions;
 using Promotora.Infrastructure;
+using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Shared.Health;
 using Promotora.WebApi.Errors;
 using Promotora.WebApi.Identity;
@@ -21,6 +23,25 @@ builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionS
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, HttpUsuarioActual>();
 builder.Services.AddHostedService<BootstrapAdminService>();
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "promotora";
+var audience = builder.Configuration["Jwt:Audience"] ?? "promotora-api";
+byte[]? jwtKey = null;
+if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora")))
+{
+    try
+    {
+        jwtKey = Convert.FromBase64String(builder.Configuration["Jwt:SigningKey"] ?? "");
+    }
+    catch (FormatException)
+    {
+        throw new InvalidOperationException("Jwt:SigningKey debe ser una clave externa Base64 de al menos 32 bytes.");
+    }
+
+    builder.Services.AddIdentitySessions(jwtKey, issuer, audience, new SesionOptions(
+        builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
+}
+
+builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
 builder.Services.AddExceptionHandler<UnexpectedExceptionHandler>();
@@ -38,12 +59,17 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options => options
     return response;
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => options.SwaggerDoc("v1", new OpenApiInfo
+builder.Services.AddSwaggerGen(options =>
 {
-    Title = "Promotora de Eventos API",
-    Version = "v1",
-    Description = "API versionada. Los endpoints de negocio se incorporan desde la Fase 3."
-}));
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Promotora de Eventos API",
+        Version = "v1",
+        Description = "Identidad: registro, altas, login, refresh con rotación y logout. Consulta docs/IDENTIDAD_SEGURIDAD.md para ejemplos y permisos."
+    });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
+    options.OperationFilter<BearerOperationFilter>();
+});
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 
 var app = builder.Build();
@@ -62,6 +88,8 @@ app.UseStatusCodePages(async context =>
     problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
     await response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json", cancellationToken: context.HttpContext.RequestAborted);
 });
+app.UseAuthentication();
+app.UseAuthorization();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

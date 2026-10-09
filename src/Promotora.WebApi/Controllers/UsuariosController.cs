@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Promotora.Application.Identity.Registration;
 using Promotora.Application.Shared.Handlers;
@@ -6,6 +7,7 @@ using Promotora.WebApi.Identity;
 
 namespace Promotora.WebApi.Controllers;
 
+[Authorize]
 public sealed class UsuariosController(ICommandHandler<CrearUsuarioCommand, UsuarioDto> crear) : ApiControllerBase
 {
     [HttpPost("administradores")]
