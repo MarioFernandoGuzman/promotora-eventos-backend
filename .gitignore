@@ -1,0 +1,42 @@
+# --- .NET ---
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+TestResults/
+*.trx
+coverage/
+*.log
+publish/
+
+# --- IDEs ---
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# --- Secretos y configuración local (NUNCA versionar) ---
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.key
+
+# --- Docker / datos locales ---
+docker-data/
+pgdata/
+rabbitmq-data/
+uploads/
+
+# --- Power BI (se versiona el .pbix de ejemplo solo si pesa poco) ---
+*.pbix.bak
+~$*
+
+# --- SO ---
+.DS_Store
+Thumbs.db
