@@ -9,6 +9,12 @@ public static class PersistenceOptions
     public static DbContextOptionsBuilder<PromotoraDbContext> UsePromotoraPostgres(
         this DbContextOptionsBuilder<PromotoraDbContext> builder, string connectionString)
     {
+        UsePromotoraPostgres((DbContextOptionsBuilder)builder, connectionString);
+        return builder;
+    }
+
+    public static DbContextOptionsBuilder UsePromotoraPostgres(this DbContextOptionsBuilder builder, string connectionString)
+    {
         var connection = new NpgsqlConnectionStringBuilder(connectionString);
         if (connection.IncludeErrorDetail || connection.LogParameters)
         {

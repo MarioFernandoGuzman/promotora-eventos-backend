@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <UserSecretsId>promotora-worker-desarrollo</UserSecretsId>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <ProjectReference Include="../Promotora.Application/Promotora.Application.csproj" />
     <ProjectReference Include="../Promotora.Infrastructure/Promotora.Infrastructure.csproj" />

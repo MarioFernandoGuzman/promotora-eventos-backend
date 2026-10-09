@@ -38,6 +38,38 @@ F2-03 mapea 26 tablas (198 columnas) y 16 vistas `bi` sin clave, con snake_case,
 dotnet test --project tests/Promotora.Infrastructure.Tests
 ```
 
+## API y Swagger (F2-05)
+
+Después de crear `promotora_runtime`, configurar la conexión en la misma terminal (el builder escapa la contraseña correctamente):
+
+```powershell
+$connection = [System.Data.Common.DbConnectionStringBuilder]::new()
+$connection['Host'] = 'localhost'
+$connection['Port'] = 5432
+$connection['Database'] = 'promotora'
+$connection['Username'] = 'promotora_runtime'
+$connection['Password'] = $env:PROMOTORA_DB_PASSWORD
+$env:ConnectionStrings__Promotora = $connection.ConnectionString
+dotnet run --project src/Promotora.WebApi
+```
+
+Alternativa: guardar `ConnectionStrings:Promotora` en user-secrets de WebApi y Worker con `dotnet user-secrets set 'ConnectionStrings:Promotora' (Read-Host 'Cadena de conexión restringida' -MaskInput) --project src/Promotora.WebApi` y repetir cambiando el proyecto a `src/Promotora.Worker`. Los secretos quedan fuera del repositorio. No imprimir la conexión ni usar `user-secrets list` para compartir capturas. No se requiere OpenAI en Fase 2.
+
+Abrir [Swagger UI](http://localhost:5080/swagger). Por ahora el documento tiene `paths: {}`: no hay CRUD, login ni ventas implementados. Los health checks son técnicos y están fuera del catálogo Swagger. Los futuros controllers heredan `ApiControllerBase`, cuya ruta es `/api/v1/[controller]`; la serialización usa camelCase. Los `Result` fallidos se convierten en 400/401/403/404/409/422/429 con ProblemDetails. Excepciones inesperadas devuelven 500 genérico; el log registra tipo de excepción y correlación, sin mensajes privados ni payloads.
+
+Desde otra terminal:
+
+```powershell
+Invoke-WebRequest http://localhost:5080/health/live
+Invoke-WebRequest http://localhost:5080/health/ready
+Invoke-RestMethod http://localhost:5080/swagger/v1/swagger.json
+dotnet test --project tests/Promotora.Api.Tests
+```
+
+`live` responde 200 si el proceso está activo. `ready` responde 200 solo con conexión, login restringido miembro de `promotora_app`, 26 tablas y 16 vistas; sin conexión, migraciones o permisos adecuados devuelve 503 sin detalles SQL. Swagger se habilita únicamente en Development (perfil local incluido). Las respuestas llevan `X-Correlation-ID`; se conserva un UUID válido enviado por el cliente y se genera otro si falta o es inválido. El mismo identificador aparece como `traceId` en ProblemDetails y en Serilog.
+
+El Worker se inicia con `dotnet run --project src/Promotora.Worker` en otra terminal con la misma variable de conexión, o sus propios user-secrets. En Fase 2 es un host preparado con DI/logging; los consumidores, relay y jobs se implementan en Fase 6. Detener API y Worker con Ctrl+C.
+
 Esta prueba crea PostgreSQL temporal con Testcontainers, aplica las migraciones reales mediante Flyway y consulta con un login restringido. Docker debe estar encendido; no requiere Compose ni modifica la base local. Comprueba todas las columnas/vistas, defaults e IDs, perfil obligatorio, permisos, JSON, clave compuesta y persistencia/búsqueda por coseno de vectores.
 
 ## Solución (F2-01)
