@@ -78,7 +78,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [x] **F1-03** `V3__catalogo_eventos.sql` (incluye `evento_presentadores`).
 - [x] **F1-04** `V4__ventas.sql` (compras con `public_id`, `idempotency_key`, `expira_en`, `procesando_desde TIMESTAMPTZ NULL`; boletos preparados para QR firmado).
 - [x] **F1-05** `V5__finanzas.sql` (pagos, cuentas PLATAFORMA/DUENO/IMPUESTOS con estado ACTIVA/CERRADA y fecha_cierre, movimientos VENTA/COMISION/IMPUESTO/LIQUIDACION/REEMBOLSO; CHECK de dueño y UNIQUE(dueno_id, moneda)).
-- [ ] **F1-06** `V6__resenas.sql`, `V7__auditoria_ia_rag.sql` (pgvector + HNSW), `V8__mensajeria.sql`.
+- [x] **F1-06** `V6__resenas.sql`, `V7__auditoria_ia_rag.sql` (pgvector + HNSW), `V8__mensajeria.sql`.
 - [ ] **F1-07** `V9__indices_triggers_permisos.sql`: índices (refresh por usuario/familia, compras por procesando_desde WHERE estado='PROCESANDO', únicos parciales PLATAFORMA/IMPUESTOS por moneda), triggers de integridad (§6 de la BD), constraint trigger de perfil DEFERRABLE INITIALLY DEFERRED al COMMIT, bloqueo de movimientos en cuentas CERRADA, triggers contra UPDATE/DELETE en ledger y ambos logs; REVOKE correspondiente y de DELETE sobre usuarios y datos de compras/financieros.
 - [ ] **F1-11** Regenerar el diccionario completo en `BASE_DE_DATOS.md` (tipo, PK/FK, nulabilidad, default, CHECK) a partir de las migraciones. Ejecutar después de F1-07 y antes de F1-08.
 - [ ] **F1-08** `R__bi_vistas.sql`: vistas `bi.*` de los 15 reportes + rol `bi_reader`.
