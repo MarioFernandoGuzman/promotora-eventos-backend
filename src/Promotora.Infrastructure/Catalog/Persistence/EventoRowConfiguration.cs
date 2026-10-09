@@ -19,7 +19,7 @@ internal sealed class EventoRowConfiguration : IEntityTypeConfiguration<EventoRo
         builder.Property(x => x.FechaFin).HasColumnType("timestamp with time zone").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.FechaInicioVenta).HasColumnType("timestamp with time zone").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.FechaFinVenta).HasColumnType("timestamp with time zone").IsRequired(false).ValueGeneratedNever();
-        builder.Property(x => x.MaxBoletosPorCompra).HasColumnType("integer").IsRequired(true).HasDefaultValueSql("10");
+        builder.Property(x => x.MaxBoletosPorCompra).HasColumnType("integer").IsRequired(true).HasDefaultValueSql("10").HasSentinel(10);
         builder.Property(x => x.Estado).HasColumnType("character varying(20)").IsRequired(true).HasDefaultValueSql("'BORRADOR'::character varying");
         builder.Property(x => x.ImagenUrl).HasColumnType("character varying(255)").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.FechaCreacion).HasColumnType("timestamp with time zone").IsRequired(true).HasDefaultValueSql("now()");

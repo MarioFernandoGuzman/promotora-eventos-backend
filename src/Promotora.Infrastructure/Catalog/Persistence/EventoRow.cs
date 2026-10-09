@@ -13,7 +13,7 @@ public sealed class EventoRow
     public DateTime? FechaFin { get; set; }
     public DateTime? FechaInicioVenta { get; set; }
     public DateTime? FechaFinVenta { get; set; }
-    public int MaxBoletosPorCompra { get; set; }
+    public int MaxBoletosPorCompra { get; set; } = 10;
     public string Estado { get; set; } = null!;
     public string? ImagenUrl { get; set; }
     public DateTime FechaCreacion { get; set; }

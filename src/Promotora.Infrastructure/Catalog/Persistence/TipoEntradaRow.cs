@@ -10,5 +10,5 @@ public sealed class TipoEntradaRow
     public decimal Precio { get; set; }
     public int CupoTotal { get; set; }
     public int CupoDisponible { get; set; }
-    public bool Activo { get; set; }
+    public bool Activo { get; set; } = true;
 }

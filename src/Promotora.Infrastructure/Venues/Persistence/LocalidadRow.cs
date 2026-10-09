@@ -11,5 +11,5 @@ public sealed class LocalidadRow
     public int Capacidad { get; set; }
     public JsonDocument? Geometria { get; set; }
     public string? Color { get; set; }
-    public bool Activo { get; set; }
+    public bool Activo { get; set; } = true;
 }

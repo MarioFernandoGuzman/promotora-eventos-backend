@@ -12,6 +12,6 @@ public sealed class RecintoRow
     public decimal? Longitud { get; set; }
     public string? ImagenPlanoUrl { get; set; }
     public int? CapacidadTotal { get; set; }
-    public bool Activo { get; set; }
+    public bool Activo { get; set; } = true;
     public DateTime FechaCreacion { get; set; }
 }

@@ -69,6 +69,39 @@ public sealed class PersistenceTests(PostgresFixture fixture) : IClassFixture<Po
         await db.Set<T>().AsNoTracking().Take(1).ToListAsync(ct);
 
     [Fact]
+    public async Task FalseExplicitoNoSeSustituyePorDefaultTrue()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = fixture.CreateContext();
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var categoria = new CategoriaEventoRow { Nombre = Guid.NewGuid().ToString("N"), Activo = false };
+        db.CategoriasEvento.Add(categoria);
+        await db.SaveChangesAsync(ct);
+        db.ChangeTracker.Clear();
+        Assert.False((await db.CategoriasEvento.SingleAsync(c => c.Id == categoria.Id, ct)).Activo);
+        await transaction.RollbackAsync(ct);
+    }
+
+    [Fact]
+    public async Task VersionCeroNoSeSustituyePorDefaultUno()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = fixture.CreateContext();
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var usuario = new UsuarioRow { Email = $"{Guid.NewGuid():N}@example.invalid", PasswordHash = "!SIN_ACCESO_PRUEBA!", Nombre = "Prueba", Apellido = "Default", Rol = "ADMINISTRADOR" };
+        db.Usuarios.Add(usuario);
+        await db.SaveChangesAsync(ct);
+        db.Administradores.Add(new AdministradorRow { UsuarioId = usuario.Id });
+        await db.SaveChangesAsync(ct);
+        var documento = new DocumentoRagRow { Titulo = "Versión explícita", SubidoPor = usuario.Id, Version = 0 };
+        db.DocumentosRag.Add(documento);
+        await db.SaveChangesAsync(ct);
+        db.ChangeTracker.Clear();
+        Assert.Equal(0, (await db.DocumentosRag.SingleAsync(d => d.Id == documento.Id, ct)).Version);
+        await transaction.RollbackAsync(ct);
+    }
+
+    [Fact]
     public async Task IdentidadGeneraIdYDefaultsYExigePerfilAlCommit()
     {
         var ct = TestContext.Current.CancellationToken;

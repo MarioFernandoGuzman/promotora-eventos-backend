@@ -8,5 +8,5 @@ public sealed class PresentadorRow
     public string Tipo { get; set; } = null!;
     public string? Biografia { get; set; }
     public string? ImagenUrl { get; set; }
-    public bool Activo { get; set; }
+    public bool Activo { get; set; } = true;
 }

@@ -14,6 +14,6 @@ internal sealed class PresentadorRowConfiguration : IEntityTypeConfiguration<Pre
         builder.Property(x => x.Tipo).HasColumnType("character varying(20)").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.Biografia).HasColumnType("text").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.ImagenUrl).HasColumnType("character varying(255)").IsRequired(false).ValueGeneratedNever();
-        builder.Property(x => x.Activo).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("true");
+        builder.Property(x => x.Activo).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("true").HasSentinel(true);
     }
 }

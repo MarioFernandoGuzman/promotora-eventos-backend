@@ -18,7 +18,7 @@ internal sealed class RecintoRowConfiguration : IEntityTypeConfiguration<Recinto
         builder.Property(x => x.Longitud).HasColumnType("numeric(9,6)").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.ImagenPlanoUrl).HasColumnType("character varying(255)").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.CapacidadTotal).HasColumnType("integer").IsRequired(false).ValueGeneratedNever();
-        builder.Property(x => x.Activo).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("true");
+        builder.Property(x => x.Activo).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("true").HasSentinel(true);
         builder.Property(x => x.FechaCreacion).HasColumnType("timestamp with time zone").IsRequired(true).HasDefaultValueSql("now()");
         builder.HasOne<Promotora.Infrastructure.Identity.Persistence.DuenoRecintoRow>().WithMany().HasForeignKey(x => x.DuenoId).OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_recintos_dueno");
     }

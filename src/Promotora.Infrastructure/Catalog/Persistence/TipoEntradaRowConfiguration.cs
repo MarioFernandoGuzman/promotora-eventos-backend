@@ -16,7 +16,7 @@ internal sealed class TipoEntradaRowConfiguration : IEntityTypeConfiguration<Tip
         builder.Property(x => x.Precio).HasColumnType("numeric(10,2)").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.CupoTotal).HasColumnType("integer").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.CupoDisponible).HasColumnType("integer").IsRequired(true).ValueGeneratedNever();
-        builder.Property(x => x.Activo).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("true");
+        builder.Property(x => x.Activo).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("true").HasSentinel(true);
         builder.HasOne<EventoRow>().WithMany().HasForeignKey(x => x.EventoId).OnDelete(DeleteBehavior.Cascade).HasConstraintName("fk_tipos_entrada_evento");
         builder.HasOne<Promotora.Infrastructure.Venues.Persistence.LocalidadRow>().WithMany().HasForeignKey(x => x.LocalidadId).OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_tipos_entrada_localidad");
     }

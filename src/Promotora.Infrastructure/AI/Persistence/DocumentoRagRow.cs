@@ -8,7 +8,7 @@ public sealed class DocumentoRagRow
     public string? TipoDocumento { get; set; }
     public string? Contenido { get; set; }
     public string? RutaArchivo { get; set; }
-    public int Version { get; set; }
+    public int Version { get; set; } = 1;
     public DateTime FechaCarga { get; set; }
     public string Estado { get; set; } = null!;
     public int SubidoPor { get; set; }

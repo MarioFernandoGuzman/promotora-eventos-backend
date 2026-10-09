@@ -14,7 +14,7 @@ internal sealed class DocumentoRagRowConfiguration : IEntityTypeConfiguration<Do
         builder.Property(x => x.TipoDocumento).HasColumnType("character varying(50)").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.Contenido).HasColumnType("text").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.RutaArchivo).HasColumnType("character varying(255)").IsRequired(false).ValueGeneratedNever();
-        builder.Property(x => x.Version).HasColumnType("integer").IsRequired(true).HasDefaultValueSql("1");
+        builder.Property(x => x.Version).HasColumnType("integer").IsRequired(true).HasDefaultValueSql("1").HasSentinel(1);
         builder.Property(x => x.FechaCarga).HasColumnType("timestamp with time zone").IsRequired(true).HasDefaultValueSql("now()");
         builder.Property(x => x.Estado).HasColumnType("character varying(20)").IsRequired(true).HasDefaultValueSql("'PENDIENTE'::character varying");
         builder.Property(x => x.SubidoPor).HasColumnType("integer").IsRequired(true).ValueGeneratedNever();
