@@ -74,7 +74,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 
 ### Fase 1 — Base de datos v2
 - [x] **F1-01** Confirmar los ajustes menores ➕* de `BASE_DE_DATOS.md` §1.
-- [ ] **F1-02** `V1__identidad.sql` (incluye `refresh_tokens`, `usuarios.debe_cambiar_password` y FKs a usuarios RESTRICT) y `V2__recintos.sql` (con `geometria` y `color`).
+- [x] **F1-02** `V1__identidad.sql` (incluye `refresh_tokens`, `usuarios.debe_cambiar_password` y FKs a usuarios RESTRICT) y `V2__recintos.sql` (con `geometria` y `color`).
 - [ ] **F1-03** `V3__catalogo_eventos.sql` (incluye `evento_presentadores`).
 - [ ] **F1-04** `V4__ventas.sql` (compras con `public_id`, `idempotency_key`, `expira_en`, `procesando_desde TIMESTAMPTZ NULL`; boletos preparados para QR firmado).
 - [ ] **F1-05** `V5__finanzas.sql` (pagos, cuentas PLATAFORMA/DUENO/IMPUESTOS con estado ACTIVA/CERRADA y fecha_cierre, movimientos VENTA/COMISION/IMPUESTO/LIQUIDACION/REEMBOLSO; CHECK de dueño y UNIQUE(dueno_id, moneda)).
