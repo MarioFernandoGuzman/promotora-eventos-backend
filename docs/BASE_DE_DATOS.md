@@ -896,13 +896,17 @@ También obligatorios: `refresh_tokens(usuario_id)`, `refresh_tokens(familia_id)
 | `promotora_app` | DML sobre tablas operativas. **Sin DELETE en usuarios** y sin DELETE en compras, detalle_compra, boletos, pagos y cuentas_financieras. **Sin** `UPDATE`/`DELETE` en `movimientos_financieros`, `logs_auditoria`, `logs_agente_ia`; triggers bloquean también estas operaciones en ledger y ambos logs |
 | `bi_reader` | Solo `SELECT` sobre el esquema `bi`. Sin acceso a tablas operativas |
 
-V9 crea flyway y promotora_app como roles de grupo NOLOGIN, sin contraseñas ni privilegios de administración. flyway posee las tablas operativas y funciones de integridad, puede crear esquemas y tiene DML sobre el historial de Flyway; promotora_app no tiene CREATE ni acceso al historial. Las identidades LOGIN y sus membresías se provisionan fuera del repositorio. bi_reader se incorpora en F1-08.
+V9 crea flyway y promotora_app como roles de grupo NOLOGIN, sin contraseñas ni privilegios de administración. flyway posee las tablas operativas y funciones de integridad, puede crear esquemas y tiene DML sobre el historial de Flyway; promotora_app no tiene CREATE ni acceso al historial. Las identidades LOGIN y sus membresías se provisionan fuera del repositorio. F1-08 crea bi_reader también como grupo NOLOGIN, con USAGE en bi y SELECT únicamente sobre sus vistas.
 
 ---
 
 ## 10. Esquema `bi` y los 15 reportes
 
 Cada reporte se apoya en una vista; la API de reportes y Power BI leen las mismas vistas.
+
+Implementadas en `R__bi_vistas.sql` (F1-08): 16 vistas para 15 reportes. Las fechas diarias se calculan en UTC y los importes mantienen moneda separada. Las vistas conservan las dimensiones necesarias para filtrar antes de la agrupación final en F10; R-02/R-03 amplían la base diaria por evento con los nombres de categoría y recinto, y R-12 expone eventos para contar por estado después de aplicar filtros. Los endpoints, exportaciones y reportes finales siguen pendientes de F10.
+
+R-01/R-04/R-09 muestran ventas brutas de compras COMPLETADA; los detalles se agregan antes de unir cabeceras, y R-04 toma el último pago APROBADO por compra para evitar duplicación por reintentos. R-05 cuenta cupo ocupado (incluidas reservas); R-06 distingue boletos vigentes, usados y anulados. R-07/R-08 mantienen el signo del ledger y separan reembolsos; R-11 usa solo reseñas APROBADA y expone cantidad/suma para calcular promedios ponderados. R-13 reconoce Carrera y tipos 5K/10K/21K/42K, contando boletos VALIDO/USADO. Los logs de R-14/R-15 se exponen agregados, sin textos de consultas ni IPs.
 
 | # | Reporte | Vista `bi.*` | Tablas principales |
 |---|---|---|---|
