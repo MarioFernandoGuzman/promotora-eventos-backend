@@ -93,7 +93,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [x] **F2-03** `DbContext` con snake_case, `Pgvector`, entidades *keyless* para vistas `bi`.
 - [x] **F2-04** Base transversal: `Result<T>`, errores, `ICommandHandler/IQueryHandler`, pipeline de validación, `IClock`, `IUnitOfWork`.
 - [x] **F2-05** WebApi base: Swagger, `ProblemDetails`, versionado `/api/v1`, Serilog con CorrelationId, health checks.
-- [ ] **F2-06** Pruebas de arquitectura (NetArchTest): regla de dependencia y controllers sin `DbContext`.
+- [x] **F2-06** Pruebas de arquitectura (NetArchTest): regla de dependencia y controllers sin `DbContext`.
 - [ ] **F2-07** CI en GitHub Actions: build, test, format, arquitectura.
 
 **Salida:** `docker compose up`, migrar y levantar API con Swagger vacío; CI en verde.

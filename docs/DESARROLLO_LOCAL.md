@@ -70,6 +70,10 @@ dotnet test --project tests/Promotora.Api.Tests
 
 El Worker se inicia con `dotnet run --project src/Promotora.Worker` en otra terminal con la misma variable de conexión, o sus propios user-secrets. En Fase 2 es un host preparado con DI/logging; los consumidores, relay y jobs se implementan en Fase 6. Detener API y Worker con Ctrl+C.
 
+## Arquitectura (F2-06)
+
+`dotnet test --project tests/Promotora.Architecture.Tests` comprueba dependencias con NetArchTest, referencias de proyectos, Domain sin NuGets, controllers sin DbContext/adaptadores y base versionada. Solo el composition root de la API registra Infrastructure. Si una regla falla, corregir la dependencia; no desactivar la prueba.
+
 Esta prueba crea PostgreSQL temporal con Testcontainers, aplica las migraciones reales mediante Flyway y consulta con un login restringido. Docker debe estar encendido; no requiere Compose ni modifica la base local. Comprueba todas las columnas/vistas, defaults e IDs, perfil obligatorio, permisos, JSON, clave compuesta y persistencia/búsqueda por coseno de vectores.
 
 ## Solución (F2-01)

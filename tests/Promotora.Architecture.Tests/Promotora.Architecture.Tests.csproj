@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Promotora.Domain/Promotora.Domain.csproj" />
     <ProjectReference Include="../../src/Promotora.Application/Promotora.Application.csproj" />
     <ProjectReference Include="../../src/Promotora.Infrastructure/Promotora.Infrastructure.csproj" />
