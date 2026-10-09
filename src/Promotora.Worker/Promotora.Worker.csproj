@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <ProjectReference Include="../Promotora.Application/Promotora.Application.csproj" />
+    <ProjectReference Include="../Promotora.Infrastructure/Promotora.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

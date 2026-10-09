@@ -88,7 +88,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 **Salida:** BD completa (26 tablas) creada solo con migraciones; vistas `bi` consultables y diccionario completo regenerado desde las migraciones.
 
 ### Fase 2 — Esqueleto de la solución
-- [ ] **F2-01** Crear solución con los 5 proyectos `src/` y los 5 de `tests/` con referencias correctas.
+- [x] **F2-01** Crear solución con los 5 proyectos `src/` y los 5 de `tests/` con referencias correctas.
 - [ ] **F2-02** `docker-compose.yml`: postgres+pgvector, rabbitmq (management), mailhog, flyway.
 - [ ] **F2-03** `DbContext` con snake_case, `Pgvector`, entidades *keyless* para vistas `bi`.
 - [ ] **F2-04** Base transversal: `Result<T>`, errores, `ICommandHandler/IQueryHandler`, pipeline de validación, `IClock`, `IUnitOfWork`.

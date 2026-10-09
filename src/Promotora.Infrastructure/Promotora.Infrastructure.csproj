@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Promotora.Application/Promotora.Application.csproj" />
+    <ProjectReference Include="../Promotora.Domain/Promotora.Domain.csproj" />
+  </ItemGroup>
+</Project>
