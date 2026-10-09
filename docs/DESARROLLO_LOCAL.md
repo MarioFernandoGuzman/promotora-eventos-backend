@@ -48,4 +48,12 @@ dotnet build -warnaserror
 dotnet format --verify-no-changes
 ```
 
-Los cinco proyectos de pruebas usan xUnit v3 y Microsoft.Testing.Platform. En F2-01 están vacíos; las tareas siguientes añaden las pruebas reales antes de cerrar la fase. No hay endpoints de negocio todavía.
+Los cinco proyectos de pruebas usan xUnit v3 y Microsoft.Testing.Platform. No hay endpoints de negocio todavía.
+
+F2-04 incorpora `Result<T>`/`Error`, contratos de comandos y queries y sus decoradores FluentValidation. Registrar futuros handlers con `AddCommandHandler` / `AddQueryHandler` y sus `IValidator<T>` para pasar siempre por validación. `IClock` devuelve UTC y usa `TimeProvider` inyectado. `IUnitOfWork.ExecuteInTransactionAsync` confirma solo un Result exitoso y revierte ante fallo/excepción/cancelación; no admite transacciones anidadas. No incluye reintentos automáticos: las futuras operaciones que mezclen pagos/efectos externos deben controlar su idempotencia antes de reintentar la transacción.
+
+```powershell
+dotnet test --project tests/Promotora.Domain.Tests
+dotnet test --project tests/Promotora.Application.Tests
+dotnet test --project tests/Promotora.Infrastructure.Tests
+```
