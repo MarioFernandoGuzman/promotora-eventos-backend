@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
+using Promotora.Application.Identity.Ports;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Shared.Health;
 using Promotora.WebApi.Errors;
+using Promotora.WebApi.Identity;
 using Promotora.WebApi.Middleware;
 using Serilog;
 using Serilog.Events;
@@ -16,6 +18,9 @@ builder.Services.AddSerilog(configuration => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}"));
 builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionString("Promotora"));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUsuarioActual, HttpUsuarioActual>();
+builder.Services.AddHostedService<BootstrapAdminService>();
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
 builder.Services.AddExceptionHandler<UnexpectedExceptionHandler>();

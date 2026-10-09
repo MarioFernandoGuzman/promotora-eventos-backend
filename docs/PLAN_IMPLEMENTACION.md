@@ -101,7 +101,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 Implementación y validación local de F2-01–F2-07 documentadas en [`VALIDACION_FASE_2.md`](VALIDACION_FASE_2.md). La ejecución remota de GitHub Actions debe confirmarse al publicar el PR; el agente no hace push ni merge.
 
 ### Fase 3 — Identidad y seguridad
-- [ ] **F3-01** Registro de cliente (crea `usuarios` + `clientes`) y alta de admin/dueño por administrador. Al arrancar la API, si no existe ningún SUPERADMIN, crear el primero leyendo `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno, con `debe_cambiar_password = true`; nunca en migraciones ni con credenciales en el repo.
+- [x] **F3-01** Registro de cliente (crea `usuarios` + `clientes`) y alta de admin/dueño por administrador. Al arrancar la API, si no existe ningún SUPERADMIN, crear el primero leyendo `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno, con `debe_cambiar_password = true`; nunca en migraciones ni con credenciales en el repo.
 - [ ] **F3-02** Login con JWT y refresh tokens: hash SHA-256 del token, rotación en cada refresh; reutilizar uno revocado revoca toda la familia y se audita. Contraseñas con hash seguro con sal; exigir cambio cuando debe_cambiar_password sea true.
 - [ ] **F3-03** Policies RBAC: `Cliente`, `Administrador`, `DuenoRecinto` + verificación de propiedad.
 - [ ] **F3-04** CRUD de usuarios/perfiles (baja = `INACTIVO`), cambio de contraseña.

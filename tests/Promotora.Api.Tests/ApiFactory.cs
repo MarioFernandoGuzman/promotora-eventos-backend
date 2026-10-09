@@ -10,6 +10,11 @@ public sealed class ApiFactory(string environment = "Development") : WebApplicat
     {
         builder.UseEnvironment(environment);
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(
-            new Dictionary<string, string?> { ["ConnectionStrings:Promotora"] = null }));
+            new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:Promotora"] = null,
+                ["Bootstrap:AdminEmail"] = null,
+                ["Bootstrap:AdminPassword"] = null
+            }));
     }
 }

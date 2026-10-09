@@ -13,7 +13,7 @@ namespace Promotora.Api.Tests;
 public sealed class ApiTests
 {
     [Fact]
-    public async Task SwaggerUiYDocumentoV1EstanDisponiblesSinEndpointsDeNegocio()
+    public async Task SwaggerUiYDocumentoV1DocumentanRegistroYAltas()
     {
         await using var factory = new ApiFactory();
         using var client = factory.CreateClient();
@@ -22,7 +22,7 @@ public sealed class ApiTests
         Assert.Equal(HttpStatusCode.OK, ui.StatusCode);
         var document = await client.GetFromJsonAsync<JsonElement>("/swagger/v1/swagger.json", ct);
         Assert.Equal("v1", document.GetProperty("info").GetProperty("version").GetString());
-        Assert.Empty(document.GetProperty("paths").EnumerateObject());
+        Assert.True(document.GetProperty("paths").TryGetProperty("/api/v1/Auth/registro", out _));
     }
 
     [Fact]

@@ -75,7 +75,7 @@ services:
         $live = Invoke-WebRequest 'http://127.0.0.1:5080/health/live'
         $ui = Invoke-WebRequest 'http://127.0.0.1:5080/swagger/index.html'
         $document = Invoke-RestMethod 'http://127.0.0.1:5080/swagger/v1/swagger.json'
-        if ($live.StatusCode -ne 200 -or $ui.StatusCode -ne 200 -or @($document.paths.PSObject.Properties).Count -ne 0) {
+        if ($live.StatusCode -ne 200 -or $ui.StatusCode -ne 200 -or @($document.paths.PSObject.Properties).Count -lt 3) {
             throw 'El contrato base API/Swagger no coincide con Fase 2.'
         }
         Write-Host 'API Kestrel: readiness/liveness 200, login restringido y Swagger sin operaciones de negocio.'

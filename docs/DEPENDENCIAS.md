@@ -4,6 +4,7 @@ Versiones fijadas centralmente en `Directory.Packages.props`. Domain no tiene pa
 
 | Paquete | Versión | Uso | Licencia / fuente oficial |
 |---|---|---|---|
+| Microsoft.Extensions.Identity.Core | 10.0.10 | PasswordHasher PBKDF2 con sal aleatoria; no instala tablas Identity ni reemplaza Flyway | [MIT](https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt) |
 | Microsoft.Extensions.Hosting | 10.0.10 | Host del Worker | [MIT](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT) |
 | xunit.v3 | 4.0.1 | Pruebas en los cinco proyectos | [Apache-2.0](https://github.com/xunit/xunit/blob/main/LICENSE) |
 | Microsoft.Testing.Extensions.TrxReport | 2.4.0 | Resultados TRX con Microsoft.Testing.Platform | [MIT](https://github.com/microsoft/testfx/blob/main/LICENSE) |
