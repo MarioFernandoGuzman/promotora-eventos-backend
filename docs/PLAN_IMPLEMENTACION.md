@@ -106,7 +106,7 @@ Implementación y validación local de F2-01–F2-07 documentadas en [`VALIDACIO
 - [x] **F3-03** Policies RBAC: `Cliente`, `Administrador`, `DuenoRecinto` + verificación de propiedad.
 - [x] **F3-04** CRUD de usuarios/perfiles (baja = `INACTIVO`), cambio de contraseña.
 - [x] **F3-05** Rate limiting en login/registro; CORS.
-- [ ] **F3-06** `IAuditLogger` y registro de LOGIN/LOGOUT/LOGIN_FAILED y CRUD de usuarios en `logs_auditoria`.
+- [x] **F3-06** `IAuditLogger` y registro de LOGIN/LOGOUT/LOGIN_FAILED y CRUD de usuarios en `logs_auditoria`.
 - [ ] **F3-07** Pruebas: acceso denegado por rol y por propiedad.
 
 **Salida:** autenticación y autorización funcionando y auditadas.

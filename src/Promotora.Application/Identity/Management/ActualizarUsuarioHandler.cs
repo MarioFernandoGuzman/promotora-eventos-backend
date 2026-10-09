@@ -46,7 +46,8 @@ public sealed class ActualizarUsuarioHandler(IUsuarioRepository usuarios, ISesio
                     await sesiones.RevokeUserAsync(request.Id, token);
                 }
 
-                await audit.WriteAsync(actual.UsuarioId, "UPDATE", "usuarios", request.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+                await audit.WriteAsync(actual.UsuarioId, "UPDATE", "usuarios", request.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+                    new DetalleAuditoria(MotivoAuditoria.EdicionUsuario), token);
                 return Result<UsuarioDetalleDto>.Success((await usuarios.GetDetailAsync(request.Id, token))!);
             }, ct);
         }

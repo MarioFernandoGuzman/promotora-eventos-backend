@@ -113,3 +113,15 @@ Cors:AllowedOrigins es una lista explícita, por ejemplo variable de entorno
 `Cors__AllowedOrigins__0=https://frontend.example.test`. Sin lista no se permiten orígenes externos;
 Swagger en el mismo origen sigue funcionando. No se aceptan comodines, rutas, slash final ni cookies cross-origin.
 El frontend se decide en F11; aquí no se fija ninguno. CORS controla el navegador, no reemplaza autenticación.
+
+## F3-06: auditoría
+
+IAuditLogger añade filas solo INSERT a logs_auditoria, confirmadas por la transacción del caso de uso.
+El catálogo existente se conserva: CREATE (alta/bootstrap), UPDATE (perfil/contraseña), DELETE (baja lógica),
+LOGIN, LOGIN_FAILED y LOGOUT. Los motivos distinguen bootstrap, contraseña cambiada/rechazada,
+cierre solicitado, refresh reutilizado y sesión expirada/inhabilitada.
+detalle JSONB solo admite motivo enum y familiaId opcional; nunca recibe cuerpos HTTP ni credenciales.
+usuario_id identifica al actor, entidad_id al destinatario; bootstrap y correo de login inexistente permiten actor null.
+La auditoría de reutilización y fallos de login se confirma aunque el resultado HTTP sea 401.
+Las lecturas de perfiles/listados no agregan acciones fuera del catálogo; se auditan las mutaciones.
+Los triggers y permisos Flyway existentes siguen protegiendo UPDATE/DELETE/TRUNCATE de logs.

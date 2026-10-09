@@ -24,7 +24,8 @@ public sealed class RefreshHandler(IUsuarioRepository usuarios, ISesionRepositor
         if (refresh.RevocadoEn is not null)
         {
             await sesiones.RevokeFamilyAsync(refresh.FamiliaId, token);
-            await audit.WriteAsync(refresh.UsuarioId, "LOGOUT", "refresh_tokens", refresh.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+            await audit.WriteAsync(refresh.UsuarioId, "LOGOUT", "refresh_tokens", refresh.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+                new DetalleAuditoria(MotivoAuditoria.RefreshReutilizado, refresh.FamiliaId), token);
             return Result<TokenDto>.Failure(SesionErrors.Invalid);
         }
 
@@ -32,6 +33,8 @@ public sealed class RefreshHandler(IUsuarioRepository usuarios, ISesionRepositor
         if (!refresh.PuedeRotar(clock.UtcNow) || usuario is not { PuedeAutenticarse: true, DebeCambiarPassword: false })
         {
             await sesiones.RevokeFamilyAsync(refresh.FamiliaId, token);
+            await audit.WriteAsync(refresh.UsuarioId, "LOGOUT", "refresh_tokens", refresh.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+                new DetalleAuditoria(MotivoAuditoria.SesionExpiradaOInhabilitada, refresh.FamiliaId), token);
             return Result<TokenDto>.Failure(SesionErrors.Invalid);
         }
 

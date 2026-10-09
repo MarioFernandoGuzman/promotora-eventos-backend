@@ -20,6 +20,8 @@ public sealed class CambiarPasswordHandler(IUsuarioRepository usuarios, ISesionR
 
         if (!passwords.Verify(actor.PasswordHash, request.PasswordActual))
         {
+            await audit.WriteAsync(actual.UsuarioId, "LOGIN_FAILED", "usuarios", actor.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+                new DetalleAuditoria(MotivoAuditoria.CambioPasswordRechazado), token);
             return Result<Unit>.Failure(new Error("identity.password_invalid", "La contraseña actual es incorrecta.", ErrorType.Unauthorized));
         }
 
@@ -30,7 +32,8 @@ public sealed class CambiarPasswordHandler(IUsuarioRepository usuarios, ISesionR
 
         await usuarios.ChangePasswordAsync(actor.Id, passwords.Hash(request.PasswordNuevo), token);
         await sesiones.RevokeUserAsync(actor.Id, token);
-        await audit.WriteAsync(actual.UsuarioId, "UPDATE", "usuarios", actor.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+        await audit.WriteAsync(actual.UsuarioId, "UPDATE", "usuarios", actor.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+            new DetalleAuditoria(MotivoAuditoria.CambioPassword), token);
         return Result<Unit>.Success(Unit.Value);
     }, ct);
 }

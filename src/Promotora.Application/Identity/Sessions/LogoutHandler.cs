@@ -19,7 +19,8 @@ public sealed class LogoutHandler(ISesionRepository sesiones, ITokenService toke
 
         await sesiones.LockUsuarioAsync(refresh.UsuarioId, token);
         await sesiones.RevokeFamilyAsync(refresh.FamiliaId, token);
-        await audit.WriteAsync(refresh.UsuarioId, "LOGOUT", "usuarios", refresh.UsuarioId.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+        await audit.WriteAsync(refresh.UsuarioId, "LOGOUT", "usuarios", refresh.UsuarioId.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+            new DetalleAuditoria(MotivoAuditoria.LogoutSolicitado, refresh.FamiliaId), token);
         return Result<Unit>.Success(Unit.Value);
     }, ct);
 }

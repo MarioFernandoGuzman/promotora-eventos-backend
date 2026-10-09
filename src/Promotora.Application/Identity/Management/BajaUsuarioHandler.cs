@@ -35,7 +35,8 @@ public sealed class BajaUsuarioHandler(IUsuarioRepository usuarios, ISesionRepos
         }
 
         await sesiones.RevokeUserAsync(target.Id, token);
-        await audit.WriteAsync(actual.UsuarioId, "DELETE", "usuarios", target.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+        await audit.WriteAsync(actual.UsuarioId, "DELETE", "usuarios", target.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+            new DetalleAuditoria(MotivoAuditoria.BajaLogica), token);
         return Result<Unit>.Success(Unit.Value);
     }, ct);
 }

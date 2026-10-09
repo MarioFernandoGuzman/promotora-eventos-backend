@@ -16,7 +16,7 @@ public sealed class LoginHandler(IUsuarioRepository usuarios, ISesionRepository 
         var validPassword = passwords.Verify(usuario?.PasswordHash, request.Password);
         if (usuario is null || !validPassword || !usuario.PuedeAutenticarse)
         {
-            await audit.WriteAsync(usuario?.Id, "LOGIN_FAILED", "usuarios", usuario?.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+            await audit.WriteAsync(usuario?.Id, "LOGIN_FAILED", "usuarios", usuario?.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, new DetalleAuditoria(MotivoAuditoria.LoginRechazado), token);
             return Result<TokenDto>.Failure(SesionErrors.Invalid);
         }
 
@@ -25,7 +25,7 @@ public sealed class LoginHandler(IUsuarioRepository usuarios, ISesionRepository 
         // Releer tras el lock evita sesiones emitidas con contraseña/estado anteriores.
         if (!usuario.PuedeAutenticarse || !passwords.Verify(usuario.PasswordHash, request.Password))
         {
-            await audit.WriteAsync(usuario.Id, "LOGIN_FAILED", "usuarios", usuario.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+            await audit.WriteAsync(usuario.Id, "LOGIN_FAILED", "usuarios", usuario.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, new DetalleAuditoria(MotivoAuditoria.LoginRechazado), token);
             return Result<TokenDto>.Failure(SesionErrors.Invalid);
         }
 
@@ -33,7 +33,7 @@ public sealed class LoginHandler(IUsuarioRepository usuarios, ISesionRepository 
         var accessExpiry = clock.UtcNow.AddMinutes(usuario.DebeCambiarPassword ? 5 : options.AccessMinutes);
         var sessionId = await sesiones.AddAsync(usuario.Id, tokens.HashRefreshToken(refresh), Guid.NewGuid(),
             usuario.DebeCambiarPassword ? accessExpiry : clock.UtcNow.AddDays(options.RefreshDays), actual.IpOrigen, token);
-        await audit.WriteAsync(usuario.Id, "LOGIN", "usuarios", usuario.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+        await audit.WriteAsync(usuario.Id, "LOGIN", "usuarios", usuario.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, new DetalleAuditoria(MotivoAuditoria.LoginCorrecto), token);
         return Result<TokenDto>.Success(new TokenDto(tokens.CreateAccessToken(usuario, sessionId, accessExpiry),
             usuario.DebeCambiarPassword ? null : refresh, accessExpiry, usuario.DebeCambiarPassword, usuario.Id));
     }, ct);

@@ -79,7 +79,8 @@ public sealed partial class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWo
                 }
 
                 await audit.WriteAsync(actorId, "CREATE", "usuarios",
-                    row.Id.ToString(CultureInfo.InvariantCulture), ip, token);
+                    row.Id.ToString(CultureInfo.InvariantCulture), ip,
+                    new DetalleAuditoria(bootstrap ? MotivoAuditoria.BootstrapAdmin : MotivoAuditoria.AltaUsuario), token);
                 if (usuario.Rol == RolUsuario.CLIENTE)
                 {
                     db.OutboxMensajes.Add(new OutboxMensajeRow
