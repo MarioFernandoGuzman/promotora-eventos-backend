@@ -32,7 +32,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 
 Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
 
-El modelo objetivo tiene **26 tablas**, incluida `refresh_tokens`. Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regenerará el diccionario completo.
+El modelo objetivo tiene **26 tablas**, incluida `refresh_tokens`. Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9.
 
 Entrega de Fase 1: PR-B (F1-02/F1-03) en `feature/f1-identidad-recintos-catalogo`; PR-C (F1-04 a F1-06) en `feature/f1-ventas-finanzas-ia-mensajeria`; PR-D (F1-07 a F1-10 y F1-11, ejecutada después de F1-07) en `feature/f1-integridad-bi-seed`. Cada rama parte de develop actualizado después de que el usuario mergee el PR anterior. Solo commits locales en español, con `Refs: <ID>` en el cuerpo, mostrando git status y mensaje antes de cada commit; sin push ni merge del agente y sin modificar main/develop.
 
@@ -79,11 +79,11 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [x] **F1-04** `V4__ventas.sql` (compras con `public_id`, `idempotency_key`, `expira_en`, `procesando_desde TIMESTAMPTZ NULL`; boletos preparados para QR firmado).
 - [x] **F1-05** `V5__finanzas.sql` (pagos, cuentas PLATAFORMA/DUENO/IMPUESTOS con estado ACTIVA/CERRADA y fecha_cierre, movimientos VENTA/COMISION/IMPUESTO/LIQUIDACION/REEMBOLSO; CHECK de dueño y UNIQUE(dueno_id, moneda)).
 - [x] **F1-06** `V6__resenas.sql`, `V7__auditoria_ia_rag.sql` (pgvector + HNSW), `V8__mensajeria.sql`.
-- [ ] **F1-07** `V9__indices_triggers_permisos.sql`: índices (refresh por usuario/familia, compras por procesando_desde WHERE estado='PROCESANDO', únicos parciales PLATAFORMA/IMPUESTOS por moneda), triggers de integridad (§6 de la BD), constraint trigger de perfil DEFERRABLE INITIALLY DEFERRED al COMMIT, bloqueo de movimientos en cuentas CERRADA, triggers contra UPDATE/DELETE en ledger y ambos logs; REVOKE correspondiente y de DELETE sobre usuarios y datos de compras/financieros.
-- [ ] **F1-11** Regenerar el diccionario completo en `BASE_DE_DATOS.md` (tipo, PK/FK, nulabilidad, default, CHECK) a partir de las migraciones. Ejecutar después de F1-07 y antes de F1-08.
-- [ ] **F1-08** `R__bi_vistas.sql`: vistas `bi.*` de los 15 reportes + rol `bi_reader`.
-- [ ] **F1-09** `V10__seed_catalogos.sql` (solo categorías y cuentas PLATAFORMA e IMPUESTOS; nunca admin ni credenciales) y datos de prueba en `database/seed-dev/`, fuera de migraciones de producción y sin secretos.
-- [ ] **F1-10** Validar: migrar desde cero en un contenedor temporal Docker `pgvector/pgvector:pg16` con `flyway/flyway` sobre `database/migrations`, usando el mismo comando de `.github/workflows/ci.yml`; sin errores, `flyway info` limpio. No usar docker-compose.yml, que llega en F2-02.
+- [x] **F1-07** `V9__indices_triggers_permisos.sql`: índices (refresh por usuario/familia, compras por procesando_desde WHERE estado='PROCESANDO', únicos parciales PLATAFORMA/IMPUESTOS por moneda), triggers de integridad (§6 de la BD), constraint trigger de perfil DEFERRABLE INITIALLY DEFERRED al COMMIT, bloqueo de movimientos en cuentas CERRADA, triggers contra UPDATE/DELETE en ledger y ambos logs; REVOKE correspondiente y de DELETE sobre usuarios y datos de compras/financieros.
+- [x] **F1-11** Regenerar el diccionario completo en `BASE_DE_DATOS.md` (tipo, PK/FK, nulabilidad, default, CHECK) a partir de las migraciones. Ejecutar después de F1-07 y antes de F1-08.
+- [x] **F1-08** `R__bi_vistas.sql`: vistas `bi.*` de los 15 reportes + rol `bi_reader`.
+- [x] **F1-09** `V10__seed_catalogos.sql` (solo categorías y cuentas PLATAFORMA e IMPUESTOS; nunca admin ni credenciales) y datos de prueba en `database/seed-dev/`, fuera de migraciones de producción y sin secretos.
+- [x] **F1-10** Validar: migrar desde cero en un contenedor temporal Docker `pgvector/pgvector:pg16` con `flyway/flyway` sobre `database/migrations`, usando el mismo comando de `.github/workflows/ci.yml`; sin errores, `flyway info` limpio. No usar docker-compose.yml, que llega en F2-02.
 
 **Salida:** BD completa (26 tablas) creada solo con migraciones; vistas `bi` consultables y diccionario completo regenerado desde las migraciones.
 

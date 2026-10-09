@@ -6,7 +6,7 @@
 > - Modelo de datos completo: [`docs/BASE_DE_DATOS.md`](docs/BASE_DE_DATOS.md)
 > - Tareas y estado de avance: [`docs/PLAN_IMPLEMENTACION.md`](docs/PLAN_IMPLEMENTACION.md)
 > - Esquema histórico solo de referencia: [`docs/referencia/schema_v1.sql`](docs/referencia/schema_v1.sql). Nunca ejecutarlo ni moverlo a migraciones.
-> - Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos en el diccionario, seguir v1 con las correcciones v2; en tablas nuevas documentar cada suposición en el encabezado de la migración. F1-11 regenerará el diccionario completo.
+> - Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos en el diccionario, seguir v1 con las correcciones v2; en tablas nuevas documentar cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9.
 
 ---
 
