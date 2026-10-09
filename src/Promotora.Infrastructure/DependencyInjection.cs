@@ -1,9 +1,7 @@
-using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Promotora.Application.Audit;
 using Promotora.Application.Identity.Ports;
-using Promotora.Application.Identity.Registration;
 using Promotora.Application.Shared.Ports;
 using Promotora.Infrastructure.Audit;
 using Promotora.Infrastructure.Identity;
@@ -26,10 +24,6 @@ public static class DependencyInjection
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuditLogger, EfAuditLogger>();
             services.AddScoped<IUsuarioRepository, EfUsuarioRepository>();
-            services.AddScoped<IValidator<CrearUsuarioCommand>, CrearUsuarioValidator>();
-            services.AddScoped<IValidator<BootstrapAdminCommand>, BootstrapAdminValidator>();
-            services.AddCommandHandler<CrearUsuarioCommand, UsuarioDto, CrearUsuarioHandler>();
-            services.AddCommandHandler<BootstrapAdminCommand, UsuarioDto, BootstrapAdminHandler>();
         }
 
         return services;

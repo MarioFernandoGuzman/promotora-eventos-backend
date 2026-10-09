@@ -40,8 +40,8 @@ dotnet run --project src/Promotora.WebApi
 
 Usuario de prueba: **admin@example.test**. Contraseña: la que ingresaste en el comando anterior.
 Los valores se guardan fuera del repositorio mediante user-secrets, exclusivamente para desarrollo.
-El administrador inicial tendrá `debeCambiarPassword=true`; login y cambio obligatorio se incorporan en F3-02/F3-04.
-Hasta F3-02 las altas privilegiadas rechazan actores anónimos; no hay mecanismo para enviar un usuario mediante headers.
+El administrador inicial tendrá `debeCambiarPassword=true`; debe usar login y cambio obligatorio antes de gestionar usuarios.
+Las altas privilegiadas rechazan actores anónimos; no hay mecanismo para enviar un ID de usuario mediante headers.
 Swagger: http://localhost:5080/swagger. Las rutas se aceptan sin distinguir mayúsculas/minúsculas.
 
 ## F3-02: sesiones
@@ -125,3 +125,17 @@ usuario_id identifica al actor, entidad_id al destinatario; bootstrap y correo d
 La auditoría de reutilización y fallos de login se confirma aunque el resultado HTTP sea 401.
 Las lecturas de perfiles/listados no agregan acciones fuera del catálogo; se auditan las mutaciones.
 Los triggers y permisos Flyway existentes siguen protegiendo UPDATE/DELETE/TRUNCATE de logs.
+
+## F3-07: cómo verificar el módulo
+
+Preparar la base y secretos con [DESARROLLO_LOCAL.md](DESARROLLO_LOCAL.md), iniciar la API y abrir Swagger.
+En el primer login usar el usuario configurado en Bootstrap:AdminEmail y la contraseña elegida fuera del repo;
+seguir el cambio obligatorio descrito arriba. Crear luego un CLIENTE por registro y un DUENO por alta administrativa.
+Con sus JWT: GET del usuario propio debe dar 200; GET de otro y listado administrativo, 403.
+Sin JWT, listado debe dar 401. Un refresh antiguo repetido debe dar 401 e invalidar el sucesor.
+
+Ejecutar las pruebas del API con `dotnet test --project tests/Promotora.Api.Tests` (requiere Docker):
+validan bootstrap/cambio inicial, altas, roles/propiedad, errores, firma/emisor/audiencia/expiración/algoritmo,
+rotación/reutilización/logout y baja. Usan PostgreSQL/Flyway y JWT reales, sin base local ni credenciales fijas.
+Las pruebas Infrastructure incluyen carreras de bootstrap y refresh, atomicidad y protección de auditoría.
+Evidencia y revisión completa: [VALIDACION_FASE_3.md](VALIDACION_FASE_3.md).

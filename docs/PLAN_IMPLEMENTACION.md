@@ -107,9 +107,13 @@ Implementación y validación local de F2-01–F2-07 documentadas en [`VALIDACIO
 - [x] **F3-04** CRUD de usuarios/perfiles (baja = `INACTIVO`), cambio de contraseña.
 - [x] **F3-05** Rate limiting en login/registro; CORS.
 - [x] **F3-06** `IAuditLogger` y registro de LOGIN/LOGOUT/LOGIN_FAILED y CRUD de usuarios en `logs_auditoria`.
-- [ ] **F3-07** Pruebas: acceso denegado por rol y por propiedad.
+- [x] **F3-07** Pruebas: acceso denegado por rol y por propiedad.
 
 **Salida:** autenticación y autorización funcionando y auditadas.
+
+Validación local: 82 pruebas en verde, build Release sin warnings, format limpio y Compose/Flyway/Kestrel
+con bootstrap y cambio obligatorio verificados; ver [VALIDACION_FASE_3.md](VALIDACION_FASE_3.md).
+GitHub Actions confirma el CI de este bloque al publicar el PR.
 
 ### Fase 4 — Recintos, catálogo y mapas
 - [ ] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).

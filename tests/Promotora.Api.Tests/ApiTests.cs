@@ -20,9 +20,13 @@ public sealed class ApiTests
         var ct = TestContext.Current.CancellationToken;
         var ui = await client.GetAsync("/swagger/index.html", ct);
         Assert.Equal(HttpStatusCode.OK, ui.StatusCode);
+        _ = factory.Services.GetRequiredService<Swashbuckle.AspNetCore.Swagger.ISwaggerProvider>().GetSwagger("v1");
         var document = await client.GetFromJsonAsync<JsonElement>("/swagger/v1/swagger.json", ct);
         Assert.Equal("v1", document.GetProperty("info").GetProperty("version").GetString());
-        Assert.True(document.GetProperty("paths").TryGetProperty("/api/v1/Auth/registro", out _));
+        Assert.True(document.GetProperty("paths").TryGetProperty("/api/v1/auth/registro", out _));
+        Assert.False(document.GetProperty("paths").GetProperty("/api/v1/auth/login").GetProperty("post").TryGetProperty("security", out _));
+        Assert.True(document.GetProperty("paths").GetProperty("/api/v1/usuarios").GetProperty("get").TryGetProperty("security", out _));
+        Assert.True(document.GetProperty("components").GetProperty("schemas").GetProperty("RegistroRequest").TryGetProperty("example", out _));
     }
 
     [Fact]

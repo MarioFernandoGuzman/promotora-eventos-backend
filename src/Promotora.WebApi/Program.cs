@@ -40,6 +40,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentitySessions(jwtKey, issuer, audience, new SesionOptions(
         builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
     builder.Services.AddIdentityManagement();
+    builder.Services.AddIdentityRegistration();
 }
 
 builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);
@@ -47,7 +48,8 @@ builder.Services.AddIdentityHttpProtection(builder.Configuration);
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
 builder.Services.AddExceptionHandler<UnexpectedExceptionHandler>();
-builder.Services.AddControllers().ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
+builder.Services.AddControllers(options => options.Conventions.Add(new Microsoft.AspNetCore.Mvc.ApplicationModels.RouteTokenTransformerConvention(new LowercaseRouteTransformer())))
+    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
 {
     var problem = new ValidationProblemDetails(context.ModelState)
     {
@@ -71,6 +73,7 @@ builder.Services.AddSwaggerGen(options =>
     });
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
     options.OperationFilter<BearerOperationFilter>();
+    options.SchemaFilter<IdentityExamplesFilter>();
 });
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 
