@@ -166,7 +166,8 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
 **Dependencia confirmada con el usuario:** mantener el orden y preparar F5-04/F5-05 como componentes. No habilitar finalización HTTP sin registro financiero: AGENTS.md §5 exige ledger en la misma transacción de COMPLETADA. La conexión del flujo a POST y la salida de Fase 5 quedan pendientes hasta integrar F7-02/F7-03. No marcar anticipadamente tareas de F7. La consulta en memoria del pago simulado también requiere respaldo durable antes de habilitar F6-11; un resultado desconocido tras reinicio no prueba rechazo ni ausencia de pago.
 
 ### Fase 6 — Venta asíncrona con RabbitMQ
-- [ ] **F6-01** Abstracciones `IMessagePublisher` y topología (exchanges, colas, retry, DLQ) declarada en código.
+- [x] **F6-01** Abstracciones `IMessagePublisher` y topología (exchanges, colas, retry, DLQ) declarada en código.
+  - RabbitMQ.Client 7.2.2 async v7 bajo Apache 2.0, configuración externa, canal serializado, persistencia y confirms con mandatory. Cinco pruebas RabbitMQ real; 221 pruebas Release en verde, build sin warnings y format limpio. Retry con TTL por mensaje para backoff en F6-04. Guía: [MENSAJERIA_OUTBOX.md](MENSAJERIA_OUTBOX.md). Sin consumidores ni cambios HTTP todavía.
 - [ ] **F6-02** Outbox: escritura transaccional y **relay** en `Worker` (`SKIP LOCKED`, confirmaciones).
 - [ ] **F6-03** `POST /compras` pasa a **202 Accepted**: reserva + outbox; el cobro y la emisión ocurren en el consumidor.
 - [ ] **F6-04** `ProcesarCompraConsumer`: idempotente (`mensajes_procesados`), ACK manual, reintentos con backoff, DLQ. Toma con `UPDATE compras SET estado='PROCESANDO', procesando_desde=now() WHERE id=@id AND estado='PENDIENTE'`; 0 filas ⇒ ACK y omitir. Referencia idempotente ante la pasarela: `compras.public_id`.
