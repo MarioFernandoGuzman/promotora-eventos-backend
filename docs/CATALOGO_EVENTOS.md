@@ -43,3 +43,9 @@ Usar IDs existentes y fechas UTC (Z). Nombre hasta 150, URL hasta 255, límite p
 DELETE conserva el evento como CANCELADO; repetido devuelve 200 sin nueva auditoría. Con cualquier historial de compras, la edición y la cancelación devuelven 409: el flujo con devolución y reembolso se implementa en ventas/finanzas. No se crea una cancelación financiera parcial desde el CRUD. Recinto inactivo impide configurar o publicar, pero permite consultar y cancelar un evento sin compras.
 
 Prueba local: crear recinto propio → crear evento → editar → programar → abrir venta sin tipos (422) → crear tipos en F4-07 → abrir venta dentro de la ventana → intentar editar (409). Como otro dueño, detalle/cancelación → 403 y listado sin eventos ajenos. Las transiciones se escriben con estado esperado y se auditan en la misma transacción.
+
+## F4-06: presentadores de un evento
+
+`/api/v1/eventos/{eventoId}/presentadores`: POST asocia con `{"presentadorId":1,"rol":"HEADLINER"}`; GET lista paginado, incluidos presentadores inactivos para gestión privada. PUT `/{presentadorId}` recibe `{"rol":"INVITADO"}`; DELETE `/{presentadorId}` retira solo la relación (baja repetida → 200 sin auditoría duplicada). El rol es texto opcional hasta 30 caracteres: los ejemplos no constituyen un enum.
+
+Consultas: dueño del recinto o administrador. Escrituras: además, evento BORRADOR/PROGRAMADO sin compras y recinto activo; asociación/edición requieren presentador activo. Duplicado → 409; presentador inexistente → 404; inactivo → 409; rol largo → 400; otro dueño/cliente → 403. DELETE físico de la relación está permitido por la matriz CRUD; conserva ambos recursos e historial auditado. Probar asociar → listar → cambiar rol → retirar dos veces; la asociación duplicada no crea otra fila ni auditoría.

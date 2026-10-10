@@ -14,6 +14,15 @@ public static class CatalogRegistration
     {
         services.AddScoped<CatalogAccess>();
         services.AddScoped<EventoAccess>();
+        services.AddScoped<EventoConfigurationAccess>();
+        services.AddScoped<IEventoPresentadorRepository, EfEventoPresentadorRepository>();
+        services.AddScoped<IValidator<AsociarPresentadorCommand>, AsociarPresentadorValidator>();
+        services.AddScoped<IValidator<EditarRolPresentadorCommand>, EditarRolPresentadorValidator>();
+        services.AddScoped<IValidator<ListarEventoPresentadoresQuery>, ListarEventoPresentadoresValidator>();
+        services.AddCommandHandler<AsociarPresentadorCommand, EventoPresentadorDto, AsociarPresentadorHandler>();
+        services.AddCommandHandler<EditarRolPresentadorCommand, EventoPresentadorDto, EditarRolPresentadorHandler>();
+        services.AddCommandHandler<RetirarPresentadorCommand, Unit, RetirarPresentadorHandler>();
+        services.AddQueryHandler<ListarEventoPresentadoresQuery, PaginaDto<EventoPresentadorDto>, ListarEventoPresentadoresHandler>();
         services.AddScoped<IEventoRepository, EfEventoRepository>();
         services.AddScoped<IValidator<CrearEventoCommand>, CrearEventoValidator>();
         services.AddScoped<IValidator<ActualizarEventoCommand>, ActualizarEventoValidator>();
