@@ -29,6 +29,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-12 | Roles | ✅ | Un rol por usuario (`usuarios.rol` + perfil) |
 | D-13 | Una compra = un evento | ✅ | `compras.evento_id` |
 | D-14 | Envío de correo | ✅ | MailHog en desarrollo |
+| D-15 | Política monetaria de compra | ✅ | Precios sin IVA; `Finanzas:TasaIva = 0.12`, `Finanzas:ComisionPorcentaje = 0.10` (valor inicial configurable, no dato legal). Comisión sobre subtotal, IVA sobre subtotal + comisión; decimal y redondeo AwayFromZero por componente a 2 decimales; montos congelados y reembolso solo total |
 
 Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
 
@@ -91,6 +92,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [x] **F2-01** Crear solución con los 5 proyectos `src/` y los 5 de `tests/` con referencias correctas.
 - [x] **F2-02** `docker-compose.yml`: postgres+pgvector, rabbitmq (management), mailhog, flyway.
 - [x] **F2-03** `DbContext` con snake_case, `Pgvector`, entidades *keyless* para vistas `bi`.
+  - Corrección posterior: sentinel `false` explícito en `usuarios.debe_cambiar_password` y `outbox_mensajes.publicado`; pruebas PostgreSQL de ambos valores con el warning de EF convertido en error. Sin cambio de esquema ni migraciones.
 - [x] **F2-04** Base transversal: `Result<T>`, errores, `ICommandHandler/IQueryHandler`, pipeline de validación, `IClock`, `IUnitOfWork`.
 - [x] **F2-05** WebApi base: Swagger, `ProblemDetails`, versionado `/api/v1`, Serilog con CorrelationId, health checks.
 - [x] **F2-06** Pruebas de arquitectura (NetArchTest): regla de dependencia y controllers sin `DbContext`.
@@ -134,9 +136,16 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). Segundo bloque F4-04–F4-08 implementado: 111 pruebas en verde y 49 operaciones Swagger; guía en [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) y revisión en [VALIDACION_F4_CATALOGO_EVENTOS.md](VALIDACION_F4_CATALOGO_EVENTOS.md). F4-09/F4-10 completadas: 120 pruebas en verde y 53 operaciones Swagger. Imágenes en [IMAGENES.md](IMAGENES.md), criterio de salida y revisión de fase en [VALIDACION_FASE_4.md](VALIDACION_FASE_4.md). Fase 4 cerrada localmente; CI remoto se confirma al publicar el PR.
 
 ### Fase 5 — Venta síncrona y boletos (primero sin colas)
-- [ ] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.
-- [ ] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
-- [ ] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
+
+**D-15 confirmada:** `subtotal = Σ(cantidad × precio_unitario)`; `comision = Redondear(subtotal × ComisionPorcentaje)`; `impuestos = Redondear((subtotal + comision) × TasaIva)`; `total = subtotal + comision + impuestos`, sumando componentes ya redondeados. Todo usa `decimal`, nunca `double`; redondeo a 2 decimales con `MidpointRounding.AwayFromZero`. Los precios de tipos_entrada no incluyen IVA. Domain recibe una política tarifaria (record simple) desde Application y no referencia configuración. Tasas configurables en appsettings, inicialmente IVA 0.12 y comisión porcentual 0.10; no se consideran asesoría ni definición legal. Los precios/componentes quedan congelados en la compra: el reembolso total revierte los movimientos originales sin recalcular con tasas vigentes. Con total cero no se generan movimientos (CHECK monto <> 0). Reembolso parcial fuera de alcance.
+
+Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, total 369.60; 33.33 → 3.33, 4.40, 41.06; 0.00 → todos cero; además, invariante subtotal + comisión + impuestos = total sobre una serie de subtotales aleatorios.
+- [x] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.
+  - D-15 registrada antes del código. Reglas, configuración, límites y pruebas en [COMPRAS_DOMINIO.md](COMPRAS_DOMINIO.md). Validación de F5-01: 137 pruebas en verde, build sin warnings y format limpio. F5-02/F5-03 incorporaron posteriormente reserva persistida y endpoint.
+- [x] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
+  - Puerto y adaptador transaccionales; pruebas PostgreSQL de concurrencia, estados y rollback. Diseño y comandos en [RESERVA_CUPO.md](RESERVA_CUPO.md).
+- [x] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
+  - HTTP 201 nueva / 200 repetida propia; compra PENDIENTE, reserva + detalles + auditoría transaccionales. D-15 congelada, validación del actor y padres activos, límite agregado y carreras de clave. 159 pruebas Release en verde; 54 operaciones Swagger. Guía frontend/local en [COMPRAS_API.md](COMPRAS_API.md) y revisión del bloque en [VALIDACION_F5_COMPRAS.md](VALIDACION_F5_COMPRAS.md). Pago/emisión siguen en F5-04/F5-05; expiración automática en F5-08 y contrato 202/outbox en F6-03.
 - [ ] **F5-04** Pago vía `IPaymentGateway` simulado (tasa de fallo configurable).
 - [ ] **F5-05** Emisión de boletos con token QR firmado (HMAC) y datos del asistente (obligatorios en carreras).
 - [ ] **F5-06** `GET /compras/{publicId}`, mis compras, mis boletos (con QR); cancelación por usuario solo desde PENDIENTE mediante UPDATE condicional; en PROCESANDO responde 409. Solo el ganador devuelve cupo en la misma transacción.
@@ -289,4 +298,5 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 | Pasarela real no disponible | Adaptador simulado detrás de puerto (D-10) |
 | Licencias de paquetes | Revisar cada NuGet nuevo (ver `AGENTS.md` §2) |
 | IVA y alcance fiscal | Tasa configurable en appsettings y cálculo en Domain; conciliación de los tres componentes del cobro. Facturación electrónica fuera de alcance |
+| Reembolso parcial | Fuera del alcance actual; solo reembolso total que revierte movimientos registrados, sin recalcular tasas |
 | Compras atascadas o carreras de estado | F6-11: timeout configurable, consulta de pago por public_id y recuperación idempotente; toda transición usa estado esperado y solo el ganador devuelve cupo |

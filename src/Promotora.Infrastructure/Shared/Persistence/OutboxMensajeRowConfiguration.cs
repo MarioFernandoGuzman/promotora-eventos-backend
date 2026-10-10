@@ -14,7 +14,7 @@ internal sealed class OutboxMensajeRowConfiguration : IEntityTypeConfiguration<O
         builder.Property(x => x.AgregadoId).HasColumnType("character varying").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.Tipo).HasColumnType("character varying").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.Payload).HasColumnType("jsonb").IsRequired(true).ValueGeneratedNever();
-        builder.Property(x => x.Publicado).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("false");
+        builder.Property(x => x.Publicado).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("false").HasSentinel(false);
         builder.Property(x => x.Fecha).HasColumnType("timestamp with time zone").IsRequired(true).HasDefaultValueSql("now()");
         builder.Property(x => x.FechaPublicado).HasColumnType("timestamp with time zone").IsRequired(false).ValueGeneratedNever();
         builder.Property(x => x.Intentos).HasColumnType("integer").IsRequired(true).HasDefaultValueSql("0");

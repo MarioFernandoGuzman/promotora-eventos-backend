@@ -12,7 +12,7 @@ internal sealed class UsuarioRowConfiguration : IEntityTypeConfiguration<Usuario
         builder.Property(x => x.Id).HasColumnType("integer").IsRequired(true).UseIdentityAlwaysColumn();
         builder.Property(x => x.Email).HasColumnType("character varying(150)").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.PasswordHash).HasColumnType("character varying(255)").IsRequired(true).ValueGeneratedNever();
-        builder.Property(x => x.DebeCambiarPassword).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("false");
+        builder.Property(x => x.DebeCambiarPassword).HasColumnType("boolean").IsRequired(true).HasDefaultValueSql("false").HasSentinel(false);
         builder.Property(x => x.Nombre).HasColumnType("character varying(100)").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.Apellido).HasColumnType("character varying(100)").IsRequired(true).ValueGeneratedNever();
         builder.Property(x => x.Rol).HasColumnType("character varying(20)").IsRequired(true).ValueGeneratedNever();

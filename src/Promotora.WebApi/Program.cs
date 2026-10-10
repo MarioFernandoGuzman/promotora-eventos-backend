@@ -3,17 +3,21 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Promotora.Application.Identity.Ports;
 using Promotora.Application.Identity.Sessions;
+using Promotora.Application.Ticketing;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Catalog;
+using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Images;
 using Promotora.Infrastructure.Shared.Health;
+using Promotora.Infrastructure.Ticketing;
 using Promotora.Infrastructure.Venues;
 using Promotora.WebApi.Catalog;
 using Promotora.WebApi.Errors;
 using Promotora.WebApi.Identity;
 using Promotora.WebApi.Images;
 using Promotora.WebApi.Middleware;
+using Promotora.WebApi.Ticketing;
 using Promotora.WebApi.Venues;
 using Serilog;
 using Serilog.Events;
@@ -26,6 +30,7 @@ builder.Services.AddSerilog(configuration => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}"));
 builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionString("Promotora"));
+builder.Services.AddFinanzas(builder.Configuration.GetValue("Finanzas:TasaIva", 0.12m), builder.Configuration.GetValue("Finanzas:ComisionPorcentaje", 0.10m));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, HttpUsuarioActual>();
 builder.Services.AddHostedService<BootstrapAdminService>();
@@ -49,6 +54,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentityRegistration();
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
+    builder.Services.AddTicketing(new CompraOptions(builder.Configuration.GetValue("Ticketing:ReservaMinutos", 15)));
     builder.Services.AddImages(builder.Configuration["Images:RootPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "uploads"));
 }
 
@@ -86,6 +92,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SchemaFilter<IdentityExamplesFilter>();
     options.SchemaFilter<VenuesExamplesFilter>();
     options.SchemaFilter<CatalogExamplesFilter>();
+    options.SchemaFilter<CompraExamplesFilter>();
 });
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 

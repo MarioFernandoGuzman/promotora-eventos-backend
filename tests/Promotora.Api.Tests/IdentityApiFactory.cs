@@ -7,10 +7,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Promotora.Application.Identity.Sessions;
+using Promotora.Application.Ticketing;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Images;
+using Promotora.Infrastructure.Ticketing;
 using Promotora.Infrastructure.Venues;
 
 namespace Promotora.Api.Tests;
@@ -30,7 +32,8 @@ public sealed class IdentityApiFactory(string connection, string? adminEmail = n
             ["Bootstrap:AdminPassword"] = adminPassword,
             ["Jwt:SigningKey"] = Convert.ToBase64String(Key),
             ["RateLimiting:LoginPermitLimit"] = "1000",
-            ["RateLimiting:RegistroPermitLimit"] = "1000"
+            ["RateLimiting:RegistroPermitLimit"] = "1000",
+            ["RateLimiting:CompraPermitLimit"] = "1000"
         }));
         // Minimal hosting ejecuta Program antes del callback de configuración del host de pruebas.
         // Reemplaza sus adaptadores con los mismos registros de producción, apuntando a PostgreSQL temporal.
@@ -42,6 +45,7 @@ public sealed class IdentityApiFactory(string connection, string? adminEmail = n
             services.AddIdentityManagement();
             services.AddVenues();
             services.AddCatalog();
+            services.AddTicketing(new CompraOptions());
             services.AddImages(ImagesRoot);
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
             {

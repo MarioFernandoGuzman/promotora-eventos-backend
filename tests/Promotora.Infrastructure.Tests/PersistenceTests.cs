@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Npgsql;
 using Pgvector;
@@ -98,6 +99,38 @@ public sealed class PersistenceTests(PostgresFixture fixture) : IClassFixture<Po
         await db.SaveChangesAsync(ct);
         db.ChangeTracker.Clear();
         Assert.Equal(0, (await db.DocumentosRag.SingleAsync(d => d.Id == documento.Id, ct)).Version);
+        await transaction.RollbackAsync(ct);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DefaultsBooleanosDeIdentidadYOutboxConservanValorExplicito(bool valor)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = new PromotoraDbContext(new DbContextOptionsBuilder<PromotoraDbContext>()
+            .UsePromotoraPostgres(fixture.ConnectionString)
+            .ConfigureWarnings(warnings => warnings.Throw(RelationalEventId.BoolWithDefaultWarning)).Options);
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var usuario = new UsuarioRow
+        {
+            Email = $"{Guid.NewGuid():N}@example.invalid",
+            PasswordHash = "!SIN_ACCESO_PRUEBA!",
+            Nombre = "Prueba",
+            Apellido = "Sentinel",
+            Rol = "CLIENTE",
+            DebeCambiarPassword = valor
+        };
+        using var payload = JsonDocument.Parse("{\"contenido\":\"prueba\"}");
+        var outbox = new OutboxMensajeRow { Agregado = "Prueba", AgregadoId = "1", Tipo = "prueba", Payload = payload, Publicado = valor };
+        db.Usuarios.Add(usuario); db.OutboxMensajes.Add(outbox);
+        await db.SaveChangesAsync(ct);
+        db.Clientes.Add(new ClienteRow { UsuarioId = usuario.Id });
+        await db.SaveChangesAsync(ct);
+        await db.Database.ExecuteSqlRawAsync("SET CONSTRAINTS ALL IMMEDIATE", ct);
+        db.ChangeTracker.Clear();
+        Assert.Equal(valor, (await db.Usuarios.SingleAsync(x => x.Id == usuario.Id, ct)).DebeCambiarPassword);
+        Assert.Equal(valor, (await db.OutboxMensajes.SingleAsync(x => x.Id == outbox.Id, ct)).Publicado);
         await transaction.RollbackAsync(ct);
     }
 

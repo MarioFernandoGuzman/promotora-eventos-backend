@@ -25,6 +25,9 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 | [`docs/VALIDACION_F4_CATALOGO_EVENTOS.md`](docs/VALIDACION_F4_CATALOGO_EVENTOS.md) | Pruebas y revisión del bloque F4-04–F4-08 |
 | [`docs/IMAGENES.md`](docs/IMAGENES.md) | Subida de planos/fotos, multipart en Swagger, permisos y almacenamiento local |
 | [`docs/VALIDACION_FASE_4.md`](docs/VALIDACION_FASE_4.md) | Cierre de catálogo/mapa/imágenes, auditoría y propiedad; 120 pruebas |
+| [`docs/COMPRAS_DOMINIO.md`](docs/COMPRAS_DOMINIO.md) | F5-01: reglas de compra, política monetaria D-15, estados, configuración y pruebas |
+| [`docs/RESERVA_CUPO.md`](docs/RESERVA_CUPO.md) | F5-02: reserva atómica, devolución idempotente y pruebas PostgreSQL |
+| [`docs/COMPRAS_API.md`](docs/COMPRAS_API.md) | F5-03: crear compras desde Swagger, permisos, idempotencia y pruebas locales |
 | [`docs/VALIDACION_FASE_3.md`](docs/VALIDACION_FASE_3.md) | Pruebas y revisión de salida de identidad/seguridad |
 
 ## Arranque rápido
@@ -37,7 +40,7 @@ docker compose run --rm flyway migrate
 dotnet run --project src/Promotora.WebApi
 ```
 
-Swagger local: `http://localhost:5080/swagger`, con 53 operaciones: 11 de identidad, 11 de recintos/localidades/mapa, 27 de catálogo y 4 de imágenes. El administrador inicial debe cambiar su contraseña antes de gestionar recursos. El catálogo público se consulta sin token en `/api/v1/catalogo/eventos`; la gestión requiere sesión y permisos. El Worker es un host preparado; el procesamiento de compras llega en Fase 6.
+Swagger local: `http://localhost:5080/swagger`, con 54 operaciones: 11 de identidad, 11 de recintos/localidades/mapa, 27 de catálogo, 4 de imágenes y 1 de compras. El administrador inicial debe cambiar su contraseña antes de gestionar recursos. El catálogo público se consulta sin token en `/api/v1/catalogo/eventos`; la gestión requiere sesión y permisos. POST de compras reserva como CLIENTE; pago/emisión siguen pendientes en F5-04/F5-05. El Worker es un host preparado; el procesamiento asíncrono llega en Fase 6.
 
 ```bash
 dotnet restore

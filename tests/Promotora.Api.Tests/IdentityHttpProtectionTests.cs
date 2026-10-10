@@ -18,7 +18,8 @@ public sealed class IdentityHttpProtectionTests
         await using var factory = new ApiFactory(settings: new Dictionary<string, string?>
         {
             ["RateLimiting:LoginPermitLimit"] = "2",
-            ["RateLimiting:RegistroPermitLimit"] = "2"
+            ["RateLimiting:RegistroPermitLimit"] = "2",
+            ["RateLimiting:CompraPermitLimit"] = "2"
         });
         using var configured = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {
@@ -29,7 +30,7 @@ public sealed class IdentityHttpProtectionTests
         }));
         using var client = configured.CreateClient();
         var ct = TestContext.Current.CancellationToken;
-        foreach (string path in new[] { "/api/v1/auth/login", "/api/v1/auth/registro" })
+        foreach (string path in new[] { "/api/v1/auth/login", "/api/v1/auth/registro", "/api/v1/compras" })
         {
             var body = new { email = "test@example.test", password = Guid.NewGuid().ToString("N"), nombre = "Nombre", apellido = "Apellido" };
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync(path, body, ct)).StatusCode);
