@@ -28,6 +28,8 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 | [`docs/COMPRAS_DOMINIO.md`](docs/COMPRAS_DOMINIO.md) | F5-01: reglas de compra, política monetaria D-15, estados, configuración y pruebas |
 | [`docs/RESERVA_CUPO.md`](docs/RESERVA_CUPO.md) | F5-02: reserva atómica, devolución idempotente y pruebas PostgreSQL |
 | [`docs/COMPRAS_API.md`](docs/COMPRAS_API.md) | F5-03: crear compras desde Swagger, permisos, idempotencia y pruebas locales |
+| [`docs/PAGOS_SIMULADOS.md`](docs/PAGOS_SIMULADOS.md) | F5-04: pasarela simulada, referencia idempotente, configuración y límites |
+| [`docs/BOLETOS_EMISION.md`](docs/BOLETOS_EMISION.md) | F5-05: emisión interna, firma HMAC, carreras, clave externa y pruebas |
 | [`docs/VALIDACION_FASE_3.md`](docs/VALIDACION_FASE_3.md) | Pruebas y revisión de salida de identidad/seguridad |
 
 ## Arranque rápido
@@ -40,7 +42,7 @@ docker compose run --rm flyway migrate
 dotnet run --project src/Promotora.WebApi
 ```
 
-Swagger local: `http://localhost:5080/swagger`, con 54 operaciones: 11 de identidad, 11 de recintos/localidades/mapa, 27 de catálogo, 4 de imágenes y 1 de compras. El administrador inicial debe cambiar su contraseña antes de gestionar recursos. El catálogo público se consulta sin token en `/api/v1/catalogo/eventos`; la gestión requiere sesión y permisos. POST de compras reserva como CLIENTE; pago/emisión siguen pendientes en F5-04/F5-05. El Worker es un host preparado; el procesamiento asíncrono llega en Fase 6.
+Swagger local: `http://localhost:5080/swagger`, con 54 operaciones: 11 de identidad, 11 de recintos/localidades/mapa, 27 de catálogo, 4 de imágenes y 1 de compras. El administrador inicial debe cambiar su contraseña antes de gestionar recursos. El catálogo público se consulta sin token en `/api/v1/catalogo/eventos`; la gestión requiere sesión y permisos. POST de compras reserva como CLIENTE. Los componentes internos de pago/emisión F5-04/F5-05 están implementados; su conexión HTTP espera el registro financiero transaccional de F7. El Worker es un host preparado; el procesamiento asíncrono llega en Fase 6.
 
 ```bash
 dotnet restore

@@ -31,6 +31,7 @@ builder.Services.AddSerilog(configuration => configuration
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}"));
 builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionString("Promotora"));
 builder.Services.AddFinanzas(builder.Configuration.GetValue("Finanzas:TasaIva", 0.12m), builder.Configuration.GetValue("Finanzas:ComisionPorcentaje", 0.10m));
+builder.Services.AddPagoSimulado(new FakePaymentOptions(builder.Configuration.GetValue("PagosSimulados:TasaFallo", 0m)));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, HttpUsuarioActual>();
 builder.Services.AddHostedService<BootstrapAdminService>();
@@ -55,6 +56,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
     builder.Services.AddTicketing(new CompraOptions(builder.Configuration.GetValue("Ticketing:ReservaMinutos", 15)));
+    builder.Services.AddEmisionBoletosBase64(builder.Configuration["Boletos:SigningKey"], builder.Configuration.GetValue<int?>("Boletos:CategoriaCarreraId"));
     builder.Services.AddImages(builder.Configuration["Images:RootPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "uploads"));
 }
 
