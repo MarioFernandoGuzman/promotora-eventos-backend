@@ -145,7 +145,7 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
 - [x] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
   - Puerto y adaptador transaccionales; pruebas PostgreSQL de concurrencia, estados y rollback. Diseño y comandos en [RESERVA_CUPO.md](RESERVA_CUPO.md).
 - [x] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
-  - HTTP 201 nueva / 200 repetida propia; compra PENDIENTE, reserva + detalles + auditoría transaccionales. D-15 congelada, validación del actor y padres activos, límite agregado y carreras de clave. 159 pruebas Release en verde; 54 operaciones Swagger. Guía frontend/local en [COMPRAS_API.md](COMPRAS_API.md) y revisión del bloque en [VALIDACION_F5_COMPRAS.md](VALIDACION_F5_COMPRAS.md). Pago/emisión siguen en F5-04/F5-05; expiración automática en F5-08 y contrato 202/outbox en F6-03.
+  - HTTP 201 nueva / 200 repetida propia; compra PENDIENTE, reserva + detalles + auditoría transaccionales. D-15 congelada, validación del actor y padres activos, límite agregado y carreras de clave. 159 pruebas Release en verde; 54 operaciones Swagger. Guía frontend/local en [COMPRAS_API.md](COMPRAS_API.md) y revisión del bloque en [VALIDACION_F5_COMPRAS.md](VALIDACION_F5_COMPRAS.md). Componentes de pago/emisión F5-04/F5-05 implementados, integración financiera pendiente de F7; handler de expiración en F5-08, programación automática en F6-07 y contrato 202/outbox en F6-03.
 - [x] **F5-04** Pago vía `IPaymentGateway` simulado (tasa de fallo configurable).
   - Puerto y singleton en API/Worker; referencia public_id, monto congelado, repetición concurrente, consulta y rechazo configurable. Diseño, comandos y límites en [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md). El POST aún no cobra: integración transaccional con pagos/ledger depende de F7-02/F7-03.
 - [x] **F5-05** Emisión de boletos con token QR firmado (HMAC) y datos del asistente (obligatorios en carreras).
@@ -154,9 +154,12 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
   - Consultas propias paginadas, QR sin caché, compra ajena 404, cancelación repetida idempotente y auditoría UPDATE transaccional. Pruebas de veinte cancelaciones concurrentes, propiedad, paginación y rollback; guía y prueba local en [COMPRAS_API.md](COMPRAS_API.md).
 - [x] **F5-07** Validación en puerta: `POST /boletos/validar` (admin/dueño), atómica.
   - Firma HMAC, propiedad del recinto y compra COMPLETADA; UPDATE condicional VALIDO → USADO con fecha_uso/validado_por y auditoría VALIDATE transaccional. Veinte escaneos con dos administradores permiten una sola entrada. Contratos, roles, errores y comandos separados en [BOLETOS_VALIDACION.md](BOLETOS_VALIDACION.md).
-- [ ] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
+- [x] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
+  - Handler interno por lotes registrado en API/Worker, sin temporizador ni endpoint; activación periódica/coordinación de instancias en F6-07. Auditoría UPDATE y devolución en la misma transacción; pruebas de repetición, carreras y rollback. Guía local: [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md).
 - [ ] **F5-09** **Prueba de concurrencia:** N hilos sobre cupo K ⇒ vendidos = K exactos.
-- [ ] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.
+  - En el flujo actual se comprueban reservas PENDIENTE: ocho clientes HTTP distintos, casos 40/7, 40/8 y 33/9, cantidades 1/2/3; cupo final cero, cantidades exactas, rechazo sin compras parciales y una auditoría por ganadora. Evidencia: [PRUEBAS_F5_CONCURRENCIA.md](PRUEBAS_F5_CONCURRENCIA.md). La comprobación de ventas COMPLETADA/pagos/ledger/boletos permanece pendiente al integrar F7-02/F7-03 antes de cumplir la salida de Fase 5.
+- [x] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.
+  - Cuarenta solicitudes HTTP con una clave propia, disputa entre clientes, reintento tras falta de cupo y reutilización tras cancelar/cambiar precio: una compra/detalle/auditoría y una sola reserva. Evidencia: [PRUEBAS_F5_IDEMPOTENCIA.md](PRUEBAS_F5_IDEMPOTENCIA.md). Consumidores en F6 y finalización/ledger/emisión se validarán al integrar F7; salida de Fase 5 y F5-09 pendientes.
 
 **Salida:** compra completa y correcta de punta a punta, sin sobreventa bajo concurrencia.
 

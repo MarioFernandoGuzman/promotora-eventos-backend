@@ -9,6 +9,16 @@ namespace Promotora.Infrastructure.Ticketing;
 
 public static class TicketingRegistration
 {
+    public static IServiceCollection AddExpiracionCompras(this IServiceCollection services)
+    {
+        services.AddScoped<IExpiracionCompraRepository, EfExpiracionCompraRepository>();
+        services.AddScoped<ICupoEntradaRepository, EfCupoEntradaRepository>();
+        services.AddScoped<ITicketingTransaction, EfTicketingTransaction>();
+        services.AddScoped<IValidator<ExpirarComprasCommand>, ExpirarComprasValidator>();
+        services.AddCommandHandler<ExpirarComprasCommand, ExpiracionLoteDto, ExpirarComprasHandler>();
+        return services;
+    }
+
     public static IServiceCollection AddEmisionBoletosBase64(this IServiceCollection services, string? signingKey, int? categoriaCarreraId = null)
     {
         byte[]? bytes = null;
@@ -49,8 +59,7 @@ public static class TicketingRegistration
         services.AddQueryHandler<MisComprasQuery, PaginaDto<CompraCreadaDto>, MisComprasHandler>();
         services.AddQueryHandler<MisBoletosQuery, PaginaDto<BoletoClienteDto>, MisBoletosHandler>();
         services.AddCommandHandler<CancelarCompraCommand, CompraCreadaDto, CancelarCompraHandler>();
-        services.AddScoped<ICupoEntradaRepository, EfCupoEntradaRepository>();
-        services.AddScoped<ITicketingTransaction, EfTicketingTransaction>();
+        services.AddExpiracionCompras();
         services.AddScoped<IValidator<CrearCompraCommand>, CrearCompraValidator>();
         services.AddCommandHandler<CrearCompraCommand, CrearCompraResultado, CrearCompraHandler>();
         return services;
