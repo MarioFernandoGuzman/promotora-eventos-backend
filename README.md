@@ -19,6 +19,7 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 | [`docs/DESARROLLO_LOCAL.md`](docs/DESARROLLO_LOCAL.md) | Arranque seguro de Docker, login PostgreSQL, API/Swagger y pruebas |
 | [`docs/DEPENDENCIAS.md`](docs/DEPENDENCIAS.md) | Versiones, propósito y licencias de NuGets |
 | [`docs/IDENTIDAD_SEGURIDAD.md`](docs/IDENTIDAD_SEGURIDAD.md) | Usuarios, bootstrap, JWT, permisos, auditoría y pruebas en Swagger |
+| [`docs/FRONTEND_SWAGGER_AUTENTICACION.md`](docs/FRONTEND_SWAGGER_AUTENTICACION.md) | Guía frontend: login en Swagger, Bearer, cambio inicial, refresh, logout y CORS |
 | [`docs/VALIDACION_FASE_3.md`](docs/VALIDACION_FASE_3.md) | Pruebas y revisión de salida de identidad/seguridad |
 
 ## Arranque rápido

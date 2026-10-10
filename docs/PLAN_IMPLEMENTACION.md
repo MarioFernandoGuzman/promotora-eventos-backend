@@ -115,6 +115,8 @@ Validación local: 82 pruebas en verde, build Release sin warnings, format limpi
 con bootstrap y cambio obligatorio verificados; ver [VALIDACION_FASE_3.md](VALIDACION_FASE_3.md).
 GitHub Actions confirma el CI de este bloque al publicar el PR.
 
+Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md), con acceso autenticado a Swagger, cambio inicial, rotación, logout, permisos y CORS de F3-02–F3-05.
+
 ### Fase 4 — Recintos, catálogo y mapas
 - [ ] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
 - [ ] **F4-02** CRUD de `localidades` con `geometria` y `color`; validar suma de capacidades.
