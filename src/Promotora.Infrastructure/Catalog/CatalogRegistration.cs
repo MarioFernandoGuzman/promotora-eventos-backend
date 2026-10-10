@@ -13,6 +13,10 @@ public static class CatalogRegistration
     public static IServiceCollection AddCatalog(this IServiceCollection services)
     {
         services.AddScoped<CatalogAccess>();
+        services.AddScoped<ICatalogoPublicoQueryPort, EfCatalogoPublicoQueryPort>();
+        services.AddScoped<IValidator<ListarCatalogoPublicoQuery>, ListarCatalogoPublicoValidator>();
+        services.AddQueryHandler<ListarCatalogoPublicoQuery, PaginaDto<EventoResumenPublicoDto>, ListarCatalogoPublicoHandler>();
+        services.AddQueryHandler<ObtenerEventoPublicoQuery, EventoPublicoDto, ObtenerEventoPublicoHandler>();
         services.AddScoped<EventoAccess>();
         services.AddScoped<EventoConfigurationAccess>();
         services.AddScoped<TipoEntradaCapacity>();

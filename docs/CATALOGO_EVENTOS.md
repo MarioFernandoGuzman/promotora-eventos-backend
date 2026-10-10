@@ -59,3 +59,19 @@ POST: `{"nombre":"VIP","precio":150.00,"cupoTotal":50,"localidadId":1}`. Para ge
 Localidad debe estar activa y pertenecer al recinto del evento; localidad ajena/inexistente → 404. La suma de cupoTotal de todos los tipos del evento en esa localidad, incluidos inactivos, no excede su capacidad (422); bloqueos compartidos y triggers existentes protegen la carrera. Conforme a BASE_DE_DATOS.md §6, el límite agregado es por localidad; generales y distancias tienen cupo independiente por tipo, sin inventar otro límite agregado.
 
 Prueba local: crear tipo de localidad → reducir cupo total y comprobar disponibilidad → otro dueño no accede → exceso de capacidad devuelve 422 → baja dos veces y confirmar activo=false → el tipo inactivo sigue contando en el límite → crear General/10K → programar evento → abrir venta → editar precio/cupo devuelve 409. El mapa público existente refleja automáticamente los tipos activos.
+
+## F4-08: catálogo público para frontend
+
+GET `/api/v1/catalogo/eventos` y GET `/api/v1/catalogo/eventos/{id}` funcionan sin token. Solo se publican PROGRAMADO, EN_VENTA y AGOTADO, con recinto y categoría activos; borradores, cancelados, finalizados y recursos ocultos devuelven 404 en el detalle. El detalle incluye categoría, recinto, presentadores activos y tipos activos generales o de localidades activas. No incluye creadoPor, dueño, usuarios, compras ni finanzas. Los precios son base del tipo, sin comisión/IVA todavía (cálculos en F5).
+
+Filtros combinables: `categoriaId`, `ciudad` (coincidencia completa sin distinguir mayúsculas), `desde`, `hasta` (fechaInicio del evento, límites inclusivos UTC), `texto` (fragmento literal de nombre o descripción sin distinguir mayúsculas), `page` y `pageSize`. Texto máximo 200, ciudad máximo 100, page 1–100000 y pageSize 1–100. Orden estable: fechaInicio, id. Sin coincidencias devuelve 200 con items vacío; filtros inválidos o rango invertido devuelven 400 ProblemDetails.
+
+Ejemplo:
+
+```text
+/api/v1/catalogo/eventos?categoriaId=1&ciudad=Guatemala&desde=2027-01-01T00:00:00Z&hasta=2027-12-31T23:59:59Z&texto=festival&page=1&pageSize=20
+```
+
+En Swagger, quitar la autorización para probar el catálogo; gestión de eventos sin token debe seguir devolviendo 401. Crear un borrador → comprobar 404 público → programar → comprobar listado/detalle → asociar presentador y tipos → verificar datos → baja de categoría/recinto oculta el evento. El detalle usa una instantánea de lectura para mantener coherencia entre evento y sus datos asociados.
+
+Frontend: usar recinto.id para GET `/api/v1/recintos/{recintoId}/mapa?eventoId={id}` y dibujar geometrías sobre imagenPlanoUrl. Consultar fechaInicioVenta/fechaFinVenta y cupoDisponible para mostrar disponibilidad; esa lectura no reserva boletos. La compra y su validación definitiva pertenecen a F5/F6. Evitar persistir la gestión privada como catálogo público.
