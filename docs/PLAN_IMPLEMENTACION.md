@@ -154,7 +154,8 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
   - Consultas propias paginadas, QR sin caché, compra ajena 404, cancelación repetida idempotente y auditoría UPDATE transaccional. Pruebas de veinte cancelaciones concurrentes, propiedad, paginación y rollback; guía y prueba local en [COMPRAS_API.md](COMPRAS_API.md).
 - [x] **F5-07** Validación en puerta: `POST /boletos/validar` (admin/dueño), atómica.
   - Firma HMAC, propiedad del recinto y compra COMPLETADA; UPDATE condicional VALIDO → USADO con fecha_uso/validado_por y auditoría VALIDATE transaccional. Veinte escaneos con dos administradores permiten una sola entrada. Contratos, roles, errores y comandos separados en [BOLETOS_VALIDACION.md](BOLETOS_VALIDACION.md).
-- [ ] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
+- [x] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
+  - Handler interno por lotes registrado en API/Worker, sin temporizador ni endpoint; activación periódica/coordinación de instancias en F6-07. Auditoría UPDATE y devolución en la misma transacción; pruebas de repetición, carreras y rollback. Guía local: [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md).
 - [ ] **F5-09** **Prueba de concurrencia:** N hilos sobre cupo K ⇒ vendidos = K exactos.
 - [ ] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.
 

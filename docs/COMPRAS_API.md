@@ -1,6 +1,6 @@
 # Compras: reserva, consultas y cancelación — F5-01 a F5-06
 
-POST /api/v1/compras crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. F5-06 añade consulta, listas propias y cancelación. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). El job de expiración corresponde a F5-08; el Worker aún no procesa estas compras y el contrato asíncrono 202 + outbox llega en F6-03.
+POST /api/v1/compras crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. F5-06 añade consulta, listas propias y cancelación. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). El handler de expiración F5-08 está disponible; su ejecución periódica corresponde a F6-07; el Worker aún no procesa estas compras y el contrato asíncrono 202 + outbox llega en F6-03.
 
 ## Módulos y transacción
 
@@ -100,7 +100,7 @@ dotnet run --project src/Promotora.WebApi
 3. Abrir http://localhost:5080/swagger. Como administrador/dueño, preparar recinto, evento, tipos a Q100 y cupo suficiente, programar y abrir venta; seguir [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md). Elegir fechas que incluyan el momento de la prueba, en UTC. Como cliente, consultar GET `/api/v1/catalogo/eventos/{id}` para copiar eventoId y tipoEntradaId.
 4. Login como CLIENTE, copiar accessToken y pegarlo sin prefijo Bearer en **Authorize**. Abrir Compras → POST → Try it out. Indicar una clave nueva y el JSON con cantidad 3. Esperar 201, PENDIENTE y total Q369.60.
 5. Ejecutar exactamente la misma clave otra vez: 200 y mismo publicId. Consultar nuevamente el catálogo: el cupo se descontó una sola vez. Con nueva clave y cantidad mayor al disponible, esperar 409; con máximo excedido, 422. Sin clave, 400; como administrador, 403.
-6. Consultar GET /api/v1/compras/{publicId} y GET /api/v1/compras. Cancelar con POST /api/v1/compras/{publicId}/cancelar: 200 y CANCELADA; el cupo del catálogo vuelve al valor previo. Repetir no devuelve cupo adicional. La expiración automática aún requiere F5-08; no modificar manualmente estados/cupos ni borrar compras.
+6. Consultar GET /api/v1/compras/{publicId} y GET /api/v1/compras. Cancelar con POST /api/v1/compras/{publicId}/cancelar: 200 y CANCELADA; el cupo del catálogo vuelve al valor previo. Repetir no devuelve cupo adicional. La expiración automática aún requiere F6-07; no modificar manualmente estados/cupos ni borrar compras.
 
 ## Consultas propias y cancelación — F5-06
 

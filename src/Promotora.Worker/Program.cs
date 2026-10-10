@@ -15,6 +15,9 @@ builder.Services.AddSerilog(configuration => configuration
 builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionString("Promotora"));
 builder.Services.AddPagoSimulado(new FakePaymentOptions(builder.Configuration.GetValue("PagosSimulados:TasaFallo", 0m)));
 if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora")))
+{
     builder.Services.AddEmisionBoletosBase64(builder.Configuration["Boletos:SigningKey"], builder.Configuration.GetValue<int?>("Boletos:CategoriaCarreraId"));
+    builder.Services.AddExpiracionCompras();
+}
 using var host = builder.Build();
 await host.RunAsync();
