@@ -33,6 +33,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
 {
     builder.Services.AddEmisionBoletosBase64(builder.Configuration["Boletos:SigningKey"], builder.Configuration.GetValue<int?>("Boletos:CategoriaCarreraId"));
     builder.Services.AddExpiracionCompras();
+    builder.Services.AddCompraConsumerComponents();
 }
 if (builder.Configuration.GetValue("Outbox:Enabled", false))
 {
@@ -45,6 +46,14 @@ if (builder.Configuration.GetValue("Outbox:Enabled", false))
     builder.Services.AddSingleton(relayOptions);
     builder.Services.AddOutboxRelay();
     builder.Services.AddHostedService<OutboxRelayService>();
+}
+if (builder.Configuration.GetValue("Compras:ConsumerEnabled", false))
+{
+    // Fallará cerrado hasta registrar el finalizador financiero: no usar un handler no-op.
+    builder.Services.AddCompraConsumer(new CompraConsumerOptions(
+        builder.Configuration.GetValue<ushort>("Compras:Prefetch", 16), builder.Configuration.GetValue("Compras:MaxIntentos", 3),
+        builder.Configuration.GetValue("Compras:RetryBaseDelayMilliseconds", 5000)));
+    builder.Services.AddHostedService<ProcesarCompraConsumerService>();
 }
 var host = builder.Build();
 await using var hostLifetime = (IAsyncDisposable)host;

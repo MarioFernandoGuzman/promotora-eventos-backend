@@ -17,6 +17,29 @@ F6-03/F6-04 permanecen pendientes en el plan hasta integrar pago, ledger, saldos
 
 El mensaje solo identifica la compra; el futuro consumidor debe leer los montos congelados y la referencia `compras.public_id` desde PostgreSQL. No confiar en un monto, cliente o cuenta que viniera del mensaje.
 
+## Componentes de consumidor — F6-04
+
+`ProcesarCompraConsumer` consume async con `autoAck=false`, prefetch configurable y un despacho por canal (sin compartir publicaciones concurrentes). Verifica Type, ContentType, MessageId positivo, JSON objeto con publicId UUID no vacío, tamaño máximo 64 KiB y header x-intentos entero no negativo. Copia la memoria del cuerpo dentro del callback de v7. Crea un scope por entrega y llama a `IProcesarCompraMensajePort`; solo Success tras commit permite ACK. Mensajes malformados o Result fallido se trasladan a DLQ; una excepción transitoria permite retry. No registra payload, credenciales ni excepciones sensibles.
+
+Con header x-intentos ausente, el primer intento vale cero. Tras cada fallo se incrementa; con MaxIntentos=3 hay **tres ejecuciones totales**, luego DLQ. Retrasos base de 5 s, 10 s, etc., acotados a 300 s mediante TTL por mensaje en la cola retry, con retorno al exchange de compras. Conserva MessageId, Type, body y headers; elimina Expiration al enviar a DLQ. Espera confirms y mandatory antes de confirmar el original. Caer después del traslado y antes del ACK puede duplicar: la deduplicación sigue siendo necesaria. Si el traslado falla, cierra el canal sin ACK y el broker reentrega. Shutdown cancela el puerto, revierte su transacción y deja el original sin confirmar.
+
+`EfMensajeProcesadoRepository.RegistrarAsync` utiliza INSERT parametrizado con ON CONFLICT DO NOTHING sobre (mensaje_id, consumidor) y fecha IClock UTC. Requiere una transacción activa: false permite ACK/omitir; si la transacción falla, el registro desaparece junto con los efectos. No registra un mensaje por anticipado fuera de los efectos del negocio.
+
+`EfCompraTomaRepository.TomarAsync` exige transacción activa, realiza UPDATE PENDIENTE→PROCESANDO por publicId con procesando_desde UTC y audita al ganador en esa transacción. Cero filas devuelve null sin leer montos ni auditar. El ganador obtiene los componentes congelados desde PostgreSQL. No cobra, finaliza, devuelve cupo ni emite boletos. El integrador de F7 deberá coordinar toma, referencia idempotente, deduplicación, pago/ledger/saldos/emisión y compra.completada; además probar reinicios y recuperación de F6-11.
+
+`ProcesarCompraConsumerService` administra reconexión del transporte en Worker, con espera cancellable de 2 s. El registro `AddCompraConsumer` exige que exista el puerto de integración financiera antes de activar el transporte. Ese puerto **no tiene implementación registrada de producción todavía**. El adaptador de tests escribe una categoría como efecto artificial, únicamente en PostgreSQL temporal; no simula una compra pagada ni sustituye las pruebas financieras de F7.
+
+| Configuración de Worker | Valor y estado |
+|---|---|
+| Compras:ConsumerEnabled | false; true se rechaza al arrancar hasta integrar F7 |
+| Compras:Prefetch | 16; rango 1–1000 |
+| Compras:MaxIntentos | 3 ejecuciones totales; rango 1–10 |
+| Compras:RetryBaseDelayMilliseconds | 5000; rango 1–300000 |
+
+No habilites el consumidor para probar compras pagadas en este bloque: la protección rechaza esa configuración y las compras permanecen pendientes. La prueba automática sí conecta el transporte real a un puerto explícito de pruebas y comprueba efectos/dedup atómicos, retry/DLQ, toma concurrente, traslado fallido y shutdown.
+
+TTL por mensaje en una sola cola puede sufrir espera detrás de mensajes anteriores con TTL mayor; no se promete un tiempo exacto de retry. Esta decisión conserva la topología acordada y no crea colas adicionales. [Semántica oficial de TTL](https://www.rabbitmq.com/docs/ttl) y [memoria/consumo async v7](https://www.rabbitmq.com/client-libraries/dotnet-api-guide).
+
 ## Verificar localmente
 
 Configurar API/Swagger según [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md) y Worker/Management según [MENSAJERIA_OUTBOX.md](MENSAJERIA_OUTBOX.md). Desde la raíz, con Docker operativo:
