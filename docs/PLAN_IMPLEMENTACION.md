@@ -142,7 +142,8 @@ Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VA
 Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, total 369.60; 33.33 → 3.33, 4.40, 41.06; 0.00 → todos cero; además, invariante subtotal + comisión + impuestos = total sobre una serie de subtotales aleatorios.
 - [x] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.
   - D-15 registrada antes del código. Reglas, configuración, límites y pruebas en [COMPRAS_DOMINIO.md](COMPRAS_DOMINIO.md). Validación local: 137 pruebas en verde, build sin warnings y format limpio; todavía sin endpoints de compra (F5-03) ni reserva persistida (F5-02).
-- [ ] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
+- [x] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
+  - Puerto y adaptador transaccionales; pruebas PostgreSQL de concurrencia, estados y rollback. Diseño y comandos en [RESERVA_CUPO.md](RESERVA_CUPO.md).
 - [ ] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
 - [ ] **F5-04** Pago vía `IPaymentGateway` simulado (tasa de fallo configurable).
 - [ ] **F5-05** Emisión de boletos con token QR firmado (HMAC) y datos del asistente (obligatorios en carreras).
