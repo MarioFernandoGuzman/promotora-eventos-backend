@@ -12,8 +12,18 @@ public static class VenuesRegistration
     public static IServiceCollection AddVenues(this IServiceCollection services)
     {
         services.AddScoped<IRecintoRepository, EfRecintoRepository>();
+        services.AddScoped<ILocalidadRepository, EfLocalidadRepository>();
         services.AddScoped<IVenuesTransaction, EfVenuesTransaction>();
         services.AddScoped<VenuesAccess>();
+        services.AddScoped<LocalidadAccess>();
+        services.AddScoped<IValidator<CrearLocalidadCommand>, CrearLocalidadValidator>();
+        services.AddScoped<IValidator<ActualizarLocalidadCommand>, ActualizarLocalidadValidator>();
+        services.AddScoped<IValidator<ListarLocalidadesQuery>, ListarLocalidadesValidator>();
+        services.AddCommandHandler<CrearLocalidadCommand, LocalidadDto, CrearLocalidadHandler>();
+        services.AddCommandHandler<ActualizarLocalidadCommand, LocalidadDto, ActualizarLocalidadHandler>();
+        services.AddCommandHandler<BajaLocalidadCommand, Unit, BajaLocalidadHandler>();
+        services.AddQueryHandler<ObtenerLocalidadQuery, LocalidadDto, ObtenerLocalidadHandler>();
+        services.AddQueryHandler<ListarLocalidadesQuery, LocalidadesPaginaDto, ListarLocalidadesHandler>();
         services.AddScoped<IValidator<CrearRecintoCommand>, CrearRecintoValidator>();
         services.AddScoped<IValidator<ActualizarRecintoCommand>, ActualizarRecintoValidator>();
         services.AddScoped<IValidator<ListarRecintosQuery>, ListarRecintosValidator>();

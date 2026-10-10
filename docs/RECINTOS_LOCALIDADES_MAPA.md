@@ -52,3 +52,36 @@ Las pruebas automatizadas comprueban JWT real, permisos en handlers, filtrado, v
 ```powershell
 dotnet test --project tests/Promotora.Api.Tests
 ```
+
+## F4-02: localidades
+
+Las rutas privadas de zonas se anidan bajo el recinto. Todas requieren Bearer de sesión completa y dueño propio o administrador:
+
+| Método | Ruta | Resultado |
+|---|---|---|
+| POST | `/api/v1/recintos/{recintoId}/localidades` | 200 con localidad creada |
+| GET | `/api/v1/recintos/{recintoId}/localidades?page=1&pageSize=20` | 200 con items/page/pageSize/total |
+| GET | `/api/v1/recintos/{recintoId}/localidades/{id}` | 200 con detalle |
+| PUT | `/api/v1/recintos/{recintoId}/localidades/{id}` | 200; reemplaza nombre/capacidad/geometría/color |
+| DELETE | `/api/v1/recintos/{recintoId}/localidades/{id}` | 200; baja lógica idempotente |
+
+Ejemplo de POST y PUT en Swagger:
+
+```json
+{
+  "nombre": "Palco",
+  "capacidad": 100,
+  "geometria": {"type": "polygon", "points": [[10,20],[80,20],[80,60],[10,60]]},
+  "color": "#3366CC"
+}
+```
+
+Nombre obligatorio hasta 100 caracteres y capacidad positiva. Geometría y color pueden ser null. El formato del polígono exige al menos tres puntos distintos, cada uno [x,y] con números finitos; usa coordenadas del plano, no implica normalización 0..1. No se verifica intersección de aristas ni encaje en la imagen porque la BD no almacena sus dimensiones. El color se normaliza a mayúsculas y admite exactamente #RRGGBB.
+
+La capacidad total del recinto debe estar configurada antes de crear localidades. Las localidades inactivas siguen contando para la suma y sus nombres siguen reservados por el índice único. No se cambia recinto ni se reactivan localidades al editar. POST/PUT rechazan un recinto inactivo; consulta privada y baja de localidades conservan acceso al historial de ese recinto.
+
+Reducir capacidad por debajo del cupo total asignado a esa localidad en cualquiera de sus eventos devuelve 422, contando también tipos de entrada inactivos. Los triggers V9 siguen siendo la protección final de integridad. No se modifica cupo_disponible ni se reserva inventario en este bloque.
+
+Prueba manual: crear Palco 60 en un recinto de capacidad 100; intentar crear General 41 → 422; crear General 40 → 200. Un nombre repetido → 409. Polígono de un punto o color "rojo" → 400. Dar de baja Palco no libera su capacidad física: intentar crear otra zona 1 → 422. Como otro dueño, POST/GET/PUT/DELETE → 403. No usar un ID de localidad bajo otro recinto: 404 para el gestor de ese recinto.
+
+La prueba de concurrencia usa un dueño y un administrador, con dos peticiones simultáneas para zonas de 60 sobre un recinto de 100: una devuelve 200 y otra 422; persiste solo una zona y una auditoría de CREATE. Las pruebas también comprueban conservación del historial, nombres únicos, JSONB, color y protección de cupos por evento.
