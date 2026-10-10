@@ -13,6 +13,18 @@ public static class CatalogRegistration
     public static IServiceCollection AddCatalog(this IServiceCollection services)
     {
         services.AddScoped<CatalogAccess>();
+        services.AddScoped<EventoAccess>();
+        services.AddScoped<IEventoRepository, EfEventoRepository>();
+        services.AddScoped<IValidator<CrearEventoCommand>, CrearEventoValidator>();
+        services.AddScoped<IValidator<ActualizarEventoCommand>, ActualizarEventoValidator>();
+        services.AddScoped<IValidator<CambiarEstadoEventoCommand>, CambiarEstadoEventoValidator>();
+        services.AddScoped<IValidator<ListarEventosQuery>, ListarEventosValidator>();
+        services.AddCommandHandler<CrearEventoCommand, EventoDto, CrearEventoHandler>();
+        services.AddCommandHandler<ActualizarEventoCommand, EventoDto, ActualizarEventoHandler>();
+        services.AddCommandHandler<CambiarEstadoEventoCommand, EventoDto, CambiarEstadoEventoHandler>();
+        services.AddCommandHandler<CancelarEventoCommand, Unit, CancelarEventoHandler>();
+        services.AddQueryHandler<ObtenerEventoQuery, EventoDto, ObtenerEventoHandler>();
+        services.AddQueryHandler<ListarEventosQuery, PaginaDto<EventoDto>, ListarEventosHandler>();
         services.AddScoped<ICatalogTransaction, EfCatalogTransaction>();
         services.AddScoped<ICategoriaEventoRepository, EfCategoriaEventoRepository>();
         services.AddScoped<IValidator<CrearCategoriaEventoCommand>, CrearCategoriaEventoValidator>();

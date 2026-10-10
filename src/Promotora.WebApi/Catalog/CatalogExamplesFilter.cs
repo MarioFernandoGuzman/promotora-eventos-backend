@@ -13,6 +13,10 @@ public sealed class CatalogExamplesFilter : ISchemaFilter
             {"nombre":"Festival","descripcion":"Eventos de festival"}
             """ : context.Type == typeof(PresentadorRequest) ? """
             {"nombre":"Artista de prueba","tipo":"ARTISTA","biografia":null,"imagenUrl":null}
+            """ : context.Type == typeof(EventoRequest) ? """
+            {"recintoId":1,"categoriaId":1,"nombre":"Festival","fechaInicio":"2027-06-01T18:00:00Z","fechaFin":"2027-06-01T23:00:00Z","fechaInicioVenta":"2026-10-01T00:00:00Z","fechaFinVenta":"2027-06-01T17:00:00Z","maxBoletosPorCompra":5}
+            """ : context.Type == typeof(EstadoEventoRequest) ? """
+            {"estadoEsperado":"BORRADOR","estadoNuevo":"PROGRAMADO"}
             """ : null;
         if (json is not null) concrete.Example = JsonNode.Parse(json);
     }
