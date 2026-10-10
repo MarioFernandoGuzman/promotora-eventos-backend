@@ -121,7 +121,7 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 - [x] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
 - [x] **F4-02** CRUD de `localidades` con `geometria` y `color`; validar suma de capacidades.
 - [x] **F4-03** Endpoint público del mapa: `GET /recintos/{id}/mapa` (plano + localidades con geometría y disponibilidad por evento).
-- [ ] **F4-04** CRUD de `categorias_evento` y `presentadores`.
+- [x] **F4-04** CRUD de `categorias_evento` y `presentadores`.
 - [ ] **F4-05** CRUD de `eventos` (estados, `creado_por`, ventana de venta, `max_boletos_por_compra`).
 - [ ] **F4-06** Gestión de `evento_presentadores`.
 - [ ] **F4-07** CRUD de `tipos_entrada` (general / localidad / distancias de carrera) con validaciones de cupo.
