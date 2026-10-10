@@ -7,9 +7,26 @@ using Promotora.WebApi.Identity;
 
 namespace Promotora.WebApi.Controllers;
 
+public sealed record ValidarBoletoRequest(string CodigoQr);
+
 [Authorize(Policy = IdentityPolicies.SesionCompleta)]
-public sealed class BoletosController(IQueryHandler<MisBoletosQuery, PaginaDto<BoletoClienteDto>> listar) : ApiControllerBase
+public sealed class BoletosController(IQueryHandler<MisBoletosQuery, PaginaDto<BoletoClienteDto>> listar,
+    ICommandHandler<ValidarBoletoCommand, BoletoValidadoDto> validar) : ApiControllerBase
 {
+    [Authorize(Roles = "ADMINISTRADOR,DUENO_RECINTO")]
+    [HttpPost("validar")]
+    [EndpointSummary("Validar firma y registrar una única entrada VALIDO → USADO")]
+    [EndpointDescription("Administrador o dueño del recinto, con sesión completa. Body: {codigoQr: token firmado}. Repetido/anulado/compra no completada: 409; firma inválida: 422; ajeno/inexistente: 404. Guarda fechaUso UTC y validadoPor junto con auditoría.")]
+    [ProducesResponseType<BoletoValidadoDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<BoletoValidadoDto>> Validar(ValidarBoletoRequest request, CancellationToken ct) =>
+        FromResult(await validar.HandleAsync(new ValidarBoletoCommand(request.CodigoQr), ct));
+
     [Authorize(Policy = IdentityPolicies.Cliente)]
     [HttpGet]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]

@@ -11,5 +11,7 @@ public sealed class CompraExamplesFilter : ISchemaFilter
     {
         if (context.Type == typeof(CrearCompraRequest) && schema is OpenApiSchema concrete)
             concrete.Example = JsonNode.Parse("""{"eventoId":1,"items":[{"tipoEntradaId":1,"cantidad":2}]}""");
+        if (context.Type == typeof(ValidarBoletoRequest) && schema is OpenApiSchema boleto)
+            boleto.Example = JsonNode.Parse("""{"codigoQr":"<copiar codigoQr de un boleto propio emitido>"}""");
     }
 }

@@ -1,6 +1,6 @@
 # Emisión de boletos y firma — F5-05
 
-Estado: componente interno implementado, registrado y probado. No se añadió un endpoint de emisión ni se conectó el cobro/emisión a POST /api/v1/compras. Esa integración espera F7-02/F7-03 para confirmar pago, ledger, saldo y COMPLETADA juntos. Swagger conserva 54 operaciones; POST sigue reservando PENDIENTE. Las consultas de boletos/QR y validación en puerta corresponden a F5-06/F5-07.
+Estado: componente interno implementado, registrado y probado. No se añadió un endpoint de emisión ni se conectó el cobro/emisión a POST /api/v1/compras. Esa integración espera F7-02/F7-03 para confirmar pago, ledger, saldo y COMPLETADA juntos. Swagger tiene 59 operaciones; POST sigue reservando PENDIENTE. Las consultas de boletos/QR y validación en puerta F5-06/F5-07 están implementadas; ver [BOLETOS_VALIDACION.md](BOLETOS_VALIDACION.md).
 
 ## Módulos
 
@@ -120,4 +120,4 @@ dotnet run --project src/Promotora.WebApi
 
 Las pruebas usan claves aleatorias solo en memoria y PostgreSQL temporal con Flyway/rol restringido. Preparan compras completadas y respaldo financiero dentro de fixtures para verificar el componente; no escriben en la base de Compose. Nunca modificar manualmente estado/pagos/ledger locales para forzar una emisión.
 
-En http://localhost:5080/swagger siguen funcionando login, catálogo y reserva de compra. No esperes pago ni QR en su respuesta todavía. Para verificar específicamente firma/emisión, ejecutar las pruebas anteriores; para el pago simulado, seguir [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md).
+En http://localhost:5080/swagger funcionan login, catálogo, reserva/consulta/cancelación de compra y consulta/validación de boletos existentes. No esperes pago ni QR en la respuesta de reserva todavía. Para verificar firma/emisión, ejecutar las pruebas anteriores; para el pago simulado, seguir [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md).

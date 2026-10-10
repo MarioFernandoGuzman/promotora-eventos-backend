@@ -38,6 +38,9 @@ public static class TicketingRegistration
         services.AddScoped<ICompraRepository, EfCompraRepository>();
         services.AddScoped<ICompraConsultaRepository, EfCompraConsultaRepository>();
         services.AddScoped<ClienteCompraAccess>();
+        services.AddScoped<IValidacionBoletoRepository, EfValidacionBoletoRepository>();
+        services.AddScoped<IValidator<ValidarBoletoCommand>, ValidarBoletoValidator>();
+        services.AddCommandHandler<ValidarBoletoCommand, BoletoValidadoDto, ValidarBoletoHandler>();
         services.AddScoped<IValidator<ObtenerCompraQuery>, ObtenerCompraValidator>();
         services.AddScoped<IValidator<MisComprasQuery>, MisComprasValidator>();
         services.AddScoped<IValidator<MisBoletosQuery>, MisBoletosValidator>();

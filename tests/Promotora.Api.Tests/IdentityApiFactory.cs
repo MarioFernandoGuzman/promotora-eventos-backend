@@ -20,6 +20,7 @@ namespace Promotora.Api.Tests;
 public sealed class IdentityApiFactory(string connection, string? adminEmail = null, string? adminPassword = null) : WebApplicationFactory<Program>
 {
     public byte[] Key { get; } = RandomNumberGenerator.GetBytes(64);
+    public byte[] QrKey { get; } = RandomNumberGenerator.GetBytes(32);
     public string ImagesRoot { get; } = Path.Combine(Path.GetTempPath(), "promotora-images-tests", Guid.NewGuid().ToString("N"));
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -46,6 +47,7 @@ public sealed class IdentityApiFactory(string connection, string? adminEmail = n
             services.AddVenues();
             services.AddCatalog();
             services.AddTicketing(new CompraOptions());
+            services.AddEmisionBoletos(QrKey);
             services.AddImages(ImagesRoot);
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
             {
