@@ -32,4 +32,3 @@ public sealed partial class CatalogApiTests
         public Task<bool> PublicReferenceAsync(string url, CancellationToken ct) => Task.FromResult(false);
     }
 }
-

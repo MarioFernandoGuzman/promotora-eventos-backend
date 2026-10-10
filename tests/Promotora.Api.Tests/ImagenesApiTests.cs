@@ -109,4 +109,3 @@ public sealed partial class CatalogApiTests
         Assert.Equal(0, await db.LogsAuditoria.CountAsync(x => x.EntidadAfectada == "recintos" && x.EntidadId == recinto.ToString() && x.Accion == "UPDATE", ct));
     }
 }
-

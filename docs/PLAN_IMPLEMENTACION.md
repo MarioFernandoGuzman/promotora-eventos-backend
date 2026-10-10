@@ -127,11 +127,11 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 - [x] **F4-07** CRUD de `tipos_entrada` (general / localidad / distancias de carrera) con validaciones de cupo.
 - [x] **F4-08** Listado público de eventos con filtros (categoría, ciudad, fecha, texto) y paginación.
 - [x] **F4-09** Subida de imágenes (plano, evento, presentador) con almacenamiento local detrás de un puerto.
-- [ ] **F4-10** Auditoría de CRUD y pruebas de propiedad.
+- [x] **F4-10** Auditoría de CRUD y pruebas de propiedad.
 
 **Salida:** un dueño puede crear recinto, zonas, evento y tipos de entrada; el público ve catálogo y mapa.
 
-Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). Segundo bloque F4-04–F4-08 implementado: 111 pruebas en verde y 49 operaciones Swagger; guía en [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) y revisión en [VALIDACION_F4_CATALOGO_EVENTOS.md](VALIDACION_F4_CATALOGO_EVENTOS.md). La fase sigue abierta: F4-09 y F4-10 pendientes.
+Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). Segundo bloque F4-04–F4-08 implementado: 111 pruebas en verde y 49 operaciones Swagger; guía en [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) y revisión en [VALIDACION_F4_CATALOGO_EVENTOS.md](VALIDACION_F4_CATALOGO_EVENTOS.md). F4-09/F4-10 completadas: 120 pruebas en verde y 53 operaciones Swagger. Imágenes en [IMAGENES.md](IMAGENES.md), criterio de salida y revisión de fase en [VALIDACION_FASE_4.md](VALIDACION_FASE_4.md). Fase 4 cerrada localmente; CI remoto se confirma al publicar el PR.
 
 ### Fase 5 — Venta síncrona y boletos (primero sin colas)
 - [ ] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.

@@ -40,6 +40,8 @@ dotnet test --project tests/Promotora.Infrastructure.Tests
 
 ## API y Swagger (F2-05)
 
+Fase 4 completa: 53 operaciones (11 identidad, 11 recintos/localidades/mapa, 27 catálogo y 4 imágenes). Subidas multipart, selector de archivo, permisos y publicación: [IMAGENES.md](IMAGENES.md). Pruebas y revisión de salida: [VALIDACION_FASE_4.md](VALIDACION_FASE_4.md). Restaurar paquetes tras actualizar la rama para incluir SkiaSharp; no requiere nuevos secretos ni cambios de esquema.
+
 Después de crear `promotora_runtime`, configurar la conexión en la misma terminal (el builder escapa la contraseña correctamente):
 
 ```powershell
