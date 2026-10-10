@@ -13,8 +13,19 @@ namespace Promotora.WebApi.Controllers;
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
 public sealed class RecintosController(ICommandHandler<CrearRecintoCommand, RecintoDto> crear,
     ICommandHandler<ActualizarRecintoCommand, RecintoDto> actualizar, ICommandHandler<BajaRecintoCommand, Unit> baja,
-    IQueryHandler<ObtenerRecintoQuery, RecintoDto> obtener, IQueryHandler<ListarRecintosQuery, RecintosPaginaDto> listar) : ApiControllerBase
+    IQueryHandler<ObtenerRecintoQuery, RecintoDto> obtener, IQueryHandler<ListarRecintosQuery, RecintosPaginaDto> listar,
+    IQueryHandler<ObtenerMapaRecintoQuery, MapaRecintoDto> mapa) : ApiControllerBase
 {
+    [AllowAnonymous]
+    [HttpGet("{id:int}/mapa")]
+    [EndpointSummary("Mapa público del recinto activo; eventoId opcional añade precios y cupos")]
+    [EndpointDescription("Solo localidades y tipos activos. Sin eventoId, cupoDisponible=null; con evento público del recinto, devuelve inventario actual sin reservar. Excluye borradores, cancelados y finalizados.")]
+    [ProducesResponseType<MapaRecintoDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<MapaRecintoDto>> Mapa(int id, [FromQuery] int? eventoId = null, CancellationToken ct = default) =>
+        FromResult(await mapa.HandleAsync(new ObtenerMapaRecintoQuery(id, eventoId), ct));
+
     [HttpPost]
     [EndpointSummary("Crear recinto propio o asignarlo a un dueño como administrador")]
     [ProducesResponseType<RecintoDto>(StatusCodes.Status200OK)]

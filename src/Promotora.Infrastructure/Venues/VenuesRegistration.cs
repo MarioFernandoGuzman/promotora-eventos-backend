@@ -14,6 +14,9 @@ public static class VenuesRegistration
         services.AddScoped<IRecintoRepository, EfRecintoRepository>();
         services.AddScoped<ILocalidadRepository, EfLocalidadRepository>();
         services.AddScoped<IVenuesTransaction, EfVenuesTransaction>();
+        services.AddScoped<IMapaRecintoQueryPort, EfMapaRecintoQueryPort>();
+        services.AddScoped<IValidator<ObtenerMapaRecintoQuery>, ObtenerMapaRecintoValidator>();
+        services.AddQueryHandler<ObtenerMapaRecintoQuery, MapaRecintoDto, ObtenerMapaRecintoHandler>();
         services.AddScoped<VenuesAccess>();
         services.AddScoped<LocalidadAccess>();
         services.AddScoped<IValidator<CrearLocalidadCommand>, CrearLocalidadValidator>();

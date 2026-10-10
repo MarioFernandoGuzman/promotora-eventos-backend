@@ -74,6 +74,8 @@ Alternativa: guardar `ConnectionStrings:Promotora` en user-secrets de WebApi y W
 
 Abrir [Swagger UI](http://localhost:5080/swagger). Fase 3 incorpora 11 operaciones de identidad: registro, altas por administrador, login/refresh/logout, consulta/edición/baja y cambio de contraseña. Seguir [IDENTIDAD_SEGURIDAD.md](IDENTIDAD_SEGURIDAD.md) para el cambio obligatorio inicial, permisos y ejemplos. El bootstrap solo crea el SUPERADMIN si no existe ninguno; cambiar su configuración no cambia la contraseña de uno existente. Los health checks son técnicos y están fuera del catálogo Swagger. Los controllers heredan `ApiControllerBase`, con rutas `/api/v1/...` en minúsculas y JSON camelCase. Los `Result` fallidos se convierten en 400/401/403/404/409/422/429 con ProblemDetails. Excepciones inesperadas devuelven 500 genérico; el log registra tipo de excepción y correlación, sin mensajes privados ni payloads.
 
+F4-01–F4-03 añaden 11 operaciones de recintos/localidades/mapa, para un total de 22. La prueba manual del dueño y el mapa anónimo está en [RECINTOS_LOCALIDADES_MAPA.md](RECINTOS_LOCALIDADES_MAPA.md). La configuración de CORS y la sesión del frontend están en [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md).
+
 Desde otra terminal:
 
 ```powershell

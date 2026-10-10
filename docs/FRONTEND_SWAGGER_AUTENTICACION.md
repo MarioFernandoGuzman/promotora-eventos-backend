@@ -1,6 +1,6 @@
 # Acceso a Swagger y autenticación para frontend
 
-Esta guía describe los contratos implementados en Fase 3. Sirve para probar la API con Swagger e integrar la sesión en el frontend. Los ejemplos contienen marcadores: sustituirlos localmente, sin guardar contraseñas ni tokens reales en este documento.
+Esta guía describe la autenticación implementada en Fase 3, vigente para el CRUD de recintos/localidades de F4-01–F4-03. Sirve para probar la API con Swagger e integrar la sesión en el frontend. Los ejemplos contienen marcadores: sustituirlos localmente, sin guardar contraseñas ni tokens reales en este documento.
 
 ## 1. Direcciones y requisitos
 
@@ -184,7 +184,7 @@ Todas las rutas de esta tabla comienzan con `/api/v1`. Las operaciones exitosas 
 | DELETE | `/usuarios/{id}` | Propietario o ADMINISTRADOR con sesión completa; baja lógica |
 | PUT | `/usuarios/{id}/password` | Solo propietario; admite sesión inicial restringida |
 
-Consultar los cuerpos de edición y altas en **Schemas** de Swagger. La edición no cambia rol ni nivel de acceso. Cambiar el correo revoca las sesiones y exige login con el correo nuevo; la baja desactiva el usuario e impide autenticarse. Los módulos de recintos, catálogo, compras y finanzas aún no tienen endpoints de negocio implementados en esta fase.
+Consultar los cuerpos de edición y altas en **Schemas** de Swagger. La edición no cambia rol ni nivel de acceso. Cambiar el correo revoca las sesiones y exige login con el correo nuevo; la baja desactiva el usuario e impide autenticarse. F4-01–F4-03 añaden CRUD privado de recintos/localidades para dueño propio o administrador y el mapa público sin JWT; ver [Recintos, localidades y mapa](RECINTOS_LOCALIDADES_MAPA.md). Catálogo, compras y finanzas aún no tienen endpoints de negocio implementados en este bloque.
 
 ## 9. Consumir la API desde el frontend
 

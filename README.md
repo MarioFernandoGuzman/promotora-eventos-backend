@@ -20,11 +20,12 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 | [`docs/DEPENDENCIAS.md`](docs/DEPENDENCIAS.md) | Versiones, propósito y licencias de NuGets |
 | [`docs/IDENTIDAD_SEGURIDAD.md`](docs/IDENTIDAD_SEGURIDAD.md) | Usuarios, bootstrap, JWT, permisos, auditoría y pruebas en Swagger |
 | [`docs/FRONTEND_SWAGGER_AUTENTICACION.md`](docs/FRONTEND_SWAGGER_AUTENTICACION.md) | Guía frontend: login en Swagger, Bearer, cambio inicial, refresh, logout y CORS |
+| [`docs/RECINTOS_LOCALIDADES_MAPA.md`](docs/RECINTOS_LOCALIDADES_MAPA.md) | CRUD de recintos/localidades, permisos, capacidades y mapa público |
 | [`docs/VALIDACION_FASE_3.md`](docs/VALIDACION_FASE_3.md) | Pruebas y revisión de salida de identidad/seguridad |
 
 ## Arranque rápido
 
-Fases 2 y 3 implementadas: solución por capas, persistencia, API e identidad/seguridad. Preparar variables de entorno, login restringido, clave JWT y bootstrap siguiendo [`docs/DESARROLLO_LOCAL.md`](docs/DESARROLLO_LOCAL.md).
+Fases 2 y 3 implementadas, más F4-01–F4-03: solución por capas, persistencia, identidad/seguridad y recintos/localidades con mapa público. Preparar variables de entorno, login restringido, clave JWT y bootstrap siguiendo [`docs/DESARROLLO_LOCAL.md`](docs/DESARROLLO_LOCAL.md).
 
 ```bash
 docker compose up -d --wait
@@ -32,7 +33,7 @@ docker compose run --rm flyway migrate
 dotnet run --project src/Promotora.WebApi
 ```
 
-Swagger local: `http://localhost:5080/swagger`, con 11 operaciones de identidad y autorización Bearer. El administrador inicial debe cambiar su contraseña antes de gestionar usuarios. El Worker es un host preparado; el procesamiento de compras llega en Fase 6.
+Swagger local: `http://localhost:5080/swagger`, con 22 operaciones: 11 de identidad, 10 de CRUD de recintos/localidades y un mapa público. El administrador inicial debe cambiar su contraseña antes de gestionar usuarios. El Worker es un host preparado; el procesamiento de compras llega en Fase 6.
 
 ```bash
 dotnet restore

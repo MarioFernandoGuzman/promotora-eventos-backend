@@ -85,3 +85,50 @@ Reducir capacidad por debajo del cupo total asignado a esa localidad en cualquie
 Prueba manual: crear Palco 60 en un recinto de capacidad 100; intentar crear General 41 → 422; crear General 40 → 200. Un nombre repetido → 409. Polígono de un punto o color "rojo" → 400. Dar de baja Palco no libera su capacidad física: intentar crear otra zona 1 → 422. Como otro dueño, POST/GET/PUT/DELETE → 403. No usar un ID de localidad bajo otro recinto: 404 para el gestor de ese recinto.
 
 La prueba de concurrencia usa un dueño y un administrador, con dos peticiones simultáneas para zonas de 60 sobre un recinto de 100: una devuelve 200 y otra 422; persiste solo una zona y una auditoría de CREATE. Las pruebas también comprueban conservación del historial, nombres únicos, JSONB, color y protección de cupos por evento.
+
+## F4-03: mapa público
+
+`GET /api/v1/recintos/{id}/mapa` no requiere JWT. Muestra un recinto activo, su nombre, imagenPlanoUrl y todas sus localidades activas con capacidad, geometría y color. Es una configuración compuesta del mapa completo, no el listado paginado privado de localidades. No incluye dueño, usuarios, compras ni finanzas.
+
+Sin `eventoId`, eventoId/estadoEvento/cupoDisponible son null y los tipos de entrada son listas vacías. La capacidad física no es inventario de boletos.
+
+Para disponibilidad y precios usar `GET /api/v1/recintos/{id}/mapa?eventoId={eventoId}`. El evento debe pertenecer al recinto y estar PROGRAMADO, EN_VENTA o AGOTADO. Recinto inactivo, evento ajeno, BORRADOR/CANCELADO/FINALIZADO o recurso inexistente devuelve 404. Un eventoId no positivo devuelve 400.
+
+Ejemplo ilustrativo de respuesta con evento; IDs y cupos dependen de tus datos reales:
+
+```json
+{
+  "id": 1,
+  "nombre": "Recinto de prueba",
+  "imagenPlanoUrl": "/planos/prueba.png",
+  "eventoId": 2,
+  "estadoEvento": "EN_VENTA",
+  "localidades": [
+    {
+      "id": 3,
+      "nombre": "Palco",
+      "capacidad": 100,
+      "geometria": {"type":"polygon","points":[[10,20],[80,20],[80,60],[10,60]]},
+      "color": "#3366CC",
+      "cupoDisponible": 12,
+      "tiposEntrada": [{"id":4,"nombre":"Palco","precio":150.50,"cupoTotal":40,"cupoDisponible":12}]
+    }
+  ],
+  "entradasGenerales": [{"id":5,"nombre":"General","precio":90.00,"cupoTotal":10,"cupoDisponible":7}]
+}
+```
+
+Cada localidad suma cupo_disponible de sus tipos activos para ese evento; una zona sin tipos activos tiene 0. Tipos de localidades inactivas no se publican. Los tipos sin localidad se devuelven aparte en entradasGenerales. Geometría/color/imagen pueden ser null: el frontend debe ofrecer una representación alternativa mientras se configura el plano. Los precios son decimales del contrato; no inferir un único precio por zona cuando tiene varios tipos de entrada.
+
+Las consultas muestran el inventario leído; no reservan ni garantizan que siga disponible después. PROGRAMADO o AGOTADO no implican que se pueda comprar. Las validaciones de ventana de venta y reserva atómica corresponden a F5. En F4-01–03 aún no se crean eventos/tipos por HTTP ni se suben imágenes; la prueba de inventario usa datos temporales de Testcontainers. No añadir datos manualmente a las migraciones para probarlo.
+
+### Prueba manual del mapa
+
+1. Crear recinto y localidades con un dueño siguiendo los pasos anteriores.
+2. Retirar la autorización de Swagger y ejecutar GET del mapa sin eventoId: 200, zonas activas y cupoDisponible=null.
+3. Verificar nombre, geometría y color contra la respuesta del CRUD.
+4. Dar de baja una zona con el dueño; consultar el mapa sin JWT y comprobar que desaparece.
+5. Dar de baja el recinto; consultar su mapa público y comprobar 404.
+6. Cuando exista un evento PROGRAMADO/EN_VENTA/AGOTADO con tipos de entrada, enviar su eventoId y comprobar sus precios/cupos. Hasta F4-05/F4-07 esta parte se verifica con las pruebas automatizadas, sin endpoint de alta de evento en este bloque.
+
+Las pruebas verifican acceso anónimo, separación de cupo/capacidad, entradas generales, tipos/localidades inactivos, borradores, evento ajeno, recinto inactivo y conservación de cupo tras consultas repetidas. En Swagger el mapa no tiene requisito Bearer; el CRUD de recintos/localidades sí lo tiene.

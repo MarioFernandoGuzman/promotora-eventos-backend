@@ -120,7 +120,7 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 ### Fase 4 — Recintos, catálogo y mapas
 - [x] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
 - [x] **F4-02** CRUD de `localidades` con `geometria` y `color`; validar suma de capacidades.
-- [ ] **F4-03** Endpoint público del mapa: `GET /recintos/{id}/mapa` (plano + localidades con geometría y disponibilidad por evento).
+- [x] **F4-03** Endpoint público del mapa: `GET /recintos/{id}/mapa` (plano + localidades con geometría y disponibilidad por evento).
 - [ ] **F4-04** CRUD de `categorias_evento` y `presentadores`.
 - [ ] **F4-05** CRUD de `eventos` (estados, `creado_por`, ventana de venta, `max_boletos_por_compra`).
 - [ ] **F4-06** Gestión de `evento_presentadores`.
@@ -130,6 +130,8 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 - [ ] **F4-10** Auditoría de CRUD y pruebas de propiedad.
 
 **Salida:** un dueño puede crear recinto, zonas, evento y tipos de entrada; el público ve catálogo y mapa.
+
+Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). La fase sigue abierta: F4-04–F4-10 pendientes.
 
 ### Fase 5 — Venta síncrona y boletos (primero sin colas)
 - [ ] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.
