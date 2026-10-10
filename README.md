@@ -25,6 +25,7 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 | [`docs/VALIDACION_F4_CATALOGO_EVENTOS.md`](docs/VALIDACION_F4_CATALOGO_EVENTOS.md) | Pruebas y revisión del bloque F4-04–F4-08 |
 | [`docs/IMAGENES.md`](docs/IMAGENES.md) | Subida de planos/fotos, multipart en Swagger, permisos y almacenamiento local |
 | [`docs/VALIDACION_FASE_4.md`](docs/VALIDACION_FASE_4.md) | Cierre de catálogo/mapa/imágenes, auditoría y propiedad; 120 pruebas |
+| [`docs/COMPRAS_DOMINIO.md`](docs/COMPRAS_DOMINIO.md) | F5-01: reglas de compra, política monetaria D-15, estados, configuración y pruebas |
 | [`docs/VALIDACION_FASE_3.md`](docs/VALIDACION_FASE_3.md) | Pruebas y revisión de salida de identidad/seguridad |
 
 ## Arranque rápido

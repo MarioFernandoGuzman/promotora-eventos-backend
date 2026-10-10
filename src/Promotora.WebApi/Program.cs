@@ -5,6 +5,7 @@ using Promotora.Application.Identity.Ports;
 using Promotora.Application.Identity.Sessions;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Catalog;
+using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Images;
 using Promotora.Infrastructure.Shared.Health;
@@ -26,6 +27,7 @@ builder.Services.AddSerilog(configuration => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}"));
 builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionString("Promotora"));
+builder.Services.AddFinanzas(builder.Configuration.GetValue("Finanzas:TasaIva", 0.12m), builder.Configuration.GetValue("Finanzas:ComisionPorcentaje", 0.10m));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, HttpUsuarioActual>();
 builder.Services.AddHostedService<BootstrapAdminService>();
