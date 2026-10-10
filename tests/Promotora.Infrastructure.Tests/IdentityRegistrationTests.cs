@@ -61,7 +61,7 @@ public sealed class IdentityRegistrationTests(PostgresFixture fixture) : IClassF
         Assert.Equal(1, await check.Administradores.CountAsync(x => x.NivelAcceso == "SUPERADMIN", ct));
         Assert.True((await check.Usuarios.SingleAsync(x => x.Id == results[0].Value.Id, ct)).DebeCambiarPassword);
         var adminId = results[0].Value.Id.ToString();
-        Assert.Equal(1, await check.LogsAuditoria.CountAsync(x => x.Accion == "CREATE" && x.EntidadId == adminId, ct));
+        Assert.Equal(1, await check.LogsAuditoria.CountAsync(x => x.Accion == "CREATE" && x.EntidadAfectada == "usuarios" && x.EntidadId == adminId, ct));
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class IdentityRegistrationTests(PostgresFixture fixture) : IClassF
         Assert.NotEqual(Passwords.Hash("password-de-prueba"), Passwords.Hash("password-de-prueba"));
     }
 
-    private static EfUsuarioRepository Repository(PromotoraDbContext db) => new(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock));
+    private static EfUsuarioRepository Repository(PromotoraDbContext db) => new(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, Clock)));
     private static ICommandHandler<CrearUsuarioCommand, UsuarioDto> CreateHandler(PromotoraDbContext db, Actor actor) =>
         new ValidatingCommandHandler<CrearUsuarioCommand, UsuarioDto>(new CrearUsuarioHandler(Repository(db), Passwords, actor, Clock), [new CrearUsuarioValidator()]);
 

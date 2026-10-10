@@ -23,7 +23,7 @@ internal sealed class TicketingApiTestSupport(PostgresFixture fixture)
     {
         await using var db = fixture.CreateContext(); var clock = new SystemClock(TimeProvider.System);
         string email = $"{Guid.NewGuid():N}@example.test", password = Guid.NewGuid().ToString("N");
-        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, clock));
+        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, clock)));
         var usuario = await repo.CreateAsync(new Usuario(0, email, new IdentityPasswordService().Hash(password), "Prueba", "Ticketing", rol, "ACTIVO", false, clock.UtcNow),
             new PerfilNuevo(Empresa: rol == RolUsuario.DUENO_RECINTO ? "Prueba" : null), null, null, false, ct);
         using var response = await client.PostAsJsonAsync("/api/v1/auth/login", new { email, password }, ct);

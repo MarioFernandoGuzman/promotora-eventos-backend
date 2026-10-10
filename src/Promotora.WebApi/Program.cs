@@ -53,6 +53,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
         builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
     builder.Services.AddIdentityManagement();
     builder.Services.AddIdentityRegistration();
+    builder.Services.AddCuentasFinancieras();
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
     builder.Services.AddTicketing(new CompraOptions(builder.Configuration.GetValue("Ticketing:ReservaMinutos", 15)));

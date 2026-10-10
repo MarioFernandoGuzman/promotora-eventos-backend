@@ -127,7 +127,7 @@ public sealed class BienvenidaNotificacionTests(PostgresFixture postgres, Rabbit
     private async Task<(int Id, string Email)> UsuarioAsync()
     {
         await using var db = postgres.CreateContext(); var clock = new SystemClock(TimeProvider.System);
-        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, clock));
+        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, clock)));
         var email = $"{Guid.NewGuid():N}@example.invalid";
         var result = await repo.CreateAsync(new(0, email, "!SIN_ACCESO_PRUEBA!", "Cliente", "Prueba", RolUsuario.CLIENTE, "ACTIVO", false, clock.UtcNow),
             new PerfilNuevo(), null, null, false, Ct);

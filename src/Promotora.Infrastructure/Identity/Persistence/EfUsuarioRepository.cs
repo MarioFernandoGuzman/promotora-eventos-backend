@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Promotora.Application.Audit;
+using Promotora.Application.Finance.Ports;
 using Promotora.Application.Identity.Ports;
 using Promotora.Application.Identity.Registration;
 using Promotora.Application.Shared.Ports;
@@ -12,7 +13,7 @@ using Promotora.Infrastructure.Shared.Persistence;
 
 namespace Promotora.Infrastructure.Identity.Persistence;
 
-public sealed partial class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWork unitOfWork, IAuditLogger audit) : IUsuarioRepository
+public sealed partial class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWork unitOfWork, IAuditLogger audit, IAltaCuentaDuenoPort cuentas) : IUsuarioRepository
 {
     public async Task<Usuario?> FindByIdAsync(int id, CancellationToken ct) =>
         (await db.Usuarios.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct))?.ToDomain();
@@ -72,7 +73,9 @@ public sealed partial class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWo
                         db.Administradores.Add(new AdministradorRow { UsuarioId = row.Id, NivelAcceso = perfil.NivelAcceso });
                         break;
                     case RolUsuario.DUENO_RECINTO:
-                        db.DuenosRecinto.Add(new DuenoRecintoRow { UsuarioId = row.Id, Empresa = perfil.Empresa!, Nit = perfil.Nit });
+                        var dueno = new DuenoRecintoRow { UsuarioId = row.Id, Empresa = perfil.Empresa!, Nit = perfil.Nit };
+                        db.DuenosRecinto.Add(dueno); await db.SaveChangesAsync(token);
+                        await cuentas.CrearEnTransaccionAsync(dueno.Id, actorId, ip, token);
                         break;
                     default:
                         throw new InvalidOperationException("Rol desconocido.");

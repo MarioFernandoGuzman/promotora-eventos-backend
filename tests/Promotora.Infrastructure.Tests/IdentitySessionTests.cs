@@ -26,7 +26,7 @@ public sealed class IdentitySessionTests(PostgresFixture fixture) : IClassFixtur
         var (id, email, password) = await CreateAsync(false, ct);
         await using var db = fixture.CreateContext();
         var repo = new EfSesionRepository(db, Clock);
-        var usuario = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock));
+        var usuario = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, Clock)));
         var audit = new EfAuditLogger(db, Clock);
         var login = new LoginHandler(usuario, repo, Passwords, Tokens, new Actor(id), Clock, Options, audit);
         var session = await login.HandleAsync(new LoginCommand(email, password), ct);
@@ -62,7 +62,7 @@ public sealed class IdentitySessionTests(PostgresFixture fixture) : IClassFixtur
         var results = await Task.WhenAll(Enumerable.Range(0, 2).Select(async _ =>
         {
             await using var db = fixture.CreateContext();
-            var handler = new RefreshHandler(new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock)),
+            var handler = new RefreshHandler(new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, Clock))),
                 new EfSesionRepository(db, Clock), Tokens, new Actor(id), Clock, Options, new EfAuditLogger(db, Clock));
             return await handler.HandleAsync(new RefreshCommand(session.RefreshToken!), ct);
         }));
@@ -108,7 +108,7 @@ public sealed class IdentitySessionTests(PostgresFixture fixture) : IClassFixtur
     }
 
     private static LoginHandler Login(PromotoraDbContext db, int id) => new(
-        new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock)), new EfSesionRepository(db, Clock),
+        new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, Clock))), new EfSesionRepository(db, Clock),
         Passwords, Tokens, new Actor(id), Clock, Options, new EfAuditLogger(db, Clock));
 
     private async Task<(int Id, string Email, string Password)> CreateAsync(bool mustChange, CancellationToken ct)
@@ -116,7 +116,7 @@ public sealed class IdentitySessionTests(PostgresFixture fixture) : IClassFixtur
         await using var db = fixture.CreateContext();
         var email = $"{Guid.NewGuid():N}@example.test";
         var password = Guid.NewGuid().ToString("N");
-        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock));
+        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, Clock)));
         var user = await repo.CreateAsync(new Usuario(0, email, Passwords.Hash(password), "Nombre", "Apellido", RolUsuario.CLIENTE,
             "ACTIVO", mustChange, Clock.UtcNow), new PerfilNuevo(), null, null, false, ct);
         return (user.Value.Id, email, password);

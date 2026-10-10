@@ -97,7 +97,7 @@ public sealed class IdentityManagementTests(PostgresFixture fixture) : IClassFix
         Assert.Equal(ErrorType.Forbidden, forbidden.Errors[0].Type);
     }
 
-    private static EfUsuarioRepository Repository(PromotoraDbContext db) => new(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock));
+    private static EfUsuarioRepository Repository(PromotoraDbContext db) => new(db, new EfUnitOfWork(db), new EfAuditLogger(db, Clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, Clock)));
 
     private async Task<(UsuarioDto Usuario, string Password)> CreateAsync(bool mustChange, CancellationToken ct)
     {

@@ -194,7 +194,7 @@ public sealed class IdentityApiTests(PostgresFixture fixture) : IClassFixture<Po
         var clock = new SystemClock(TimeProvider.System);
         var passwords = new IdentityPasswordService();
         var password = Guid.NewGuid().ToString("N");
-        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, clock));
+        var repo = new EfUsuarioRepository(db, new EfUnitOfWork(db), new EfAuditLogger(db, clock), new Promotora.Infrastructure.Finance.EfCuentaRepository(db, new EfAuditLogger(db, clock)));
         var result = await repo.CreateAsync(new Usuario(0, $"{Guid.NewGuid():N}@example.test", passwords.Hash(password), "Nombre", "Apellido",
             rol, "ACTIVO", false, clock.UtcNow), new PerfilNuevo(Empresa: rol == RolUsuario.DUENO_RECINTO ? "Empresa" : null), null, null, false, ct);
         return (result.Value, password);

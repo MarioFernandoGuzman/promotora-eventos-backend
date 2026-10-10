@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Promotora.Application.Audit;
+using Promotora.Application.Finance.Ports;
 using Promotora.Application.Identity.Ports;
 using Promotora.Application.Shared.Ports;
 using Promotora.Infrastructure.Audit;
+using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Identity.Persistence;
 using Promotora.Infrastructure.Shared;
@@ -24,6 +26,7 @@ public static class DependencyInjection
             services.AddDbContext<PromotoraDbContext>(options => options.UsePromotoraPostgres(connectionString));
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuditLogger, EfAuditLogger>();
+            services.AddScoped<IAltaCuentaDuenoPort, EfCuentaRepository>();
             services.AddScoped<IOutboxWriter, EfOutboxWriter>();
             services.AddScoped<IUsuarioRepository, EfUsuarioRepository>();
         }
