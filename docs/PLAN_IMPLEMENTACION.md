@@ -121,17 +121,17 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 - [x] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
 - [x] **F4-02** CRUD de `localidades` con `geometria` y `color`; validar suma de capacidades.
 - [x] **F4-03** Endpoint público del mapa: `GET /recintos/{id}/mapa` (plano + localidades con geometría y disponibilidad por evento).
-- [ ] **F4-04** CRUD de `categorias_evento` y `presentadores`.
-- [ ] **F4-05** CRUD de `eventos` (estados, `creado_por`, ventana de venta, `max_boletos_por_compra`).
-- [ ] **F4-06** Gestión de `evento_presentadores`.
-- [ ] **F4-07** CRUD de `tipos_entrada` (general / localidad / distancias de carrera) con validaciones de cupo.
-- [ ] **F4-08** Listado público de eventos con filtros (categoría, ciudad, fecha, texto) y paginación.
+- [x] **F4-04** CRUD de `categorias_evento` y `presentadores`.
+- [x] **F4-05** CRUD de `eventos` (estados, `creado_por`, ventana de venta, `max_boletos_por_compra`).
+- [x] **F4-06** Gestión de `evento_presentadores`.
+- [x] **F4-07** CRUD de `tipos_entrada` (general / localidad / distancias de carrera) con validaciones de cupo.
+- [x] **F4-08** Listado público de eventos con filtros (categoría, ciudad, fecha, texto) y paginación.
 - [ ] **F4-09** Subida de imágenes (plano, evento, presentador) con almacenamiento local detrás de un puerto.
 - [ ] **F4-10** Auditoría de CRUD y pruebas de propiedad.
 
 **Salida:** un dueño puede crear recinto, zonas, evento y tipos de entrada; el público ve catálogo y mapa.
 
-Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). La fase sigue abierta: F4-04–F4-10 pendientes.
+Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). Segundo bloque F4-04–F4-08 implementado: 111 pruebas en verde y 49 operaciones Swagger; guía en [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) y revisión en [VALIDACION_F4_CATALOGO_EVENTOS.md](VALIDACION_F4_CATALOGO_EVENTOS.md). La fase sigue abierta: F4-09 y F4-10 pendientes.
 
 ### Fase 5 — Venta síncrona y boletos (primero sin colas)
 - [ ] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.

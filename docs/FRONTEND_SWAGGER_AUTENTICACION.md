@@ -253,3 +253,9 @@ dotnet test --project tests/Promotora.Api.Tests
 ```
 
 Las pruebas usan PostgreSQL temporal; no necesitan credenciales del administrador local. Detalles de implementación y evidencia: [Identidad y seguridad](IDENTIDAD_SEGURIDAD.md) y [Validación de Fase 3](VALIDACION_FASE_3.md).
+
+## 12. Catálogo de eventos disponible (F4-04–F4-08)
+
+La guía [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) describe contratos, ejemplos y permisos. GET `/api/v1/catalogo/eventos` y `/{id}` son públicos; no necesitan Bearer. `/api/v1/eventos` es gestión privada para dueño del recinto o administrador. Categorías/presentadores se consultan con sesión completa y los modifica un administrador. Asociaciones y tipos de entrada se gestionan bajo `/api/v1/eventos/{eventoId}` y comprueban propiedad en los handlers.
+
+En Swagger, iniciar sesión → completar cambio obligatorio si aplica → Authorize con accessToken → crear recinto y evento BORRADOR → configurar presentadores/tipos → programar → quitar autorización para probar listado/detalle público. El catálogo público omite creador, dueño y datos de identidad. Usar recinto.id y evento.id del detalle para consultar el mapa; su disponibilidad informativa no reserva cupo.

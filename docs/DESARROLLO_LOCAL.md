@@ -76,6 +76,8 @@ Abrir [Swagger UI](http://localhost:5080/swagger). Fase 3 incorpora 11 operacion
 
 F4-01–F4-03 añaden 11 operaciones de recintos/localidades/mapa, para un total de 22. La prueba manual del dueño y el mapa anónimo está en [RECINTOS_LOCALIDADES_MAPA.md](RECINTOS_LOCALIDADES_MAPA.md). La configuración de CORS y la sesión del frontend están en [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md).
 
+F4-04–F4-08 añaden 27 operaciones de categorías/presentadores, eventos, asociaciones y tipos de entrada, incluido catálogo público, para un total de 49. Seguir [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) para cuerpos JSON, permisos, estados y pruebas locales. Si la API estaba abierta durante los cambios, detenerla con Ctrl+C y ejecutar de nuevo `dotnet run --project src/Promotora.WebApi` para cargar los nuevos endpoints. No requiere nuevos secretos ni cambios de esquema.
+
 Desde otra terminal:
 
 ```powershell

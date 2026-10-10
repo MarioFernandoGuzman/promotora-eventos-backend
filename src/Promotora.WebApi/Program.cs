@@ -4,9 +4,11 @@ using Microsoft.OpenApi;
 using Promotora.Application.Identity.Ports;
 using Promotora.Application.Identity.Sessions;
 using Promotora.Infrastructure;
+using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Shared.Health;
 using Promotora.Infrastructure.Venues;
+using Promotora.WebApi.Catalog;
 using Promotora.WebApi.Errors;
 using Promotora.WebApi.Identity;
 using Promotora.WebApi.Middleware;
@@ -44,6 +46,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentityManagement();
     builder.Services.AddIdentityRegistration();
     builder.Services.AddVenues();
+    builder.Services.AddCatalog();
 }
 
 builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);
@@ -78,6 +81,7 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<BearerOperationFilter>();
     options.SchemaFilter<IdentityExamplesFilter>();
     options.SchemaFilter<VenuesExamplesFilter>();
+    options.SchemaFilter<CatalogExamplesFilter>();
 });
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 

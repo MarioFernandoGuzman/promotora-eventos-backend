@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Promotora.Application.Identity.Sessions;
 using Promotora.Infrastructure;
+using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Venues;
 
@@ -38,6 +39,7 @@ public sealed class IdentityApiFactory(string connection, string? adminEmail = n
             services.AddIdentitySessions(Key, "promotora", "promotora-api", new SesionOptions());
             services.AddIdentityManagement();
             services.AddVenues();
+            services.AddCatalog();
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
             {
                 options.TokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(Key);
