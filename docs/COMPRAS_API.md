@@ -1,6 +1,6 @@
 # Compras: reserva e idempotencia — F5-01 a F5-03
 
-Este bloque añade una operación en Swagger: `POST /api/v1/compras`. Crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. Todavía no cobra ni emite boletos: F5-04/F5-05 incorporarán esos pasos. GET de compra, cancelación y job de expiración corresponden a F5-06/F5-08. El Worker aún no procesa estas compras; el contrato asíncrono 202 + outbox llega en F6-03. No usar esta etapa para ventas reales.
+Este bloque añade una operación en Swagger: `POST /api/v1/compras`. Crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 ya están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). GET de compra, cancelación y job de expiración corresponden a F5-06/F5-08. El Worker aún no procesa estas compras; el contrato asíncrono 202 + outbox llega en F6-03. No usar esta etapa para ventas reales.
 
 ## Módulos y transacción
 
