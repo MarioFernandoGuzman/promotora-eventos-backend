@@ -6,7 +6,7 @@ Application/Ticketing define queries/handlers de compra propia, listas paginadas
 
 GET /api/v1/compras/{publicId}, GET /api/v1/compras y GET /api/v1/boletos requieren CLIENTE activo con sesión completa. La identidad procede del JWT y se revalida en los handlers. Los datos ajenos no aparecen; una compra ajena se trata igual que una inexistente (404). Listas: page=1, pageSize=20 por defecto, máximo 100, con {items,page,pageSize,total}; se ordenan por fecha e ID descendentes. Consultas con Cache-Control: no-store.
 
-POST /api/v1/compras/{publicId}/cancelar no recibe body. Solo PENDIENTE pasa a CANCELADA; el ganador devuelve cupo y audita UPDATE en la misma transacción. Repetir CANCELADA devuelve 200 sin nuevos efectos. PROCESANDO y otros estados devuelven 409. Fallar la auditoría revierte estado y cupo. El handler de expiración F5-08 está disponible; la ejecución automática depende de F6-07, ver [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md).
+POST /api/v1/compras/{publicId}/cancelar no recibe body. Solo PENDIENTE pasa a CANCELADA; el ganador devuelve cupo y audita UPDATE en la misma transacción. Repetir CANCELADA devuelve 200 sin nuevos efectos. PROCESANDO y otros estados devuelven 409. Fallar la auditoría revierte estado y cupo. El handler de expiración F5-08 y el job F6-07 están implementados; la ejecución automática requiere habilitar Worker según [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md).
 
 ## Contrato para la puerta
 

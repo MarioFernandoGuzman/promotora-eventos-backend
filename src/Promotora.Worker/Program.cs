@@ -8,6 +8,7 @@ using Promotora.Infrastructure.Shared.Messaging;
 using Promotora.Infrastructure.Shared.Notifications;
 using Promotora.Infrastructure.Ticketing;
 using Promotora.Worker.Messaging;
+using Promotora.Worker.Ticketing;
 using Serilog;
 using Serilog.Events;
 
@@ -69,6 +70,13 @@ if (builder.Configuration.GetValue("Notificaciones:Enabled", false))
         builder.Configuration.GetValue("Notificaciones:MaxIntentos", 3), builder.Configuration.GetValue("Notificaciones:RetryDelayMilliseconds", 2000)));
     builder.Services.AddHostedService<NotificacionConsumerService>();
     builder.Services.AddBienvenidaNotificaciones();
+}
+if (builder.Configuration.GetValue("Expiracion:Enabled", false))
+{
+    if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora")))
+        throw new InvalidOperationException("Expiración habilitada requiere conexión PostgreSQL externa.");
+    builder.Services.AddExpiracionWorker(new(builder.Configuration.GetValue("Expiracion:BatchSize", 100),
+        builder.Configuration.GetValue("Expiracion:PollIntervalSeconds", 30)));
 }
 var host = builder.Build();
 await using var hostLifetime = (IAsyncDisposable)host;

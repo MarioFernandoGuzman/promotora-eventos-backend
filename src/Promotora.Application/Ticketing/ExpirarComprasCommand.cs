@@ -11,7 +11,7 @@ namespace Promotora.Application.Ticketing;
 
 // Operación interna de mantenimiento; su ejecución periódica corresponde a F6-07.
 public sealed record ExpirarComprasCommand(int Lote = 100) : ICommand<ExpiracionLoteDto>;
-public sealed record ExpiracionLoteDto(int Revisadas, int Expiradas);
+public sealed record ExpiracionLoteDto(int Revisadas, int Expiradas, bool OmitidoPorBloqueo = false);
 public sealed class ExpirarComprasValidator : AbstractValidator<ExpirarComprasCommand>
 {
     public ExpirarComprasValidator() => RuleFor(x => x.Lote).InclusiveBetween(1, 1000);
@@ -26,6 +26,8 @@ public sealed class ExpirarComprasHandler(IExpiracionCompraRepository compras, I
         if (request.Lote is < 1 or > 1000) return Task.FromResult(Result<ExpiracionLoteDto>.Failure(new Error("compra.lote", "El lote debe estar entre 1 y 1000.", ErrorType.Validation)));
         return transaction.ExecuteAsync(async token =>
         {
+            if (!await compras.IntentarCoordinarAsync(token))
+                return Result<ExpiracionLoteDto>.Success(new(0, 0, true));
             var ahora = clock.UtcNow;
             var ids = await compras.VencidasAsync(ahora, request.Lote, token);
             int expiradas = 0;
