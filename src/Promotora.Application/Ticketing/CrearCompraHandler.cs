@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Text.Json;
 using Promotora.Application.Audit;
 using Promotora.Application.Identity.Ports;
 using Promotora.Application.Shared.Handlers;
+using Promotora.Application.Shared.Messaging;
 using Promotora.Application.Shared.Ports;
 using Promotora.Application.Ticketing.Ports;
 using Promotora.Domain.Identity;
@@ -12,7 +14,7 @@ namespace Promotora.Application.Ticketing;
 
 public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRepository cupos, ITicketingTransaction transaction,
     IUsuarioRepository usuarios, ISesionRepository sesiones, IUsuarioActual actual, CrearCompraFactory factory,
-    CompraOptions options, IClock clock, IAuditLogger audit) : ICommandHandler<CrearCompraCommand, CrearCompraResultado>
+    CompraOptions options, IClock clock, IAuditLogger audit, IOutboxWriter outbox, ICompraProcesamientoEstado procesamiento) : ICommandHandler<CrearCompraCommand, CrearCompraResultado>
 {
     public Task<Result<CrearCompraResultado>> HandleAsync(CrearCompraCommand request, CancellationToken ct) => transaction.ExecuteAsync(async token =>
     {
@@ -27,7 +29,7 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
         if (existente is not null)
         {
             return existente.ClienteId == clienteId
-                ? Result<CrearCompraResultado>.Success(new(existente.Compra, true))
+                ? Result<CrearCompraResultado>.Success(new(existente.Compra, true, procesamiento.Disponible))
                 : Fallo("compra.clave", "La clave de idempotencia ya está en uso.", ErrorType.Conflict);
         }
 
@@ -57,7 +59,9 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
         var compra = dominio.Value;
         int id = await compras.InsertAsync(compra, token);
         await audit.WriteAsync(usuarioId, "CREATE", "compras", id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
-        return Result<CrearCompraResultado>.Success(new(ToDto(compra), false));
+        await outbox.EscribirAsync(new("Compra", compra.PublicId.ToString("D"), TiposMensaje.ProcesarCompra,
+            JsonSerializer.SerializeToElement(new { publicId = compra.PublicId })), token);
+        return Result<CrearCompraResultado>.Success(new(ToDto(compra), false, procesamiento.Disponible));
     }, ct);
 
     private static Result<CrearCompraResultado> Fallo(string codigo, string mensaje, ErrorType tipo) => Result<CrearCompraResultado>.Failure(new Error(codigo, mensaje, tipo));

@@ -3,6 +3,7 @@
     <Compile Include="../Promotora.Infrastructure.Tests/ImagenFixture.cs" Link="Fixtures/ImagenFixture.cs" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <Compile Include="../Promotora.Infrastructure.Tests/PostgresFixture.cs" Link="Fixtures/PostgresFixture.cs" />
+    <Compile Include="../Promotora.Infrastructure.Tests/RabbitMqFixture.cs" Link="Fixtures/RabbitMqFixture.cs" />
     <Compile Include="../Promotora.Infrastructure.Tests/CompraFixture.cs" Link="Fixtures/CompraFixture.cs" />
     <None Include="../../database/migrations/*.sql" Link="Migrations/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />

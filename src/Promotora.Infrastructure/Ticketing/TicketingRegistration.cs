@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Promotora.Application.Shared;
 using Promotora.Application.Ticketing;
 using Promotora.Application.Ticketing.Ports;
@@ -45,6 +46,7 @@ public static class TicketingRegistration
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.ReservaMinutos);
         if (options.Moneda != "GTQ") throw new ArgumentException("El catálogo actual utiliza GTQ.", nameof(options));
         services.AddSingleton(options);
+        services.TryAddSingleton<ICompraProcesamientoEstado, CompraProcesamientoPendiente>();
         services.AddScoped<ICompraRepository, EfCompraRepository>();
         services.AddScoped<ICompraConsultaRepository, EfCompraConsultaRepository>();
         services.AddScoped<ClienteCompraAccess>();

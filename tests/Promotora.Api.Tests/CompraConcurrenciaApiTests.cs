@@ -47,6 +47,8 @@ public sealed class CompraConcurrenciaApiTests(PostgresFixture fixture) : IClass
             var compras = await db.Compras.AsNoTracking().Where(c => c.EventoId == datos.EventoId).ToArrayAsync(ct);
             Assert.Equal(ganadoras, compras.Length); Assert.Equal(ganadoras, compras.Select(c => c.PublicId).Distinct().Count());
             int[] ids = compras.Select(c => c.Id).ToArray();
+            string[] publicIds = compras.Select(c => c.PublicId.ToString("D")).ToArray();
+            Assert.Equal(ganadoras, await db.OutboxMensajes.CountAsync(m => publicIds.Contains(m.AgregadoId) && m.Tipo == "compra.procesar", ct));
             Assert.Equal(cupo, await db.DetalleCompra.Where(d => ids.Contains(d.CompraId)).SumAsync(d => d.Cantidad, ct));
             Assert.Equal(0, await db.TiposEntrada.Where(t => t.Id == datos.TipoId).Select(t => t.CupoDisponible).SingleAsync(ct));
             var clavesFallidas = resultados.Where(r => r.StatusCode == HttpStatusCode.Conflict).Select(r => r.Key).ToArray();

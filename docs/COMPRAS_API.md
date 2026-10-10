@@ -1,6 +1,6 @@
 # Compras: reserva, consultas y cancelación — F5-01 a F5-06
 
-POST /api/v1/compras crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. F5-06 añade consulta, listas propias y cancelación. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). El handler de expiración F5-08 está disponible; su ejecución periódica corresponde a F6-07; el Worker aún no procesa estas compras y el contrato asíncrono 202 + outbox llega en F6-03.
+POST /api/v1/compras crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. F5-06 añade consulta, listas propias y cancelación. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). El handler de expiración F5-08 está disponible; su ejecución periódica corresponde a F6-07. La creación ya guarda outbox y el relay puede publicarlo; el consumidor financiero está deshabilitado. Contrato 202 + Location preparado, producción mantiene 201/200 hasta activar el flujo completo: [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
 
 ## Módulos y transacción
 

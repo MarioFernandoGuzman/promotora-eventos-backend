@@ -54,6 +54,12 @@ public sealed class ComprasApiTests(PostgresFixture fixture) : IClassFixture<Pos
         var id = await db.Compras.Where(c => c.IdempotencyKey == key).Select(c => c.Id).SingleAsync(ct);
         Assert.Equal(1, await db.LogsAuditoria.CountAsync(a => a.EntidadAfectada == "compras" && a.EntidadId == id.ToString() && a.Accion == "CREATE", ct));
         Assert.False(await db.Pagos.AnyAsync(p => p.CompraId == id, ct));
+        var message = await db.OutboxMensajes.AsNoTracking().SingleAsync(m => m.AgregadoId == compra.PublicId.ToString("D"), ct);
+        Assert.Equal("Compra", message.Agregado);
+        Assert.Equal("compra.procesar", message.Tipo);
+        Assert.Equal(compra.PublicId, message.Payload.RootElement.GetProperty("publicId").GetGuid());
+        Assert.False(message.Publicado);
+        Assert.Equal(0, message.Intentos);
         Assert.False(await db.Boletos.AnyAsync(b => db.DetalleCompra.Any(d => d.Id == b.DetalleCompraId && d.CompraId == id), ct));
         var schema = await client.GetFromJsonAsync<JsonElement>("/swagger/v1/swagger.json", ct);
         var operation = schema.GetProperty("paths").GetProperty("/api/v1/compras").GetProperty("post");
