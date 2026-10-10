@@ -141,10 +141,11 @@ Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VA
 
 Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, total 369.60; 33.33 → 3.33, 4.40, 41.06; 0.00 → todos cero; además, invariante subtotal + comisión + impuestos = total sobre una serie de subtotales aleatorios.
 - [x] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.
-  - D-15 registrada antes del código. Reglas, configuración, límites y pruebas en [COMPRAS_DOMINIO.md](COMPRAS_DOMINIO.md). Validación local: 137 pruebas en verde, build sin warnings y format limpio; todavía sin endpoints de compra (F5-03) ni reserva persistida (F5-02).
+  - D-15 registrada antes del código. Reglas, configuración, límites y pruebas en [COMPRAS_DOMINIO.md](COMPRAS_DOMINIO.md). Validación de F5-01: 137 pruebas en verde, build sin warnings y format limpio. F5-02/F5-03 incorporaron posteriormente reserva persistida y endpoint.
 - [x] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
   - Puerto y adaptador transaccionales; pruebas PostgreSQL de concurrencia, estados y rollback. Diseño y comandos en [RESERVA_CUPO.md](RESERVA_CUPO.md).
-- [ ] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
+- [x] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
+  - HTTP 201 nueva / 200 repetida propia; compra PENDIENTE, reserva + detalles + auditoría transaccionales. D-15 congelada, validación del actor y padres activos, límite agregado y carreras de clave. 159 pruebas Release en verde; 54 operaciones Swagger. Guía frontend/local en [COMPRAS_API.md](COMPRAS_API.md) y revisión del bloque en [VALIDACION_F5_COMPRAS.md](VALIDACION_F5_COMPRAS.md). Pago/emisión siguen en F5-04/F5-05; expiración automática en F5-08 y contrato 202/outbox en F6-03.
 - [ ] **F5-04** Pago vía `IPaymentGateway` simulado (tasa de fallo configurable).
 - [ ] **F5-05** Emisión de boletos con token QR firmado (HMAC) y datos del asistente (obligatorios en carreras).
 - [ ] **F5-06** `GET /compras/{publicId}`, mis compras, mis boletos (con QR); cancelación por usuario solo desde PENDIENTE mediante UPDATE condicional; en PROCESANDO responde 409. Solo el ganador devuelve cupo en la misma transacción.

@@ -1,6 +1,6 @@
 # Dominio de compras y política monetaria — F5-01
 
-D-15 fue fijada por el usuario y registrada antes del código. Rama `feature/f5-dominio-compras`, desde `origin/develop` en `c1966c0` (PR #14 integrado). Fase 5 sigue en curso: esta tarea aporta dominio y política, sin venta HTTP todavía. Swagger conserva las 53 operaciones existentes; `POST /compras` corresponde a F5-03.
+D-15 fue fijada por el usuario y registrada antes del código. Rama `feature/f5-dominio-compras`, desde `origin/develop` en `c1966c0` (PR #14 integrado). Esta guía describe F5-01. F5-02/F5-03 añadieron reserva persistida y POST de compras; consultar [RESERVA_CUPO.md](RESERVA_CUPO.md) y [COMPRAS_API.md](COMPRAS_API.md) para el estado actual (54 operaciones Swagger). Fase 5 sigue en curso.
 
 ## Módulos y responsabilidades
 
@@ -44,7 +44,7 @@ PENDIENTE → PROCESANDO → COMPLETADA
 
 Cancelar y expirar solo desde PENDIENTE; expiración desde `expira_en` inclusive. PROCESANDO registra `procesando_desde` en UTC y solo pasa a COMPLETADA/FALLIDA. Terminales no se reabren. Un estado esperado distinto devuelve conflicto y conserva estado/importes. Fechas llegan explícitamente desde Application (IClock en futuros handlers); Domain no obtiene la hora del sistema.
 
-La validación del objeto no garantiza concurrencia en BD: el futuro adaptador debe ejecutar UPDATE WHERE estado = esperado, comprobar filas afectadas y devolver cupo únicamente si gana, en la misma transacción. Esto corresponde a F5-02/F5-06/F5-08; no se considera implementado todavía.
+La validación del objeto no garantiza concurrencia en BD: el adaptador ejecuta UPDATE WHERE estado = esperado, comprueba filas afectadas y devuelve cupo únicamente si gana, en la misma transacción. El puerto/adaptador se implementó en F5-02; los casos de uso de cancelación/expiración llegan en F5-06/F5-08.
 
 ## Configuración y pruebas locales
 
