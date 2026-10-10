@@ -157,6 +157,7 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
 - [x] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
   - Handler interno por lotes registrado en API/Worker, sin temporizador ni endpoint; activación periódica/coordinación de instancias en F6-07. Auditoría UPDATE y devolución en la misma transacción; pruebas de repetición, carreras y rollback. Guía local: [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md).
 - [ ] **F5-09** **Prueba de concurrencia:** N hilos sobre cupo K ⇒ vendidos = K exactos.
+  - En el flujo actual se comprueban reservas PENDIENTE: ocho clientes HTTP distintos, casos 40/7, 40/8 y 33/9, cantidades 1/2/3; cupo final cero, cantidades exactas, rechazo sin compras parciales y una auditoría por ganadora. Evidencia: [PRUEBAS_F5_CONCURRENCIA.md](PRUEBAS_F5_CONCURRENCIA.md). La comprobación de ventas COMPLETADA/pagos/ledger/boletos permanece pendiente al integrar F7-02/F7-03 antes de cumplir la salida de Fase 5.
 - [ ] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.
 
 **Salida:** compra completa y correcta de punta a punta, sin sobreventa bajo concurrencia.
