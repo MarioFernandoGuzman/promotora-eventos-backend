@@ -46,6 +46,15 @@ public sealed class EfNotificacionRepository(PromotoraDbContext db, IEmisionBole
         return Task.CompletedTask;
     }
 
+    public async Task<ContenidoNotificacion?> UsuarioAsync(int usuarioId, CancellationToken ct)
+    {
+        ExigirTransaccion();
+        var usuario = await db.Usuarios.AsNoTracking().Where(u => u.Id == usuarioId && u.Estado == "ACTIVO" && u.Rol == "CLIENTE"
+            && db.Clientes.Any(c => c.UsuarioId == u.Id)).Select(u => new { u.Id, u.Email }).SingleOrDefaultAsync(ct);
+        return usuario is null ? null : new(usuario.Id, usuario.Email, "Bienvenido a Promotora",
+            "Tu registro en Promotora está listo. Puedes iniciar sesión, consultar eventos y gestionar tus compras desde tu cuenta.");
+    }
+
     private void ExigirTransaccion()
     {
         if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("Notificaciones requieren transacción explícita.");

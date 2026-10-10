@@ -4,9 +4,11 @@ using Promotora.Application.Shared.Notifications;
 
 namespace Promotora.Worker.Messaging;
 
-public sealed class NotificacionConsumerService(INotificacionConsumer consumer, ILogger<NotificacionConsumerService> logger) : BackgroundService
+public sealed class NotificacionConsumerService(IEnumerable<INotificacionConsumer> consumers, ILogger<NotificacionConsumerService> logger) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.WhenAll(consumers.Select(consumer => EjecutarAsync(consumer, stoppingToken)));
+
+    private async Task EjecutarAsync(INotificacionConsumer consumer, CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {

@@ -68,6 +68,7 @@ if (builder.Configuration.GetValue("Notificaciones:Enabled", false))
         builder.Configuration.GetValue("Smtp:TimeoutSeconds", 15)), new NotificacionOptions(
         builder.Configuration.GetValue("Notificaciones:MaxIntentos", 3), builder.Configuration.GetValue("Notificaciones:RetryDelayMilliseconds", 2000)));
     builder.Services.AddHostedService<NotificacionConsumerService>();
+    builder.Services.AddBienvenidaNotificaciones();
 }
 var host = builder.Build();
 await using var hostLifetime = (IAsyncDisposable)host;

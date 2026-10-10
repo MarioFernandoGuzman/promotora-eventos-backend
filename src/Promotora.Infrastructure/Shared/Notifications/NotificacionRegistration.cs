@@ -7,6 +7,13 @@ namespace Promotora.Infrastructure.Shared.Notifications;
 
 public static class NotificacionRegistration
 {
+    public static IServiceCollection AddBienvenidaNotificaciones(this IServiceCollection services)
+    {
+        services.AddScoped<IBienvenidaMensajePort, EnviarBienvenidaHandler>();
+        services.AddSingleton<INotificacionConsumer, EnviarBienvenidaConsumer>();
+        return services;
+    }
+
     public static IServiceCollection AddConfirmacionNotificaciones(this IServiceCollection services, SmtpOptions smtp, NotificacionOptions options)
     {
         smtp.Validar(); options.Validar();

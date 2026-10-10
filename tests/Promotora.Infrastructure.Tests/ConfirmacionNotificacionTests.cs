@@ -45,7 +45,7 @@ public sealed class ConfirmacionNotificacionTests(PostgresFixture postgres, Rabb
             Assert.Equal(1, await db.Notificaciones.CountAsync(n => n.UsuarioId == compra.UsuarioId && n.Tipo == TiposMensaje.CompraCompletada && n.Estado == "ENVIADO", Ct));
             using var recibidos = await mail.MensajesAsync(Ct);
             var items = recibidos.RootElement.GetProperty("items").EnumerateArray().Where(i => i.GetProperty("Content").GetProperty("Headers")
-                .GetProperty("Message-ID")[0].GetString() == $"<compra-{id}@promotora.invalid>").ToArray();
+                .GetProperty("Message-ID")[0].GetString() == $"<compra.completada-{id}@promotora.invalid>").ToArray();
             Assert.Single(items);
             var body = Encoding.UTF8.GetString(Convert.FromBase64String(items[0].GetProperty("Content").GetProperty("Body").GetString()!));
             Assert.Contains(compra.PublicId.ToString(), body);
