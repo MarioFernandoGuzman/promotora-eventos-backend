@@ -146,7 +146,8 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
   - Puerto y adaptador transaccionales; pruebas PostgreSQL de concurrencia, estados y rollback. Diseño y comandos en [RESERVA_CUPO.md](RESERVA_CUPO.md).
 - [x] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
   - HTTP 201 nueva / 200 repetida propia; compra PENDIENTE, reserva + detalles + auditoría transaccionales. D-15 congelada, validación del actor y padres activos, límite agregado y carreras de clave. 159 pruebas Release en verde; 54 operaciones Swagger. Guía frontend/local en [COMPRAS_API.md](COMPRAS_API.md) y revisión del bloque en [VALIDACION_F5_COMPRAS.md](VALIDACION_F5_COMPRAS.md). Pago/emisión siguen en F5-04/F5-05; expiración automática en F5-08 y contrato 202/outbox en F6-03.
-- [ ] **F5-04** Pago vía `IPaymentGateway` simulado (tasa de fallo configurable).
+- [x] **F5-04** Pago vía `IPaymentGateway` simulado (tasa de fallo configurable).
+  - Puerto y singleton en API/Worker; referencia public_id, monto congelado, repetición concurrente, consulta y rechazo configurable. Diseño, comandos y límites en [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md). El POST aún no cobra: integración transaccional con pagos/ledger depende de F7-02/F7-03.
 - [ ] **F5-05** Emisión de boletos con token QR firmado (HMAC) y datos del asistente (obligatorios en carreras).
 - [ ] **F5-06** `GET /compras/{publicId}`, mis compras, mis boletos (con QR); cancelación por usuario solo desde PENDIENTE mediante UPDATE condicional; en PROCESANDO responde 409. Solo el ganador devuelve cupo en la misma transacción.
 - [ ] **F5-07** Validación en puerta: `POST /boletos/validar` (admin/dueño), atómica.
@@ -155,6 +156,8 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
 - [ ] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.
 
 **Salida:** compra completa y correcta de punta a punta, sin sobreventa bajo concurrencia.
+
+**Dependencia confirmada con el usuario:** mantener el orden y preparar F5-04/F5-05 como componentes. No habilitar finalización HTTP sin registro financiero: AGENTS.md §5 exige ledger en la misma transacción de COMPLETADA. La conexión del flujo a POST y la salida de Fase 5 quedan pendientes hasta integrar F7-02/F7-03. No marcar anticipadamente tareas de F7. La consulta en memoria del pago simulado también requiere respaldo durable antes de habilitar F6-11; un resultado desconocido tras reinicio no prueba rechazo ni ausencia de pago.
 
 ### Fase 6 — Venta asíncrona con RabbitMQ
 - [ ] **F6-01** Abstracciones `IMessagePublisher` y topología (exchanges, colas, retry, DLQ) declarada en código.
