@@ -91,6 +91,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [x] **F2-01** Crear solución con los 5 proyectos `src/` y los 5 de `tests/` con referencias correctas.
 - [x] **F2-02** `docker-compose.yml`: postgres+pgvector, rabbitmq (management), mailhog, flyway.
 - [x] **F2-03** `DbContext` con snake_case, `Pgvector`, entidades *keyless* para vistas `bi`.
+  - Corrección posterior: sentinel `false` explícito en `usuarios.debe_cambiar_password` y `outbox_mensajes.publicado`; pruebas PostgreSQL de ambos valores con el warning de EF convertido en error. Sin cambio de esquema ni migraciones.
 - [x] **F2-04** Base transversal: `Result<T>`, errores, `ICommandHandler/IQueryHandler`, pipeline de validación, `IClock`, `IUnitOfWork`.
 - [x] **F2-05** WebApi base: Swagger, `ProblemDetails`, versionado `/api/v1`, Serilog con CorrelationId, health checks.
 - [x] **F2-06** Pruebas de arquitectura (NetArchTest): regla de dependencia y controllers sin `DbContext`.
