@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Promotora.Application.Shared.Notifications;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Shared.Messaging;
+using Promotora.Infrastructure.Shared.Notifications;
 using Promotora.Infrastructure.Ticketing;
 using Promotora.Worker.Messaging;
 using Serilog;
@@ -54,6 +56,19 @@ if (builder.Configuration.GetValue("Compras:ConsumerEnabled", false))
         builder.Configuration.GetValue<ushort>("Compras:Prefetch", 16), builder.Configuration.GetValue("Compras:MaxIntentos", 3),
         builder.Configuration.GetValue("Compras:RetryBaseDelayMilliseconds", 5000)));
     builder.Services.AddHostedService<ProcesarCompraConsumerService>();
+}
+if (builder.Configuration.GetValue("Notificaciones:Enabled", false))
+{
+    if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora"))
+        || string.IsNullOrWhiteSpace(builder.Configuration["RabbitMQ:Host"]))
+        throw new InvalidOperationException("Notificaciones requieren PostgreSQL y RabbitMQ externos.");
+    builder.Services.AddConfirmacionNotificaciones(new SmtpOptions(builder.Configuration["Smtp:Host"] ?? "",
+        builder.Configuration.GetValue("Smtp:Port", 1025), builder.Configuration["Smtp:From"] ?? "",
+        builder.Configuration.GetValue("Smtp:EnableSsl", false), builder.Configuration["Smtp:Username"], builder.Configuration["Smtp:Password"],
+        builder.Configuration.GetValue("Smtp:TimeoutSeconds", 15)), new NotificacionOptions(
+        builder.Configuration.GetValue("Notificaciones:MaxIntentos", 3), builder.Configuration.GetValue("Notificaciones:RetryDelayMilliseconds", 2000)));
+    builder.Services.AddHostedService<NotificacionConsumerService>();
+    builder.Services.AddBienvenidaNotificaciones();
 }
 var host = builder.Build();
 await using var hostLifetime = (IAsyncDisposable)host;
