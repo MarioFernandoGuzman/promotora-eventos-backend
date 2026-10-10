@@ -29,6 +29,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-12 | Roles | ✅ | Un rol por usuario (`usuarios.rol` + perfil) |
 | D-13 | Una compra = un evento | ✅ | `compras.evento_id` |
 | D-14 | Envío de correo | ✅ | MailHog en desarrollo |
+| D-15 | Política monetaria de compra | ✅ | Precios sin IVA; `Finanzas:TasaIva = 0.12`, `Finanzas:ComisionPorcentaje = 0.10` (valor inicial configurable, no dato legal). Comisión sobre subtotal, IVA sobre subtotal + comisión; decimal y redondeo AwayFromZero por componente a 2 decimales; montos congelados y reembolso solo total |
 
 Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
 
@@ -135,6 +136,10 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). Segundo bloque F4-04–F4-08 implementado: 111 pruebas en verde y 49 operaciones Swagger; guía en [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) y revisión en [VALIDACION_F4_CATALOGO_EVENTOS.md](VALIDACION_F4_CATALOGO_EVENTOS.md). F4-09/F4-10 completadas: 120 pruebas en verde y 53 operaciones Swagger. Imágenes en [IMAGENES.md](IMAGENES.md), criterio de salida y revisión de fase en [VALIDACION_FASE_4.md](VALIDACION_FASE_4.md). Fase 4 cerrada localmente; CI remoto se confirma al publicar el PR.
 
 ### Fase 5 — Venta síncrona y boletos (primero sin colas)
+
+**D-15 confirmada:** `subtotal = Σ(cantidad × precio_unitario)`; `comision = Redondear(subtotal × ComisionPorcentaje)`; `impuestos = Redondear((subtotal + comision) × TasaIva)`; `total = subtotal + comision + impuestos`, sumando componentes ya redondeados. Todo usa `decimal`, nunca `double`; redondeo a 2 decimales con `MidpointRounding.AwayFromZero`. Los precios de tipos_entrada no incluyen IVA. Domain recibe una política tarifaria (record simple) desde Application y no referencia configuración. Tasas configurables en appsettings, inicialmente IVA 0.12 y comisión porcentual 0.10; no se consideran asesoría ni definición legal. Los precios/componentes quedan congelados en la compra: el reembolso total revierte los movimientos originales sin recalcular con tasas vigentes. Con total cero no se generan movimientos (CHECK monto <> 0). Reembolso parcial fuera de alcance.
+
+Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, total 369.60; 33.33 → 3.33, 4.40, 41.06; 0.00 → todos cero; además, invariante subtotal + comisión + impuestos = total sobre una serie de subtotales aleatorios.
 - [ ] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.
 - [ ] **F5-02** Reserva atómica de cupo (`UPDATE` condicional) + devolución idempotente.
 - [ ] **F5-03** `POST /compras` con `Idempotency-Key`, ventana de venta y límite por compra.
@@ -290,4 +295,5 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 | Pasarela real no disponible | Adaptador simulado detrás de puerto (D-10) |
 | Licencias de paquetes | Revisar cada NuGet nuevo (ver `AGENTS.md` §2) |
 | IVA y alcance fiscal | Tasa configurable en appsettings y cálculo en Domain; conciliación de los tres componentes del cobro. Facturación electrónica fuera de alcance |
+| Reembolso parcial | Fuera del alcance actual; solo reembolso total que revierte movimientos registrados, sin recalcular tasas |
 | Compras atascadas o carreras de estado | F6-11: timeout configurable, consulta de pago por public_id y recuperación idempotente; toda transición usa estado esperado y solo el ganador devuelve cupo |

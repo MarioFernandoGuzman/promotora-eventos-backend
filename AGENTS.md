@@ -164,6 +164,7 @@ Puertos locales de referencia: Postgres 5432 · RabbitMQ 5672 (UI 15672) · Mail
 12. **El agente de IA nunca accede a compras, usuarios ni finanzas.** Solo datos públicos y documentos RAG indexados.
 13. **Transiciones condicionales.** Toda transición de estado es un UPDATE condicional `WHERE estado=<esperado>`. Solo quien gana (1 fila afectada) devuelve cupo, en la misma transacción. En reembolsos, el cupo devuelto es el número de boletos que pasaron de VALIDO a ANULADO.
 14. **Perfil único obligatorio.** Cada usuario tiene exactamente una fila de perfil acorde a su rol; validar en aplicación y con constraint trigger `DEFERRABLE INITIALLY DEFERRED` que verifica la invariante al COMMIT.
+15. **Política monetaria D-15.** Precios de tipos_entrada sin IVA. `subtotal = Σ(cantidad × precio_unitario)`; `comision = Redondear(subtotal × ComisionPorcentaje)`; `impuestos = Redondear((subtotal + comision) × TasaIva)`; `total = subtotal + comision + impuestos` (componentes ya redondeados). Todo con `decimal`, nunca `double`, y `MidpointRounding.AwayFromZero` a 2 decimales por componente. Configuración inicial: `Finanzas:TasaIva = 0.12` y `Finanzas:ComisionPorcentaje = 0.10`; comisión porcentual configurable, valor inicial y no dato legal. Application entrega una política tarifaria (record simple) a Domain; Domain no referencia configuración. Los montos se congelan en la compra. Reembolso solo total: revertir movimientos originales sin recalcular con tasas vigentes; parcial fuera de alcance. Total cero no genera movimientos (CHECK monto <> 0).
 
 ---
 
