@@ -6,9 +6,11 @@ using Promotora.Application.Identity.Sessions;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Shared.Health;
+using Promotora.Infrastructure.Venues;
 using Promotora.WebApi.Errors;
 using Promotora.WebApi.Identity;
 using Promotora.WebApi.Middleware;
+using Promotora.WebApi.Venues;
 using Serilog;
 using Serilog.Events;
 
@@ -41,6 +43,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
         builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
     builder.Services.AddIdentityManagement();
     builder.Services.AddIdentityRegistration();
+    builder.Services.AddVenues();
 }
 
 builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);
@@ -74,6 +77,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
     options.OperationFilter<BearerOperationFilter>();
     options.SchemaFilter<IdentityExamplesFilter>();
+    options.SchemaFilter<VenuesExamplesFilter>();
 });
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 

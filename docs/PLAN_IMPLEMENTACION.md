@@ -118,7 +118,7 @@ GitHub Actions confirma el CI de este bloque al publicar el PR.
 Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md), con acceso autenticado a Swagger, cambio inicial, rotación, logout, permisos y CORS de F3-02–F3-05.
 
 ### Fase 4 — Recintos, catálogo y mapas
-- [ ] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
+- [x] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
 - [ ] **F4-02** CRUD de `localidades` con `geometria` y `color`; validar suma de capacidades.
 - [ ] **F4-03** Endpoint público del mapa: `GET /recintos/{id}/mapa` (plano + localidades con geometría y disponibilidad por evento).
 - [ ] **F4-04** CRUD de `categorias_evento` y `presentadores`.
