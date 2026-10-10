@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Shared.Messaging;
 using Promotora.Infrastructure.Ticketing;
+using Promotora.Worker.Messaging;
 using Serilog;
 using Serilog.Events;
 
@@ -32,5 +34,18 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddEmisionBoletosBase64(builder.Configuration["Boletos:SigningKey"], builder.Configuration.GetValue<int?>("Boletos:CategoriaCarreraId"));
     builder.Services.AddExpiracionCompras();
 }
-using var host = builder.Build();
+if (builder.Configuration.GetValue("Outbox:Enabled", false))
+{
+    if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora"))
+        || string.IsNullOrWhiteSpace(builder.Configuration["RabbitMQ:Host"]))
+        throw new InvalidOperationException("Outbox habilitado requiere conexión PostgreSQL y RabbitMQ externos.");
+    var relayOptions = new OutboxRelayOptions(builder.Configuration.GetValue("Outbox:BatchSize", 50),
+        builder.Configuration.GetValue("Outbox:PollIntervalSeconds", 2));
+    relayOptions.Validar();
+    builder.Services.AddSingleton(relayOptions);
+    builder.Services.AddOutboxRelay();
+    builder.Services.AddHostedService<OutboxRelayService>();
+}
+var host = builder.Build();
+await using var hostLifetime = (IAsyncDisposable)host;
 await host.RunAsync();

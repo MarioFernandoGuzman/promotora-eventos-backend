@@ -1,5 +1,7 @@
 # Desarrollo local
 
+RabbitMQ y relay de outbox (F6-01/F6-02): configuración externa de Worker, usuario de Management, comandos separados y pruebas en [MENSAJERIA_OUTBOX.md](MENSAJERIA_OUTBOX.md). Crear una compra todavía no alimenta outbox hasta F6-03.
+
 Requisitos: .NET 10 SDK, Docker Desktop con contenedores Linux, Docker Compose y PowerShell 7. Ejecutar desde la raíz del repositorio.
 
 ## Infraestructura (F2-02)

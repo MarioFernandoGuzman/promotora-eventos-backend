@@ -38,4 +38,123 @@ dotnet test --no-build -c Release --report-trx
 dotnet format --no-restore --verify-no-changes
 ```
 
-Las pruebas verifican routing de los tres tipos, persistencia e identidad, declaración durable repetible, DLQ, TTL y retorno de retry, concurrencia del publisher, cancelación y rechazo de mensajes sin destino. No hay nuevos endpoints ni cambios en Swagger en F6-01.
+Las pruebas verifican routing de los tres tipos, persistencia e identidad, declaración durable repetible, DLQ, TTL y retorno de retry, concurrencia del publisher, cancelación y rechazo de mensajes sin destino. No hay nuevos endpoints ni cambios en Swagger en F6-01/F6-02.
+
+## Escritura y relay — F6-02
+
+`IOutboxWriter` es scoped y comparte el DbContext de `IUnitOfWork`. Exige una transacción explícita activa, valida agregado/ID/tipo/objeto JSON y guarda la fila junto con los cambios pendientes del negocio, sin hacer commit ni acceder a RabbitMQ. Si el caso de uso falla, ambos se revierten. Devuelve el ID estable de V8; el puerto recibe un `JsonElement`, sin dependencias EF o RabbitMQ en Application. La integración de los handlers de compra y registro llegará en F6-03/F6-06.
+
+`IOutboxRelay` usa un contexto independiente, sin cambios pendientes ni transacción de negocio. Selecciona por ID con `FOR UPDATE SKIP LOCKED`, una fila y una transacción de relay por mensaje; las filas del negocio ya están confirmadas antes de ser visibles. Mantiene el lock hasta confirmar el envío y guardar `publicado=true`, `fecha_publicado` UTC e incrementar `intentos` con UPDATE condicional `WHERE publicado=false`. Dos instancias saltan filas bloqueadas. Una cancelación o fallo SQL revierte la transacción del relay y libera el lock al disponerla.
+
+Ante error del publisher incrementa intentos, mantiene pendiente y detiene ese lote; se reintenta en el siguiente ciclo sin eliminar filas. Un mensaje inválido antiguo puede detener cada lote: revisar tipo/bindings y logs de broker antes de reintentar, sin marcarlo publicado manualmente. El máximo de tres intentos y la DLQ corresponden al consumidor, no al relay: el relay no descarta mensajes por fallos del transporte.
+
+La entrega es **al menos una vez**. Si RabbitMQ recibió el mensaje y el proceso cae antes del commit, el siguiente relay lo republica con el mismo `MessageId`. F6-04 debe registrar `mensajes_procesados(id, consumidor)` con los efectos en una sola transacción. Una confirmación del broker no significa que una compra ya fue procesada. No se habilita COMPLETADA sin pagos y ledger de F7.
+
+`OutboxRelayService` prepara la topología al iniciar cada ciclo, crea un scope, procesa un lote y espera con cancelación. Logs solo con conteos/estado, sin payload, credenciales o excepciones sensibles. Shutdown y conexiones se disponen de forma async. Por defecto está deshabilitado; para habilitarlo requiere conexión PostgreSQL y configuración RabbitMQ completas.
+
+| Clave externa | Valor / regla |
+|---|---|
+| RabbitMQ:Host | localhost para Compose; requerido si habilitas outbox |
+| RabbitMQ:Port | 5672 por defecto |
+| RabbitMQ:VirtualHost | / por defecto |
+| RabbitMQ:Username | promotora para el Compose existente |
+| RabbitMQ:Password | contraseña actual del broker; sin valor predeterminado |
+| RabbitMQ:PublishTimeoutSeconds | 15 por defecto; 1–120 |
+| ConnectionStrings:Promotora | login restringido de PostgreSQL; sin valor predeterminado |
+| Outbox:Enabled | false por defecto; true para iniciar el relay |
+| Outbox:BatchSize | 50 por defecto; 1–1000 |
+| Outbox:PollIntervalSeconds | 2 por defecto; 1–300 |
+
+## Ejecutar Worker en tu entorno local
+
+Desde la raíz, con Docker y la base migrada según [DESARROLLO_LOCAL.md](DESARROLLO_LOCAL.md). Los comandos de lectura de contraseñas funcionan en Windows PowerShell 5.1 y 7. Utiliza las contraseñas actuales de tus volúmenes; cambiar una variable no cambia credenciales de un broker/base ya inicializados.
+
+Si las variables de Compose no están en esta terminal, leerlas sin imprimirlas:
+
+```powershell
+$env:POSTGRES_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host 'Contraseña actual de postgres para Compose' -AsSecureString)).Password
+```
+
+```powershell
+$env:RABBITMQ_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host 'Contraseña actual de RabbitMQ para Compose' -AsSecureString)).Password
+```
+
+```powershell
+docker compose up -d
+```
+
+```powershell
+docker compose run --rm flyway migrate
+```
+
+```powershell
+docker compose run --rm flyway info
+```
+
+Configurar el proceso Worker por variables de esta terminal:
+
+```powershell
+$env:DOTNET_ENVIRONMENT = 'Development'
+```
+
+```powershell
+$env:RabbitMQ__Host = 'localhost'
+```
+
+```powershell
+$env:RabbitMQ__Username = 'promotora'
+```
+
+```powershell
+$env:RabbitMQ__Password = $env:RABBITMQ_PASSWORD
+```
+
+Si `ConnectionStrings__Promotora` ya existe en la terminal, se comparte con Worker. Si solo está en user-secrets de WebApi, configura también la conexión restringida del Worker; este host tiene un almacén independiente. El login debe existir previamente según la guía local:
+
+```powershell
+$workerConnection = [System.Data.Common.DbConnectionStringBuilder]::new()
+```
+
+```powershell
+$workerConnection['Host'] = 'localhost'
+```
+
+```powershell
+$workerConnection['Port'] = 5432
+```
+
+```powershell
+$workerConnection['Database'] = 'promotora'
+```
+
+```powershell
+$workerConnection['Username'] = 'promotora_runtime'
+```
+
+```powershell
+$workerConnection['Password'] = [System.Net.NetworkCredential]::new('', (Read-Host 'Contraseña actual de promotora_runtime' -AsSecureString)).Password
+```
+
+```powershell
+$env:ConnectionStrings__Promotora = $workerConnection.ConnectionString
+```
+
+```powershell
+Remove-Variable workerConnection
+```
+
+```powershell
+$env:Outbox__Enabled = 'true'
+```
+
+```powershell
+dotnet run --project src/Promotora.Worker
+```
+
+Opcionalmente guardar los mismos valores con `dotnet user-secrets set` para Worker, en Development; nunca en appsettings ni archivos del repo. Las claves de boletos configuradas previamente se conservan; este bloque no necesita un usuario nuevo de la API ni contraseña de bootstrap.
+
+Abrir [RabbitMQ Management](http://localhost:15672): usuario `promotora`, contraseña actual leída arriba. Deben aparecer dos exchanges (`promotora.compras`, `promotora.dlx`) y las cinco colas de la tabla. Con outbox vacío no se generarán mensajes. Crear una compra en Swagger todavía reserva PENDIENTE y no alimenta outbox hasta F6-03. Para verificar escritura, rollback, confirmación y recuperación usa la suite automática, sin insertar SQL manual en tu base local.
+
+Las pruebas `OutboxTests` usan PostgreSQL+pgvector migrado con Flyway y el rol restringido, junto con RabbitMQ real: negocio/outbox rollback, rechazo fuera de transacción, fallo y reintento, mensaje sin destino, dos relays con fila bloqueada, caída tras confirmación antes de commit con ID repetido y host periódico con shutdown. No hay pruebas omitidas ni dependencias de tus puertos/contraseñas locales.
+
+Swagger y la autenticación de frontend siguen documentados en [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md); los módulos internos de mensajería se verifican en Worker, RabbitMQ y pruebas, sin endpoints de prueba.

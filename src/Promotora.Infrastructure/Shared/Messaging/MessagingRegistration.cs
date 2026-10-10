@@ -5,6 +5,12 @@ namespace Promotora.Infrastructure.Shared.Messaging;
 
 public static class MessagingRegistration
 {
+    public static IServiceCollection AddOutboxRelay(this IServiceCollection services)
+    {
+        services.AddScoped<IOutboxRelay, EfOutboxRelay>();
+        return services;
+    }
+
     public static IServiceCollection AddRabbitMqMessaging(this IServiceCollection services, RabbitMqOptions options)
     {
         options.Validar();

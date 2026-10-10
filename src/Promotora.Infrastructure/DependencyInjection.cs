@@ -7,6 +7,7 @@ using Promotora.Infrastructure.Audit;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Identity.Persistence;
 using Promotora.Infrastructure.Shared;
+using Promotora.Infrastructure.Shared.Messaging;
 using Promotora.Infrastructure.Shared.Persistence;
 
 namespace Promotora.Infrastructure;
@@ -23,6 +24,7 @@ public static class DependencyInjection
             services.AddDbContext<PromotoraDbContext>(options => options.UsePromotoraPostgres(connectionString));
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuditLogger, EfAuditLogger>();
+            services.AddScoped<IOutboxWriter, EfOutboxWriter>();
             services.AddScoped<IUsuarioRepository, EfUsuarioRepository>();
         }
 
