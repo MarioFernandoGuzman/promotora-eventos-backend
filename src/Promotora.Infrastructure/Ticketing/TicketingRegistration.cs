@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Promotora.Application.Shared;
 using Promotora.Application.Ticketing;
 using Promotora.Application.Ticketing.Ports;
 using Promotora.Infrastructure.Shared;
@@ -35,6 +36,16 @@ public static class TicketingRegistration
         if (options.Moneda != "GTQ") throw new ArgumentException("El catálogo actual utiliza GTQ.", nameof(options));
         services.AddSingleton(options);
         services.AddScoped<ICompraRepository, EfCompraRepository>();
+        services.AddScoped<ICompraConsultaRepository, EfCompraConsultaRepository>();
+        services.AddScoped<ClienteCompraAccess>();
+        services.AddScoped<IValidator<ObtenerCompraQuery>, ObtenerCompraValidator>();
+        services.AddScoped<IValidator<MisComprasQuery>, MisComprasValidator>();
+        services.AddScoped<IValidator<MisBoletosQuery>, MisBoletosValidator>();
+        services.AddScoped<IValidator<CancelarCompraCommand>, CancelarCompraValidator>();
+        services.AddQueryHandler<ObtenerCompraQuery, CompraCreadaDto, ObtenerCompraHandler>();
+        services.AddQueryHandler<MisComprasQuery, PaginaDto<CompraCreadaDto>, MisComprasHandler>();
+        services.AddQueryHandler<MisBoletosQuery, PaginaDto<BoletoClienteDto>, MisBoletosHandler>();
+        services.AddCommandHandler<CancelarCompraCommand, CompraCreadaDto, CancelarCompraHandler>();
         services.AddScoped<ICupoEntradaRepository, EfCupoEntradaRepository>();
         services.AddScoped<ITicketingTransaction, EfTicketingTransaction>();
         services.AddScoped<IValidator<CrearCompraCommand>, CrearCompraValidator>();
