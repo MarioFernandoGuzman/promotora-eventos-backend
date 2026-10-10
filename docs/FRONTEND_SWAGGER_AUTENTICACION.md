@@ -259,3 +259,11 @@ Las pruebas usan PostgreSQL temporal; no necesitan credenciales del administrado
 La guía [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md) describe contratos, ejemplos y permisos. GET `/api/v1/catalogo/eventos` y `/{id}` son públicos; no necesitan Bearer. `/api/v1/eventos` es gestión privada para dueño del recinto o administrador. Categorías/presentadores se consultan con sesión completa y los modifica un administrador. Asociaciones y tipos de entrada se gestionan bajo `/api/v1/eventos/{eventoId}` y comprueban propiedad en los handlers.
 
 En Swagger, iniciar sesión → completar cambio obligatorio si aplica → Authorize con accessToken → crear recinto y evento BORRADOR → configurar presentadores/tipos → programar → quitar autorización para probar listado/detalle público. El catálogo público omite creador, dueño y datos de identidad. Usar recinto.id y evento.id del detalle para consultar el mapa; su disponibilidad informativa no reserva cupo.
+
+## 13. Subida de imágenes disponible (F4-09/F4-10)
+
+[IMAGENES.md](IMAGENES.md) contiene los tres POST para plano/evento/presentador, el GET público, límites y ejemplo FormData. En Swagger, con sesión completa y permiso sobre el recurso: Try it out → id → archivo → Choose File → PNG/JPEG → Execute. La respuesta 200 devuelve una URL relativa que debe combinarse con el origen de la API. No copiar rutas locales ni registrar Bearer en logs.
+
+Planos de recintos activos son públicos; fotos de eventos BORRADOR o presentadores sin evento visible devuelven 404 en la ruta de imágenes. Antes de publicar, asociar presentadores y terminar configuración. Después de pasar a PROGRAMADO/EN_VENTA, quitar Authorize para comprobar catálogo/mapa/PNG. Otro dueño devuelve 403 en gestión y una sesión inicial sin cambio de contraseña sigue limitada. Al reemplazar una foto, usar la nueva URL de la respuesta.
+
+Cierre de Fase 4: 120 pruebas, build/format y 53 operaciones Swagger; evidencia y limitaciones en [VALIDACION_FASE_4.md](VALIDACION_FASE_4.md). El flujo de compra/boletos se implementa a partir de Fase 5.

@@ -77,6 +77,6 @@ Cuerpos JSON, rutas y casos de error en [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.m
 
 ## Alcance restante
 
-F4-09 (subida de imágenes) y F4-10 (revisión formal de auditoría/propiedad y cierre de fase) siguen pendientes. El flujo recinto → localidad → evento → tipos → catálogo/mapa ya puede probarse, pero no se declara cerrada la Fase 4. La venta de boletos sigue en F5/F6 y los reembolsos en F7; cancelar un evento con compras se bloquea con 409 para no producir una cancelación financiera incompleta. Precios públicos son base, antes de los componentes de compra. Generales/distancias usan cupo por tipo; el límite agregado especificado en el modelo es por localidad.
+Este documento registra el bloque F4-04–F4-08. F4-09 (imágenes) y F4-10 (auditoría/propiedad) se completaron posteriormente; el cierre y la evidencia vigente están en [VALIDACION_FASE_4.md](VALIDACION_FASE_4.md). La venta de boletos sigue en F5/F6 y los reembolsos en F7; cancelar un evento con compras se bloquea con 409 para no producir una cancelación financiera incompleta. Precios públicos son base, antes de los componentes de compra. Generales/distancias usan cupo por tipo; el límite agregado especificado en el modelo es por localidad.
 
 GitHub Actions debe confirmar CI al publicar el PR. La validación aquí es local y no implica despliegue.

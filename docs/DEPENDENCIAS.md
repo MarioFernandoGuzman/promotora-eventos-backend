@@ -14,6 +14,8 @@ Versiones fijadas centralmente en `Directory.Packages.props`. Domain no tiene pa
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 | Proveedor PostgreSQL para EF 10 | [PostgreSQL](https://github.com/npgsql/efcore.pg/blob/main/LICENSE) |
 | EFCore.NamingConventions | 10.0.1 | Convención snake_case | [Apache-2.0](https://www.nuget.org/packages/EFCore.NamingConventions/10.0.1) |
 | Pgvector.EntityFrameworkCore | 0.3.0 | Vector 1536 y distancia coseno (EF 9/10) | [MIT](https://www.nuget.org/packages/Pgvector.EntityFrameworkCore/0.3.0) |
+| SkiaSharp | 3.119.4 | Decodificar PNG/JPEG con límites y reexportar PNG desde píxeles en Infrastructure; evita guardar archivos originales no confiables | [MIT](https://github.com/mono/SkiaSharp/blob/main/LICENSE.md), [NuGet](https://www.nuget.org/packages/SkiaSharp/3.119.4) |
+| SkiaSharp.NativeAssets.Linux.NoDependencies | 3.119.4 | Binarios nativos compatibles con el CI/Linux, misma versión del decodificador; Windows/macOS vienen transitivamente con SkiaSharp | [MIT](https://www.nuget.org/packages/SkiaSharp.NativeAssets.Linux.NoDependencies/3.119.4) |
 | Testcontainers.PostgreSql | 4.16.0 | PostgreSQL+pgvector temporal en pruebas | [MIT](https://github.com/testcontainers/testcontainers-dotnet/blob/develop/LICENSE) |
 | FluentValidation | 12.1.1 | Validadores async y decoradores propios en Application | [Apache-2.0](https://www.nuget.org/packages/FluentValidation/12.1.1) |
 | Swashbuckle.AspNetCore | 10.3.0 | Documento OpenAPI v1 y Swagger UI | [MIT](https://www.nuget.org/packages/Swashbuckle.AspNetCore/10.3.0) |
