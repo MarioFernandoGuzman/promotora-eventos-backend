@@ -124,7 +124,7 @@ Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.m
 - [x] **F4-04** CRUD de `categorias_evento` y `presentadores`.
 - [x] **F4-05** CRUD de `eventos` (estados, `creado_por`, ventana de venta, `max_boletos_por_compra`).
 - [x] **F4-06** Gestión de `evento_presentadores`.
-- [ ] **F4-07** CRUD de `tipos_entrada` (general / localidad / distancias de carrera) con validaciones de cupo.
+- [x] **F4-07** CRUD de `tipos_entrada` (general / localidad / distancias de carrera) con validaciones de cupo.
 - [ ] **F4-08** Listado público de eventos con filtros (categoría, ciudad, fecha, texto) y paginación.
 - [ ] **F4-09** Subida de imágenes (plano, evento, presentador) con almacenamiento local detrás de un puerto.
 - [ ] **F4-10** Auditoría de CRUD y pruebas de propiedad.

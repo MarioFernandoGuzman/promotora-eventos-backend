@@ -22,6 +22,10 @@ public sealed class CatalogExamplesFilter : ISchemaFilter
             {"presentadorId":1,"rol":"HEADLINER"}
             """ : context.Type == typeof(RolPresentadorRequest) ? """
             {"rol":"INVITADO"}
+            """ : context.Type == typeof(CrearTipoEntradaRequest) ? """
+            {"nombre":"General","precio":150.00,"cupoTotal":100,"localidadId":null}
+            """ : context.Type == typeof(EditarTipoEntradaRequest) ? """
+            {"nombre":"General","precio":175.00,"cupoTotal":80}
             """ : null;
         if (json is not null) concrete.Example = JsonNode.Parse(json);
     }

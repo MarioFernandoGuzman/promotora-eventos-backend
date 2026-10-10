@@ -15,6 +15,16 @@ public static class CatalogRegistration
         services.AddScoped<CatalogAccess>();
         services.AddScoped<EventoAccess>();
         services.AddScoped<EventoConfigurationAccess>();
+        services.AddScoped<TipoEntradaCapacity>();
+        services.AddScoped<ITipoEntradaRepository, EfTipoEntradaRepository>();
+        services.AddScoped<IValidator<CrearTipoEntradaCommand>, CrearTipoEntradaValidator>();
+        services.AddScoped<IValidator<EditarTipoEntradaCommand>, EditarTipoEntradaValidator>();
+        services.AddScoped<IValidator<ListarTiposEntradaQuery>, ListarTiposEntradaValidator>();
+        services.AddCommandHandler<CrearTipoEntradaCommand, TipoEntradaDto, CrearTipoEntradaHandler>();
+        services.AddCommandHandler<EditarTipoEntradaCommand, TipoEntradaDto, EditarTipoEntradaHandler>();
+        services.AddCommandHandler<BajaTipoEntradaCommand, Unit, BajaTipoEntradaHandler>();
+        services.AddQueryHandler<ObtenerTipoEntradaQuery, TipoEntradaDto, ObtenerTipoEntradaHandler>();
+        services.AddQueryHandler<ListarTiposEntradaQuery, PaginaDto<TipoEntradaDto>, ListarTiposEntradaHandler>();
         services.AddScoped<IEventoPresentadorRepository, EfEventoPresentadorRepository>();
         services.AddScoped<IValidator<AsociarPresentadorCommand>, AsociarPresentadorValidator>();
         services.AddScoped<IValidator<EditarRolPresentadorCommand>, EditarRolPresentadorValidator>();

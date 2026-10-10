@@ -49,3 +49,13 @@ Prueba local: crear recinto propio → crear evento → editar → programar →
 `/api/v1/eventos/{eventoId}/presentadores`: POST asocia con `{"presentadorId":1,"rol":"HEADLINER"}`; GET lista paginado, incluidos presentadores inactivos para gestión privada. PUT `/{presentadorId}` recibe `{"rol":"INVITADO"}`; DELETE `/{presentadorId}` retira solo la relación (baja repetida → 200 sin auditoría duplicada). El rol es texto opcional hasta 30 caracteres: los ejemplos no constituyen un enum.
 
 Consultas: dueño del recinto o administrador. Escrituras: además, evento BORRADOR/PROGRAMADO sin compras y recinto activo; asociación/edición requieren presentador activo. Duplicado → 409; presentador inexistente → 404; inactivo → 409; rol largo → 400; otro dueño/cliente → 403. DELETE físico de la relación está permitido por la matriz CRUD; conserva ambos recursos e historial auditado. Probar asociar → listar → cambiar rol → retirar dos veces; la asociación duplicada no crea otra fila ni auditoría.
+
+## F4-07: tipos de entrada
+
+`/api/v1/eventos/{eventoId}/tipos-entrada`: POST, GET paginado, GET `/{id}`, PUT `/{id}`, DELETE `/{id}`. Gestión privada para dueño del recinto o administrador; las escrituras requieren evento BORRADOR/PROGRAMADO sin compras y recinto activo. Cupo reservado o vendido bloquea edición/baja con 409. Evento/localidad del tipo son inmutables; DELETE es baja lógica idempotente y no devuelve cupo.
+
+POST: `{"nombre":"VIP","precio":150.00,"cupoTotal":50,"localidadId":1}`. Para general o distancia, localidadId=null y nombre General/5K/10K/21K/42K; no se añade otra columna. PUT recibe solo nombre/precio/cupoTotal. Nombre obligatorio hasta 100; precio 0–99999999.99, máximo dos decimales; cupoTotal ≥ 0. El cuerpo no configura cupoDisponible; comienza igual al cupoTotal y se ajusta con UPDATE condicional atómico por diferencia, antes de ventas. El precio se protege de cambios con historial de compras.
+
+Localidad debe estar activa y pertenecer al recinto del evento; localidad ajena/inexistente → 404. La suma de cupoTotal de todos los tipos del evento en esa localidad, incluidos inactivos, no excede su capacidad (422); bloqueos compartidos y triggers existentes protegen la carrera. Conforme a BASE_DE_DATOS.md §6, el límite agregado es por localidad; generales y distancias tienen cupo independiente por tipo, sin inventar otro límite agregado.
+
+Prueba local: crear tipo de localidad → reducir cupo total y comprobar disponibilidad → otro dueño no accede → exceso de capacidad devuelve 422 → baja dos veces y confirmar activo=false → el tipo inactivo sigue contando en el límite → crear General/10K → programar evento → abrir venta → editar precio/cupo devuelve 409. El mapa público existente refleja automáticamente los tipos activos.
