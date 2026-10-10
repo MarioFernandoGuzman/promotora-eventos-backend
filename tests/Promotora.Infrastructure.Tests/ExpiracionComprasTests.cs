@@ -137,6 +137,7 @@ public sealed class ExpiracionComprasTests(PostgresFixture fixture) : IClassFixt
     private sealed record Fijo(DateTime UtcNow) : IClock;
     private sealed class ConsultaConCarrera(IExpiracionCompraRepository repo, Func<CancellationToken, Task> carrera) : IExpiracionCompraRepository
     {
+        public Task<bool> IntentarCoordinarAsync(CancellationToken ct) => repo.IntentarCoordinarAsync(ct);
         public async Task<IReadOnlyList<int>> VencidasAsync(DateTime ahora, int lote, CancellationToken ct)
         { var ids = await repo.VencidasAsync(ahora, lote, ct); await carrera(ct); return ids; }
     }

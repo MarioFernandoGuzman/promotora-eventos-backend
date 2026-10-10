@@ -6,6 +6,15 @@ namespace Promotora.Infrastructure.Ticketing;
 
 public sealed class EfExpiracionCompraRepository(PromotoraDbContext db) : IExpiracionCompraRepository
 {
+    public async Task<bool> IntentarCoordinarAsync(CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("La coordinación requiere transacción explícita.");
+        // Namespace PROM y tarea 607: constante compartida por todas las instancias de esta BD.
+        const int espacio = 0x50524F4D;
+        const int tarea = 607;
+        return await db.Database.SqlQuery<bool>($"SELECT pg_try_advisory_xact_lock({espacio}, {tarea}) AS \"Value\"").SingleAsync(ct);
+    }
+
     public async Task<IReadOnlyList<int>> VencidasAsync(DateTime ahora, int lote, CancellationToken ct)
     {
         if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("La expiración requiere transacción explícita.");
