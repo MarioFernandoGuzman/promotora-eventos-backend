@@ -150,8 +150,10 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
   - Puerto y singleton en API/Worker; referencia public_id, monto congelado, repetición concurrente, consulta y rechazo configurable. Diseño, comandos y límites en [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md). El POST aún no cobra: integración transaccional con pagos/ledger depende de F7-02/F7-03.
 - [x] **F5-05** Emisión de boletos con token QR firmado (HMAC) y datos del asistente (obligatorios en carreras).
   - Componente interno transaccional, emisión concurrente idempotente y auditoría; exige compra COMPLETADA con respaldo financiero consistente. Firma con clave externa y categoría de carreras identificada por ID configurable. 187 pruebas Release en verde. Configuración y pruebas en [BOLETOS_EMISION.md](BOLETOS_EMISION.md); revisión en [VALIDACION_F5_PAGO_BOLETOS.md](VALIDACION_F5_PAGO_BOLETOS.md). La finalización HTTP sigue pendiente hasta F7-02/F7-03 según la dependencia documentada abajo.
-- [ ] **F5-06** `GET /compras/{publicId}`, mis compras, mis boletos (con QR); cancelación por usuario solo desde PENDIENTE mediante UPDATE condicional; en PROCESANDO responde 409. Solo el ganador devuelve cupo en la misma transacción.
-- [ ] **F5-07** Validación en puerta: `POST /boletos/validar` (admin/dueño), atómica.
+- [x] **F5-06** `GET /compras/{publicId}`, mis compras, mis boletos (con QR); cancelación por usuario solo desde PENDIENTE mediante UPDATE condicional; en PROCESANDO responde 409. Solo el ganador devuelve cupo en la misma transacción.
+  - Consultas propias paginadas, QR sin caché, compra ajena 404, cancelación repetida idempotente y auditoría UPDATE transaccional. Pruebas de veinte cancelaciones concurrentes, propiedad, paginación y rollback; guía y prueba local en [COMPRAS_API.md](COMPRAS_API.md).
+- [x] **F5-07** Validación en puerta: `POST /boletos/validar` (admin/dueño), atómica.
+  - Firma HMAC, propiedad del recinto y compra COMPLETADA; UPDATE condicional VALIDO → USADO con fecha_uso/validado_por y auditoría VALIDATE transaccional. Veinte escaneos con dos administradores permiten una sola entrada. Contratos, roles, errores y comandos separados en [BOLETOS_VALIDACION.md](BOLETOS_VALIDACION.md).
 - [ ] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
 - [ ] **F5-09** **Prueba de concurrencia:** N hilos sobre cupo K ⇒ vendidos = K exactos.
 - [ ] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.

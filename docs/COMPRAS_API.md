@@ -1,6 +1,6 @@
-# Compras: reserva e idempotencia — F5-01 a F5-03
+# Compras: reserva, consultas y cancelación — F5-01 a F5-06
 
-Este bloque añade una operación en Swagger: `POST /api/v1/compras`. Crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 ya están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). GET de compra, cancelación y job de expiración corresponden a F5-06/F5-08. El Worker aún no procesa estas compras; el contrato asíncrono 202 + outbox llega en F6-03. No usar esta etapa para ventas reales.
+POST /api/v1/compras crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. F5-06 añade consulta, listas propias y cancelación. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). El job de expiración corresponde a F5-08; el Worker aún no procesa estas compras y el contrato asíncrono 202 + outbox llega en F6-03.
 
 ## Módulos y transacción
 
@@ -100,7 +100,32 @@ dotnet run --project src/Promotora.WebApi
 3. Abrir http://localhost:5080/swagger. Como administrador/dueño, preparar recinto, evento, tipos a Q100 y cupo suficiente, programar y abrir venta; seguir [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md). Elegir fechas que incluyan el momento de la prueba, en UTC. Como cliente, consultar GET `/api/v1/catalogo/eventos/{id}` para copiar eventoId y tipoEntradaId.
 4. Login como CLIENTE, copiar accessToken y pegarlo sin prefijo Bearer en **Authorize**. Abrir Compras → POST → Try it out. Indicar una clave nueva y el JSON con cantidad 3. Esperar 201, PENDIENTE y total Q369.60.
 5. Ejecutar exactamente la misma clave otra vez: 200 y mismo publicId. Consultar nuevamente el catálogo: el cupo se descontó una sola vez. Con nueva clave y cantidad mayor al disponible, esperar 409; con máximo excedido, 422. Sin clave, 400; como administrador, 403.
-6. Las compras quedan reservadas en esta etapa. expiraEn se guarda, pero todavía no se devuelve cupo automáticamente: requiere F5-08. Para repetir pruebas sin agotar el tipo, preparar un nuevo evento de desarrollo; no borrar compras ni modificar manualmente su estado/cupo.
+6. Consultar GET /api/v1/compras/{publicId} y GET /api/v1/compras. Cancelar con POST /api/v1/compras/{publicId}/cancelar: 200 y CANCELADA; el cupo del catálogo vuelve al valor previo. Repetir no devuelve cupo adicional. La expiración automática aún requiere F5-08; no modificar manualmente estados/cupos ni borrar compras.
+
+## Consultas propias y cancelación — F5-06
+
+Todas requieren CLIENTE activo y sesión completa. La propiedad se comprueba también en Application; no se acepta clienteId por query ni body.
+
+| Operación | Respuesta |
+|---|---|
+| GET /api/v1/compras/{publicId} | 200 CompraCreadaDto con montos congelados y estado actual; ajena/inexistente 404 |
+| GET /api/v1/compras?page=1&pageSize=20 | 200 {items, page, pageSize, total}; compras propias, incluyendo canceladas |
+| GET /api/v1/boletos?page=1&pageSize=20 | 200 página de boletos propios con codigoQr, estado, asistente, fechaEmision/fechaUso y compraPublicId |
+| POST /api/v1/compras/{publicId}/cancelar | 200 compra CANCELADA; sin body; repetir CANCELADA también 200 |
+
+Listados ordenados por fecha descendente y luego ID descendente; page entre 1 y 100000, pageSize entre 1 y 100 (fuera de rango: 400). UUID vacío: 400. Sin JWT o sesión revocada/inactiva: 401; rol incompatible: 403. No se revela la existencia de una compra ajena. Las consultas responden Cache-Control: no-store para proteger datos y QR.
+
+Cancelar solo permite PENDIENTE, incluso si expiraEn ya pasó mientras el job aún no ganó la transición. PROCESANDO, COMPLETADA, EXPIRADA o FALLIDA devuelven 409. El UPDATE condicional gana la transición antes de devolver cupo, dentro de la misma transacción que auditoría UPDATE; ante fallo se revierte todo. No se borran detalles ni se generan pagos/reembolsos. Repetir no duplica auditoría.
+
+El frontend puede consultar la compra para actualizar el estado. En mis boletos, representar codigoQr como QR sin alterar el texto ni guardarlo en logs; mantener los estados USADO/ANULADO visibles como historial. Una compra PENDIENTE no tiene boletos: la lista puede estar vacía hasta integrar emisión con F7.
+
+Para comprobar las nuevas operaciones contra PostgreSQL temporal con Docker, después del build:
+
+```powershell
+dotnet test --project tests/Promotora.Api.Tests --no-build -c Release --filter-class '*CompraConsultasApiTests'
+```
+
+Las pruebas incluyen veinte cancelaciones simultáneas, devolución/auditoría únicas, rollback, paginación, QR propio y rechazo de otro cliente. No modifican la base local de Compose.
 
 Para generar solo una clave de compra en PowerShell:
 
