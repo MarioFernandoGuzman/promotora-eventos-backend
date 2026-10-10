@@ -6,11 +6,13 @@ using Promotora.Application.Identity.Sessions;
 using Promotora.Infrastructure;
 using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Identity;
+using Promotora.Infrastructure.Images;
 using Promotora.Infrastructure.Shared.Health;
 using Promotora.Infrastructure.Venues;
 using Promotora.WebApi.Catalog;
 using Promotora.WebApi.Errors;
 using Promotora.WebApi.Identity;
+using Promotora.WebApi.Images;
 using Promotora.WebApi.Middleware;
 using Promotora.WebApi.Venues;
 using Serilog;
@@ -47,6 +49,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentityRegistration();
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
+    builder.Services.AddImages(builder.Configuration["Images:RootPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "uploads"));
 }
 
 builder.Services.AddPromotoraAuthentication(jwtKey, issuer, audience);
@@ -79,6 +82,7 @@ builder.Services.AddSwaggerGen(options =>
     });
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
     options.OperationFilter<BearerOperationFilter>();
+    options.OperationFilter<ImagenesOperationFilter>();
     options.SchemaFilter<IdentityExamplesFilter>();
     options.SchemaFilter<VenuesExamplesFilter>();
     options.SchemaFilter<CatalogExamplesFilter>();

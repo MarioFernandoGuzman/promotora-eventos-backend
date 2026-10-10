@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../Promotora.Infrastructure.Tests/ImagenFixture.cs" Link="Fixtures/ImagenFixture.cs" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <Compile Include="../Promotora.Infrastructure.Tests/PostgresFixture.cs" Link="Fixtures/PostgresFixture.cs" />
     <None Include="../../database/migrations/*.sql" Link="Migrations/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
