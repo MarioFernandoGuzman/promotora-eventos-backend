@@ -55,7 +55,8 @@ public sealed class ComprasController(ICommandHandler<CrearCompraCommand, CrearC
     [HttpPost]
     [EnableRateLimiting(IdentityHttpProtection.Compra)]
     [EndpointSummary("Reservar compra PENDIENTE; precios del catálogo y clave idempotente obligatoria")]
-    [EndpointDescription("201 al crear y 200 al reutilizar una clave propia. Reserva cupo; integración de pago/ledger/emisión pendiente de F7-02/F7-03. En F6-03 el contrato pasará a 202.")]
+    [EndpointDescription("Reserva + detalles + auditoría + outbox en una transacción. Actualmente 201 nueva / 200 repetida; consumidor financiero pendiente de F7-02/F7-03. Contrato 202 con Location preparado, habilitado solo por el módulo de procesamiento completo; no hay flag de configuración para adelantarlo.")]
+    [ProducesResponseType<CompraCreadaDto>(StatusCodes.Status202Accepted)]
     [ProducesResponseType<CompraCreadaDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<CompraCreadaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -70,6 +71,8 @@ public sealed class ComprasController(ICommandHandler<CrearCompraCommand, CrearC
     {
         var result = await crear.HandleAsync(new CrearCompraCommand(request.EventoId, request.Items, idempotencyKey), ct);
         if (result.IsFailure) return FromResult(Result<CompraCreadaDto>.Failure(result.Errors));
+        if (result.Value.ProcesamientoDisponible && result.Value.Compra.Estado is "PENDIENTE" or "PROCESANDO")
+            return AcceptedAtAction(nameof(Obtener), new { publicId = result.Value.Compra.PublicId }, result.Value.Compra);
         return result.Value.Reutilizada ? Ok(result.Value.Compra) : StatusCode(StatusCodes.Status201Created, result.Value.Compra);
     }
 }

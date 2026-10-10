@@ -21,6 +21,7 @@ public sealed class CompraIdempotenciaApiTests(PostgresFixture fixture) : IClass
         Assert.Equal(1, respuestas.Count(r => r.StatusCode == HttpStatusCode.Created)); Assert.Equal(39, respuestas.Count(r => r.StatusCode == HttpStatusCode.OK));
         var compras = await Task.WhenAll(respuestas.Select(r => r.Content.ReadFromJsonAsync<CompraCreadaDto>(ct)));
         Guid publicId = compras[0]!.PublicId;
+        Assert.Equal(1, await db.OutboxMensajes.CountAsync(m => m.AgregadoId == publicId.ToString("D") && m.Tipo == "compra.procesar", ct));
         Assert.All(compras, c => { Assert.NotNull(c); Assert.Equal(publicId, c.PublicId); Assert.Equal(369.60m, c.Total); Assert.Equal(3, Assert.Single(c.Items).Cantidad); });
         await VerificarUnaCompraAsync(db, key, datos.TipoId, 7, ct);
         foreach (var response in respuestas) response.Dispose();

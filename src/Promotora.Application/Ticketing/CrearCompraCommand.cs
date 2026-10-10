@@ -5,7 +5,7 @@ namespace Promotora.Application.Ticketing;
 
 public sealed record ItemCompra(int TipoEntradaId, int Cantidad);
 public sealed record CrearCompraCommand(int EventoId, IReadOnlyList<ItemCompra> Items, string IdempotencyKey) : ICommand<CrearCompraResultado>;
-public sealed record CrearCompraResultado(CompraCreadaDto Compra, bool Reutilizada);
+public sealed record CrearCompraResultado(CompraCreadaDto Compra, bool Reutilizada, bool ProcesamientoDisponible = false);
 public sealed record DetalleCompraDto(int TipoEntradaId, int Cantidad, decimal PrecioUnitario, decimal Subtotal);
 public sealed record CompraCreadaDto(Guid PublicId, int EventoId, string Estado, DateTime FechaCompra, DateTime ExpiraEn,
     string Moneda, decimal Subtotal, decimal ComisionPlataforma, decimal Impuestos, decimal Total, IReadOnlyList<DetalleCompraDto> Items);
