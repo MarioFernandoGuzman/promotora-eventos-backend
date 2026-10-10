@@ -115,10 +115,12 @@ Validación local: 82 pruebas en verde, build Release sin warnings, format limpi
 con bootstrap y cambio obligatorio verificados; ver [VALIDACION_FASE_3.md](VALIDACION_FASE_3.md).
 GitHub Actions confirma el CI de este bloque al publicar el PR.
 
+Guía de integración para el equipo frontend: [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md), con acceso autenticado a Swagger, cambio inicial, rotación, logout, permisos y CORS de F3-02–F3-05.
+
 ### Fase 4 — Recintos, catálogo y mapas
-- [ ] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
-- [ ] **F4-02** CRUD de `localidades` con `geometria` y `color`; validar suma de capacidades.
-- [ ] **F4-03** Endpoint público del mapa: `GET /recintos/{id}/mapa` (plano + localidades con geometría y disponibilidad por evento).
+- [x] **F4-01** CRUD de `recintos` (dueño solo los suyos; admin todos).
+- [x] **F4-02** CRUD de `localidades` con `geometria` y `color`; validar suma de capacidades.
+- [x] **F4-03** Endpoint público del mapa: `GET /recintos/{id}/mapa` (plano + localidades con geometría y disponibilidad por evento).
 - [ ] **F4-04** CRUD de `categorias_evento` y `presentadores`.
 - [ ] **F4-05** CRUD de `eventos` (estados, `creado_por`, ventana de venta, `max_boletos_por_compra`).
 - [ ] **F4-06** Gestión de `evento_presentadores`.
@@ -128,6 +130,8 @@ GitHub Actions confirma el CI de este bloque al publicar el PR.
 - [ ] **F4-10** Auditoría de CRUD y pruebas de propiedad.
 
 **Salida:** un dueño puede crear recinto, zonas, evento y tipos de entrada; el público ve catálogo y mapa.
+
+Primer bloque F4-01–F4-03 implementado: 93 pruebas en verde y revisión en [VALIDACION_F4_RECINTOS_MAPA.md](VALIDACION_F4_RECINTOS_MAPA.md). La fase sigue abierta: F4-04–F4-10 pendientes.
 
 ### Fase 5 — Venta síncrona y boletos (primero sin colas)
 - [ ] **F5-01** Dominio de compra: entidades, estados condicionales, cálculo de totales; comisión como cargo al cliente e IVA aparte, tasa configurada en appsettings y cálculo en Domain.

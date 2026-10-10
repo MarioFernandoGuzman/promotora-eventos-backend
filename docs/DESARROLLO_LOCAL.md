@@ -52,9 +52,17 @@ $connection['Password'] = $env:PROMOTORA_DB_PASSWORD
 $env:ConnectionStrings__Promotora = $connection.ConnectionString
 
 # Fase 3: clave JWT y primer administrador, fuera del repositorio.
-$jwtKey = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
-dotnet user-secrets set 'Jwt:SigningKey' $jwtKey --project src/Promotora.WebApi
-$jwtKey = $null
+$jwtKeyBytes = New-Object byte[] 32
+$jwtRng = [Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $jwtRng.GetBytes($jwtKeyBytes)
+    $jwtKey = [Convert]::ToBase64String($jwtKeyBytes)
+    dotnet user-secrets set 'Jwt:SigningKey' $jwtKey --project src/Promotora.WebApi
+} finally {
+    $jwtRng.Dispose()
+    $jwtKey = $null
+    [Array]::Clear($jwtKeyBytes, 0, $jwtKeyBytes.Length)
+}
 dotnet user-secrets set 'Bootstrap:AdminEmail' 'admin@example.test' --project src/Promotora.WebApi
 $bootstrapPassword = Read-Host 'Contraseña inicial del administrador (12–128 caracteres)' -MaskInput
 dotnet user-secrets set 'Bootstrap:AdminPassword' $bootstrapPassword --project src/Promotora.WebApi
@@ -65,6 +73,8 @@ dotnet run --project src/Promotora.WebApi
 Alternativa: guardar `ConnectionStrings:Promotora` en user-secrets de WebApi y Worker con `dotnet user-secrets set 'ConnectionStrings:Promotora' (Read-Host 'Cadena de conexión restringida' -MaskInput) --project src/Promotora.WebApi` y repetir cambiando el proyecto a `src/Promotora.Worker`. Los secretos quedan fuera del repositorio. No imprimir la conexión ni usar `user-secrets list` para compartir capturas. No se requiere OpenAI en Fase 2.
 
 Abrir [Swagger UI](http://localhost:5080/swagger). Fase 3 incorpora 11 operaciones de identidad: registro, altas por administrador, login/refresh/logout, consulta/edición/baja y cambio de contraseña. Seguir [IDENTIDAD_SEGURIDAD.md](IDENTIDAD_SEGURIDAD.md) para el cambio obligatorio inicial, permisos y ejemplos. El bootstrap solo crea el SUPERADMIN si no existe ninguno; cambiar su configuración no cambia la contraseña de uno existente. Los health checks son técnicos y están fuera del catálogo Swagger. Los controllers heredan `ApiControllerBase`, con rutas `/api/v1/...` en minúsculas y JSON camelCase. Los `Result` fallidos se convierten en 400/401/403/404/409/422/429 con ProblemDetails. Excepciones inesperadas devuelven 500 genérico; el log registra tipo de excepción y correlación, sin mensajes privados ni payloads.
+
+F4-01–F4-03 añaden 11 operaciones de recintos/localidades/mapa, para un total de 22. La prueba manual del dueño y el mapa anónimo está en [RECINTOS_LOCALIDADES_MAPA.md](RECINTOS_LOCALIDADES_MAPA.md). La configuración de CORS y la sesión del frontend están en [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md).
 
 Desde otra terminal:
 

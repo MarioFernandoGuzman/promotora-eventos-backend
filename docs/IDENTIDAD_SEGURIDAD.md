@@ -32,9 +32,17 @@ dotnet user-secrets set "Bootstrap:AdminEmail" "admin@example.test" --project sr
 $bootstrapPassword = Read-Host "Contraseña del administrador (12–128 caracteres)" -MaskInput
 dotnet user-secrets set "Bootstrap:AdminPassword" $bootstrapPassword --project src/Promotora.WebApi
 $bootstrapPassword = $null
-$jwtKey = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
-dotnet user-secrets set "Jwt:SigningKey" $jwtKey --project src/Promotora.WebApi
-$jwtKey = $null
+$jwtKeyBytes = New-Object byte[] 32
+$jwtRng = [Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $jwtRng.GetBytes($jwtKeyBytes)
+    $jwtKey = [Convert]::ToBase64String($jwtKeyBytes)
+    dotnet user-secrets set "Jwt:SigningKey" $jwtKey --project src/Promotora.WebApi
+} finally {
+    $jwtRng.Dispose()
+    $jwtKey = $null
+    [Array]::Clear($jwtKeyBytes, 0, $jwtKeyBytes.Length)
+}
 dotnet run --project src/Promotora.WebApi
 ```
 
