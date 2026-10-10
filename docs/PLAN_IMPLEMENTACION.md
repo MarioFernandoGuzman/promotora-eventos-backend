@@ -188,6 +188,9 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
 **Salida:** el flujo de compra corre por colas, resiste duplicados y fallos, recupera compras PROCESANDO atascadas sin duplicar cobros, boletos ni devoluciones de cupo, y queda evidencia en `notificaciones` y `outbox_mensajes`.
 
 ### Fase 7 — Finanzas
+
+**Orden excepcional aprobado por el usuario:** después de F6-07, implementar F7-01 → F7-02 → F7-03, una tarea por commit, para proporcionar la base financiera que necesitan F6-03/F6-04 y sus pruebas completas. Después de F7-03, retomar la activación pendiente de F6-03/F6-04, F6-08 → F6-09 → F6-10 → F6-11 y cerrar los criterios de salida pendientes de F5/F6. Luego continuar F7-04 en adelante. No cerrar F6-08 con efectos artificiales de transporte ni habilitar COMPLETADA sin pago/ledger/saldos/emisión transaccionales. La consulta de la pasarela simulada debe conservar resultados ante reinicio antes de habilitar recuperación F6-11. Las aprobaciones de dinero para este bloque están confirmadas; cualquier tabla/columna/endpoint que no esté definido sigue requiriendo consulta al usuario.
+
 - [ ] **F7-01** Cuentas: alta automática de cuenta `DUENO` al crear dueño; cuentas `PLATAFORMA` e `IMPUESTOS` únicas por moneda. Cierre lógico solo de DUENO con saldo cero, estado CERRADA y fecha_cierre; PLATAFORMA/IMPUESTOS no se cierran; trigger rechaza movimientos en CERRADA.
 - [ ] **F7-02** Registro de `pagos` por intento y su estado.
 - [ ] **F7-03** Movimientos al completar compra (`VENTA` +subtotal al dueño, `COMISION` +comision_plataforma a PLATAFORMA, `IMPUESTO` +impuestos a IMPUESTOS), saldos y compra en la misma transacción; movimientos de cobro suman compras.total antes de reembolsos. Componentes cero no generan movimientos (CHECK monto ≠ 0).
