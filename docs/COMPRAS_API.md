@@ -1,6 +1,6 @@
 # Compras: reserva, consultas y cancelación — F5-01 a F5-06
 
-POST /api/v1/compras crea una compra PENDIENTE, reserva cupo y congela precios/componentes D-15. F5-06 añade consulta, listas propias y cancelación. Todavía no cobra ni emite boletos por HTTP: los componentes F5-04/F5-05 están implementados, pero su integración espera el registro financiero transaccional de F7. Ver [PAGOS_SIMULADOS.md](PAGOS_SIMULADOS.md) y [BOLETOS_EMISION.md](BOLETOS_EMISION.md). El handler de expiración F5-08 está disponible; su ejecución periódica corresponde a F6-07. La creación ya guarda outbox y el relay puede publicarlo; el consumidor financiero está deshabilitado. Contrato 202 + Location preparado, producción mantiene 201/200 hasta activar el flujo completo: [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
+POST /api/v1/compras reserva cupo, congela precios/componentes D-15 y responde **202 + Location**. El Worker consume por RabbitMQ y completa pago simulado, ledger/saldos, boletos y outbox de confirmación en una transacción. GET propio permite polling hasta el estado final. La configuración y los asistentes por ítem (obligatorios en carreras) se describen en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md). No existe un endpoint de cobro independiente. La expiración periódica sigue siendo opt-in en Worker.
 
 ## Módulos y transacción
 
@@ -36,7 +36,7 @@ Content-Type: application/json
 
 Sustituir IDs por los de un evento EN_VENTA y tipos activos de ese mismo evento. Recinto, categoría y localidad asociada deben estar activos. Ventana UTC `[fechaInicioVenta, fechaFinVenta)`, verificada nuevamente después de esperar los bloqueos. Ambas fechas deben existir. Cantidades positivas; el total de todas las líneas no puede superar maxBoletosPorCompra.
 
-Respuesta nueva: HTTP 201. Con entrada a Q100 y cantidad 3:
+Respuesta nueva: HTTP 202 con Location para consultar el estado. Con entrada a Q100 y cantidad 3:
 
 ```json
 {
@@ -54,7 +54,7 @@ Respuesta nueva: HTTP 201. Con entrada a Q100 y cantidad 3:
 }
 ```
 
-Repetir una clave propia devuelve HTTP 200 y la compra persistida, incluso si el precio, la ventana, el estado del evento o el cuerpo válido cambiaron. No recalcula importes, no reserva de nuevo y no duplica auditoría. Si la clave pertenece a otro cliente, devuelve 409 sin datos de esa compra. Un cliente desactivado no puede recuperar compras con su JWT anterior (401); el handler también revalida al actor dentro de la transacción. El clienteId interno no aparece en la respuesta.
+Repetir una clave propia devuelve HTTP 202 con Location para PENDIENTE/PROCESANDO, o 200 para un estado final, y la compra persistida, incluso si el precio, la ventana, el estado del evento o el cuerpo válido cambiaron. No recalcula importes, no reserva de nuevo y no duplica auditoría. Si la clave pertenece a otro cliente, devuelve 409 sin datos de esa compra. Un cliente desactivado no puede recuperar compras con su JWT anterior (401); el handler también revalida al actor dentro de la transacción. El clienteId interno no aparece en la respuesta.
 
 | Código | Causa |
 |---|---|
@@ -98,9 +98,9 @@ dotnet run --project src/Promotora.WebApi
 ```
 
 3. Abrir http://localhost:5080/swagger. Como administrador/dueño, preparar recinto, evento, tipos a Q100 y cupo suficiente, programar y abrir venta; seguir [CATALOGO_EVENTOS.md](CATALOGO_EVENTOS.md). Elegir fechas que incluyan el momento de la prueba, en UTC. Como cliente, consultar GET `/api/v1/catalogo/eventos/{id}` para copiar eventoId y tipoEntradaId.
-4. Login como CLIENTE, copiar accessToken y pegarlo sin prefijo Bearer en **Authorize**. Abrir Compras → POST → Try it out. Indicar una clave nueva y el JSON con cantidad 3. Esperar 201, PENDIENTE y total Q369.60.
-5. Ejecutar exactamente la misma clave otra vez: 200 y mismo publicId. Consultar nuevamente el catálogo: el cupo se descontó una sola vez. Con nueva clave y cantidad mayor al disponible, esperar 409; con máximo excedido, 422. Sin clave, 400; como administrador, 403.
-6. Consultar GET /api/v1/compras/{publicId} y GET /api/v1/compras. Cancelar con POST /api/v1/compras/{publicId}/cancelar: 200 y CANCELADA; el cupo del catálogo vuelve al valor previo. Repetir no devuelve cupo adicional. La expiración automática de F6-07 requiere habilitar el job en Worker según [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md); no modificar manualmente estados/cupos ni borrar compras.
+4. Login como CLIENTE, copiar accessToken y pegarlo sin prefijo Bearer en **Authorize**. Abrir Compras → POST → Try it out. Indicar una clave nueva y el JSON con cantidad 3. Esperar 202, PENDIENTE y total Q369.60.
+5. Ejecutar exactamente la misma clave otra vez: 202 mientras siga pendiente, mismo publicId y Location (200 si ya terminó). Consultar nuevamente el catálogo: el cupo se descontó una sola vez. Con nueva clave y cantidad mayor al disponible, esperar 409; con máximo excedido, 422. Sin clave, 400; como administrador, 403.
+6. Consultar GET /api/v1/compras/{publicId} y GET /api/v1/compras. Si sigue PENDIENTE, cancelar con POST /api/v1/compras/{publicId}/cancelar devuelve 200 y CANCELADA; si el Worker ya la tomó/completó, devuelve 409 sin devolver cupo; el cupo del catálogo vuelve al valor previo. Repetir no devuelve cupo adicional. La expiración automática de F6-07 requiere habilitar el job en Worker según [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md); no modificar manualmente estados/cupos ni borrar compras.
 
 ## Consultas propias y cancelación — F5-06
 
@@ -117,7 +117,7 @@ Listados ordenados por fecha descendente y luego ID descendente; page entre 1 y 
 
 Cancelar solo permite PENDIENTE, incluso si expiraEn ya pasó mientras el job aún no ganó la transición. PROCESANDO, COMPLETADA, EXPIRADA o FALLIDA devuelven 409. El UPDATE condicional gana la transición antes de devolver cupo, dentro de la misma transacción que auditoría UPDATE; ante fallo se revierte todo. No se borran detalles ni se generan pagos/reembolsos. Repetir no duplica auditoría.
 
-El frontend puede consultar la compra para actualizar el estado. En mis boletos, representar codigoQr como QR sin alterar el texto ni guardarlo en logs; mantener los estados USADO/ANULADO visibles como historial. Una compra PENDIENTE no tiene boletos: la lista puede estar vacía hasta integrar emisión con F7.
+El frontend puede consultar la compra para actualizar el estado. En mis boletos, representar codigoQr como QR sin alterar el texto ni guardarlo en logs; mantener los estados USADO/ANULADO visibles como historial. Una compra PENDIENTE no tiene boletos: la lista puede estar vacía hasta que el Worker complete la compra.
 
 Para comprobar las nuevas operaciones contra PostgreSQL temporal con Docker, después del build:
 

@@ -46,7 +46,8 @@ public static class TicketingRegistration
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.ReservaMinutos);
         if (options.Moneda != "GTQ") throw new ArgumentException("El catálogo actual utiliza GTQ.", nameof(options));
         services.AddSingleton(options);
-        services.TryAddSingleton<ICompraProcesamientoEstado, CompraProcesamientoPendiente>();
+        services.TryAddSingleton(new EmisionBoletosOptions());
+        services.TryAddSingleton<ICompraProcesamientoEstado, CompraProcesamientoDisponible>();
         services.AddScoped<ICompraRepository, EfCompraRepository>();
         services.AddScoped<ICompraConsultaRepository, EfCompraConsultaRepository>();
         services.AddScoped<ClienteCompraAccess>();

@@ -13,6 +13,8 @@ public interface ICompletarCompraPort
 {
     Task<Result<CompraCompletadaDto>> CompletarAsync(Guid publicId, long intentoId, RespuestaPago respuesta,
         IReadOnlyList<AsistentesDetalle> asistentes, CancellationToken ct);
+    Task<Result<CompraCompletadaDto>> EnTransaccionAsync(Guid publicId, long intentoId, RespuestaPago respuesta,
+        IReadOnlyList<AsistentesDetalle> asistentes, CancellationToken ct);
 }
 
 public interface ICobroRepository

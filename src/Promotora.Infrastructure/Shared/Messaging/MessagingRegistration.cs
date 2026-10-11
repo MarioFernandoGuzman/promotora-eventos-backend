@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Promotora.Application.Shared.Ports;
+using Promotora.Application.Ticketing;
 using Promotora.Application.Ticketing.Ports;
 using Promotora.Infrastructure.Ticketing;
 
@@ -11,6 +12,14 @@ public static class MessagingRegistration
     {
         services.AddScoped<IMensajeProcesadoRepository, EfMensajeProcesadoRepository>();
         services.AddScoped<ICompraTomaRepository, EfCompraTomaRepository>();
+        return services;
+    }
+
+    public static IServiceCollection AddProcesamientoCompras(this IServiceCollection services)
+    {
+        services.AddCompraConsumerComponents();
+        services.AddScoped<ICompraMensajeRepository, EfCompraMensajeRepository>();
+        services.AddScoped<IProcesarCompraMensajePort, ProcesarCompraService>();
         return services;
     }
 

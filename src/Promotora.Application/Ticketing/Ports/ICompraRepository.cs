@@ -4,7 +4,7 @@ using Promotora.Domain.Ticketing;
 namespace Promotora.Application.Ticketing.Ports;
 
 public sealed record CompraExistente(int ClienteId, CompraCreadaDto Compra);
-public sealed record EventoCompra(int Id, string Estado, bool Activo, DateTime? InicioVenta, DateTime? FinVenta, int MaxBoletos);
+public sealed record EventoCompra(int Id, string Estado, bool Activo, DateTime? InicioVenta, DateTime? FinVenta, int MaxBoletos, int CategoriaId = 0);
 public sealed record EntradaDisponible(int TipoEntradaId, int EventoId, decimal Precio);
 
 public interface ICompraRepository

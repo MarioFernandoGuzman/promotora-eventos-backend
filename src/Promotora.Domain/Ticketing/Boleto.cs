@@ -3,7 +3,25 @@ using Promotora.Domain.Shared;
 
 namespace Promotora.Domain.Ticketing;
 
-public sealed record DatosAsistente(string? NombreAsistente, string? DocumentoIdentidad, string? DatosExtraJson = null);
+public sealed record DatosAsistente(string? NombreAsistente, string? DocumentoIdentidad, string? DatosExtraJson = null)
+{
+    public Result<DatosAsistente> Validar(bool esCarrera)
+    {
+        string? nombre = string.IsNullOrWhiteSpace(NombreAsistente) ? null : NombreAsistente.Trim();
+        string? documento = string.IsNullOrWhiteSpace(DocumentoIdentidad) ? null : DocumentoIdentidad.Trim();
+        if (esCarrera && (nombre is null || documento is null))
+            return Result<DatosAsistente>.Failure(new Error("boleto.asistente", "Carreras requieren nombre y documento por asistente.", ErrorType.BusinessRule));
+        try
+        {
+            if (DatosExtraJson is not null) { using var extra = JsonDocument.Parse(DatosExtraJson); }
+        }
+        catch (JsonException)
+        {
+            return Result<DatosAsistente>.Failure(new Error("boleto.extra", "Los datos extra deben ser JSON válido.", ErrorType.Validation));
+        }
+        return Result<DatosAsistente>.Success(new(nombre, documento, DatosExtraJson));
+    }
+}
 
 public sealed record Boleto
 {
@@ -23,23 +41,9 @@ public sealed record Boleto
     {
         if (publicId == Guid.Empty || detalleCompraId <= 0 || string.IsNullOrWhiteSpace(codigoQr) || codigoQr.Length > 100 || fechaEmision.Kind != DateTimeKind.Utc)
             return Result<Boleto>.Failure(new Error("boleto.datos", "Datos de emisión inválidos.", ErrorType.Validation));
-        var datos = asistente ?? new DatosAsistente(null, null);
-        string? nombre = Normalizar(datos.NombreAsistente), documento = Normalizar(datos.DocumentoIdentidad);
-        if (esCarrera && (nombre is null || documento is null))
-            return Result<Boleto>.Failure(new Error("boleto.asistente", "Carreras requieren nombre y documento por asistente.", ErrorType.BusinessRule));
-        try
-        {
-            if (datos.DatosExtraJson is not null)
-            {
-                using var extra = JsonDocument.Parse(datos.DatosExtraJson);
-            }
-        }
-        catch (JsonException)
-        {
-            return Result<Boleto>.Failure(new Error("boleto.extra", "Los datos extra deben ser JSON válido.", ErrorType.Validation));
-        }
-        return Result<Boleto>.Success(new(publicId, detalleCompraId, codigoQr, new(nombre, documento, datos.DatosExtraJson), fechaEmision));
+        var datos = (asistente ?? new DatosAsistente(null, null)).Validar(esCarrera);
+        if (datos.IsFailure) return Result<Boleto>.Failure(datos.Errors);
+        return Result<Boleto>.Success(new(publicId, detalleCompraId, codigoQr, datos.Value, fechaEmision));
     }
 
-    private static string? Normalizar(string? valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

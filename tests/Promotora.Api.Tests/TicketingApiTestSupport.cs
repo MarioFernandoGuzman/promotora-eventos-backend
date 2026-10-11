@@ -36,7 +36,7 @@ internal sealed class TicketingApiTestSupport(PostgresFixture fixture)
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/compras")
         { Content = JsonContent.Create(new { eventoId = evento, items = new[] { new ItemCompra(tipo, cantidad) } }) };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        using var response = await client.SendAsync(request, ct); Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        using var response = await client.SendAsync(request, ct); Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
     }
     // Compra gratuita existente en PostgreSQL temporal; total cero no requiere movimientos.

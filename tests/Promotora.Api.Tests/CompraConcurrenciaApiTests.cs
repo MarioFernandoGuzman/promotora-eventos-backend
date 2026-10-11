@@ -32,12 +32,12 @@ public sealed class CompraConcurrenciaApiTests(PostgresFixture fixture) : IClass
                 { Content = JsonContent.Create(new { eventoId = datos.EventoId, items = new[] { new ItemCompra(datos.TipoId, cantidad) } }) };
                 string key = Guid.NewGuid().ToString(); request.Headers.Add("Idempotency-Key", key);
                 using var response = await clientes[i % clientes.Length].SendAsync(request, ct);
-                var compra = response.StatusCode == HttpStatusCode.Created ? await response.Content.ReadFromJsonAsync<CompraCreadaDto>(ct) : null;
+                var compra = response.StatusCode == HttpStatusCode.Accepted ? await response.Content.ReadFromJsonAsync<CompraCreadaDto>(ct) : null;
                 return (response.StatusCode, Compra: compra, Key: key);
             }).ToArray();
             salida.SetResult(); var resultados = await Task.WhenAll(tareas);
             int ganadoras = cupo / cantidad;
-            Assert.Equal(ganadoras, resultados.Count(r => r.StatusCode == HttpStatusCode.Created));
+            Assert.Equal(ganadoras, resultados.Count(r => r.StatusCode == HttpStatusCode.Accepted));
             Assert.Equal(solicitudes - ganadoras, resultados.Count(r => r.StatusCode == HttpStatusCode.Conflict));
             Assert.All(resultados.Where(r => r.Compra is not null), r =>
             {

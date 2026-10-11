@@ -14,7 +14,8 @@ namespace Promotora.Application.Ticketing;
 
 public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRepository cupos, ITicketingTransaction transaction,
     IUsuarioRepository usuarios, ISesionRepository sesiones, IUsuarioActual actual, CrearCompraFactory factory,
-    CompraOptions options, IClock clock, IAuditLogger audit, IOutboxWriter outbox, ICompraProcesamientoEstado procesamiento) : ICommandHandler<CrearCompraCommand, CrearCompraResultado>
+    CompraOptions options, IClock clock, IAuditLogger audit, IOutboxWriter outbox, ICompraProcesamientoEstado procesamiento,
+    EmisionBoletosOptions emisionOptions) : ICommandHandler<CrearCompraCommand, CrearCompraResultado>
 {
     public Task<Result<CrearCompraResultado>> HandleAsync(CrearCompraCommand request, CancellationToken ct) => transaction.ExecuteAsync(async token =>
     {
@@ -41,8 +42,24 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
             return Fallo("compra.ventana", "El evento no admite compras en este momento.", ErrorType.Conflict);
         long cantidad = request.Items.Sum(x => (long)x.Cantidad);
         if (cantidad > evento.MaxBoletos) return Fallo("compra.limite", "Se supera el máximo de boletos por compra.", ErrorType.BusinessRule);
+        if (emisionOptions.CategoriaCarreraId is null)
+            return Fallo("compra.configuracion", "Falta configurar el ID de la categoría de carreras.", ErrorType.BusinessRule);
+        bool esCarrera = evento.CategoriaId == emisionOptions.CategoriaCarreraId;
+        foreach (var item in request.Items)
+        {
+            if (item.Asistentes is not null && item.Asistentes.Count != item.Cantidad || esCarrera && item.Asistentes is null)
+                return Fallo("compra.asistentes", "Debe informarse un asistente por boleto; obligatorio en carreras.", ErrorType.BusinessRule);
+            foreach (var asistente in item.Asistentes ?? [])
+            {
+                if (asistente is null) return Fallo("compra.asistentes", "Asistente inválido.", ErrorType.Validation);
+                var valido = asistente.Validar(esCarrera);
+                if (valido.IsFailure) return Result<CrearCompraResultado>.Failure(valido.Errors);
+            }
+        }
         var items = request.Items.GroupBy(x => x.TipoEntradaId).OrderBy(g => g.Key)
-            .Select(g => new ItemCompra(g.Key, checked((int)g.Sum(x => (long)x.Cantidad)))).ToArray();
+            .Select(g => new ItemCompra(g.Key, checked((int)g.Sum(x => (long)x.Cantidad)),
+                g.Any(x => x.Asistentes is not null)
+                    ? g.SelectMany(x => x.Asistentes ?? Enumerable.Repeat(new DatosAsistente(null, null), x.Cantidad)).ToArray() : null)).ToArray();
         var entradas = await compras.LockEntradasAsync(evento.Id, items.Select(x => x.TipoEntradaId).ToArray(), token);
         if (entradas.Count != items.Length) return Fallo("compra.entrada", "Hay entradas inactivas o que no pertenecen al evento.", ErrorType.BusinessRule);
         ahora = clock.UtcNow;
@@ -60,7 +77,11 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
         int id = await compras.InsertAsync(compra, token);
         await audit.WriteAsync(usuarioId, "CREATE", "compras", id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
         await outbox.EscribirAsync(new("Compra", compra.PublicId.ToString("D"), TiposMensaje.ProcesarCompra,
-            JsonSerializer.SerializeToElement(new { publicId = compra.PublicId })), token);
+            JsonSerializer.SerializeToElement(new
+            {
+                publicId = compra.PublicId,
+                asistentes = items.Where(x => x.Asistentes is not null).Select(x => new { tipoEntradaId = x.TipoEntradaId, personas = x.Asistentes })
+            })), token);
         return Result<CrearCompraResultado>.Success(new(ToDto(compra), false, procesamiento.Disponible));
     }, ct);
 
