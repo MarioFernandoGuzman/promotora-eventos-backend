@@ -2,7 +2,7 @@
 
 ## Estado del módulo
 
-F6-01 añade el puerto `IMessagePublisher` en Application y el adaptador async en Infrastructure. Worker registra el adaptador cuando se proporciona `RabbitMQ:Host`; exige credenciales externas. La topología se declara al preparar/publicar. Los handlers de negocio deben escribir outbox y nunca invocar este publisher dentro de su transacción.
+F6-01 añade el puerto `IMessagePublisher` en Application y el adaptador async en Infrastructure. Worker registra el adaptador cuando se proporciona `RabbitMQ:Host`; exige credenciales externas. La topología se declara al preparar/publicar. Los handlers de negocio deben escribir outbox y nunca invocar este publisher dentro de su transacción. F6-03/F6-04 ya integran compra 202 y procesamiento financiero; diagrama y semántica actual en [TOPOLOGIA_RABBITMQ.md](TOPOLOGIA_RABBITMQ.md).
 
 | Exchange / ruta | Cola durable |
 |---|---|
@@ -12,7 +12,7 @@ F6-01 añade el puerto `IMessagePublisher` en Application y el adaptador async e
 | promotora.dlx / compra.procesar | compras.procesar.dlq |
 | exchange predeterminado / compras.procesar.retry | compras.procesar.retry |
 
-Ambos exchanges son direct y durables; ninguna cola es exclusiva ni auto-delete. La cola de compras envía rechazos sin requeue a DLQ. Retry retorna a `promotora.compras / compra.procesar` mediante dead-letter; el consumidor asignará TTL por mensaje (`Expiration`) según el intento para el backoff (F6-04). Un TTL por cola impediría variar el retraso. ACK manual, prefetch, límite de intentos y procesamiento corresponden a tareas posteriores de consumidores.
+Ambos exchanges son direct y durables; ninguna cola es exclusiva ni auto-delete. La cola de compras envía rechazos sin requeue a DLQ. Retry retorna a `promotora.compras / compra.procesar` mediante dead-letter; el consumidor asigna TTL por mensaje (`Expiration`) según el intento para el backoff (F6-04). Un TTL por cola impediría variar el retraso. El consumidor financiero usa ACK manual después del commit, prefetch configurable y tres ejecuciones por defecto antes de DLQ.
 
 Publicación persistente JSON con `MessageId = outbox_mensajes.id`, `Type = tipo` y `mandatory = true`. El adaptador serializa el uso del canal, espera publisher confirms y falla ante retorno sin binding, nack o timeout. Reconecta y redeclara al siguiente intento si el canal está cerrado; no mantiene una cola invisible en memoria.
 
@@ -48,7 +48,7 @@ Las pruebas verifican routing de los tres tipos, persistencia e identidad, decla
 
 Ante error del publisher incrementa intentos, mantiene pendiente y detiene ese lote; se reintenta en el siguiente ciclo sin eliminar filas. Un mensaje inválido antiguo puede detener cada lote: revisar tipo/bindings y logs de broker antes de reintentar, sin marcarlo publicado manualmente. El máximo de tres intentos y la DLQ corresponden al consumidor, no al relay: el relay no descarta mensajes por fallos del transporte.
 
-La entrega es **al menos una vez**. Si RabbitMQ recibió el mensaje y el proceso cae antes del commit, el siguiente relay lo republica con el mismo `MessageId`. F6-04 debe registrar `mensajes_procesados(id, consumidor)` con los efectos en una sola transacción. Una confirmación del broker no significa que una compra ya fue procesada. No se habilita COMPLETADA sin pagos y ledger de F7.
+La entrega es **al menos una vez**. Si RabbitMQ recibió el mensaje y el proceso cae antes del commit, el siguiente relay lo republica con el mismo `MessageId`. F6-04 registra `mensajes_procesados(mensaje_id, consumidor)` con los efectos en una sola transacción. Una confirmación del broker no significa que una compra ya fue procesada. COMPLETADA exige pago aprobado, ledger y saldos de F7-02/F7-03 junto con boletos y auditoría.
 
 `OutboxRelayService` prepara la topología al iniciar cada ciclo, crea un scope, procesa un lote y espera con cancelación. Logs solo con conteos/estado, sin payload, credenciales o excepciones sensibles. Shutdown y conexiones se disponen de forma async. Por defecto está deshabilitado; para habilitarlo requiere conexión PostgreSQL y configuración RabbitMQ completas.
 
@@ -153,7 +153,7 @@ dotnet run --project src/Promotora.Worker
 
 Opcionalmente guardar los mismos valores con `dotnet user-secrets set` para Worker, en Development; nunca en appsettings ni archivos del repo. Las claves de boletos configuradas previamente se conservan; este bloque no necesita un usuario nuevo de la API ni contraseña de bootstrap.
 
-Abrir [RabbitMQ Management](http://localhost:15672): usuario `promotora`, contraseña actual leída arriba. Deben aparecer dos exchanges (`promotora.compras`, `promotora.dlx`) y las cinco colas de la tabla. Con outbox vacío no se generarán mensajes. Crear una compra en Swagger reserva PENDIENTE y alimenta outbox; el relay puede entregarla a la cola, pero el procesamiento financiero sigue deshabilitado. Para verificar escritura, rollback, confirmación y recuperación usa la suite automática, sin insertar SQL manual en tu base local.
+Abrir [RabbitMQ Management](http://localhost:15672): usuario `promotora`, contraseña actual leída arriba. Deben aparecer dos exchanges (`promotora.compras`, `promotora.dlx`) y las cinco colas de la tabla. Con outbox vacío no se generarán mensajes. Crear una compra en Swagger reserva PENDIENTE y alimenta outbox; para completar el flujo habilita también `Compras:ConsumerEnabled` con firma QR y categoría externa según [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md). Para verificar escritura, rollback, confirmación y reentrega usa la suite automática, sin insertar SQL manual en tu base local. Recuperación durable de PROCESANDO sigue pendiente de F6-11.
 
 Las pruebas `OutboxTests` usan PostgreSQL+pgvector migrado con Flyway y el rol restringido, junto con RabbitMQ real: negocio/outbox rollback, rechazo fuera de transacción, fallo y reintento, mensaje sin destino, dos relays con fila bloqueada, caída tras confirmación antes de commit con ID repetido y host periódico con shutdown. No hay pruebas omitidas ni dependencias de tus puertos/contraseñas locales.
 

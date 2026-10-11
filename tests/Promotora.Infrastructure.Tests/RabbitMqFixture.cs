@@ -53,4 +53,26 @@ public sealed class RabbitMqFixture : IAsyncLifetime
         Password = Options.Password,
         AutomaticRecoveryEnabled = false
     }.CreateConnectionAsync(ct);
+
+    // Solo el broker efímero de esta fixture; interrumpe una conexión, no elimina colas ni mensajes.
+    public async Task InterrumpirConsumidorAsync(string queue, CancellationToken ct)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes($"test_app:{password}")));
+        string root = $"http://{container.Hostname}:{container.GetMappedPublicPort(15672)}/api";
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct); timeout.CancelAfter(TimeSpan.FromSeconds(30));
+        string? connection = null;
+        while (connection is null)
+        {
+            using var response = await client.GetAsync($"{root}/queues/%2F/{Uri.EscapeDataString(queue)}", timeout.Token);
+            response.EnsureSuccessStatusCode();
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
+            var consumers = json.RootElement.GetProperty("consumer_details");
+            if (consumers.GetArrayLength() > 0)
+                connection = Assert.Single(consumers.EnumerateArray()).GetProperty("channel_details").GetProperty("connection_name").GetString();
+            else await Task.Delay(100, timeout.Token);
+        }
+        using var closed = await client.DeleteAsync($"{root}/connections/{Uri.EscapeDataString(connection)}", ct);
+        closed.EnsureSuccessStatusCode();
+    }
 }
