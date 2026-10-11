@@ -27,6 +27,7 @@ public static class DependencyInjection
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
             services.AddScoped<IAuditLogger, EfAuditLogger>();
             services.AddScoped<IAltaCuentaDuenoPort, EfCuentaRepository>();
+            services.AddScoped<IRegistroPagoPort, EfRegistroPagoRepository>();
             services.AddScoped<IOutboxWriter, EfOutboxWriter>();
             services.AddScoped<IUsuarioRepository, EfUsuarioRepository>();
         }
