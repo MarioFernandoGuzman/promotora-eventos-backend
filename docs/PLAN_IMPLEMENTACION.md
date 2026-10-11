@@ -33,7 +33,9 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 
 Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
 
-El modelo objetivo tiene **26 tablas**, incluida `refresh_tokens`. Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9.
+Acuerdo F6-11 aprobado por el usuario: V11 añade `pagos_simulados` (referencia UUID PK, monto NUMERIC(10,2), moneda VARCHAR(3), estado APROBADO/RECHAZADO y fecha TIMESTAMPTZ; todos obligatorios). Diario inmutable sin FK, commit independiente del proveedor simulado. No modifica el ledger ni añade endpoints. API/Worker usan la consulta durable; la recuperación nunca cobra y no devuelve cupo ante error de consulta o respaldo histórico inconsistente.
+
+El modelo objetivo tiene **27 tablas**, incluidas `refresh_tokens` y `pagos_simulados` (26 originales más V11 aprobada en F6-11). Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9, ampliado con V11.
 
 Entrega de Fase 1: PR-B (F1-02/F1-03) en `feature/f1-identidad-recintos-catalogo`; PR-C (F1-04 a F1-06) en `feature/f1-ventas-finanzas-ia-mensajeria`; PR-D (F1-07 a F1-10 y F1-11, ejecutada después de F1-07) en `feature/f1-integridad-bi-seed`. Cada rama parte de develop actualizado después de que el usuario mergee el PR anterior. Solo commits locales en español, con `Refs: <ID>` en el cuerpo, mostrando git status y mensaje antes de cada commit; sin push ni merge del agente y sin modificar main/develop.
 
@@ -50,7 +52,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | Q3 | Arquitectura formal, no un solo archivo | F2-01, F2-06, F12-03 | ⬜ |
 | Q4 | Backend REST en tecnología permitida (.NET) | F2-01, F2-05 | ✅ |
 | Q5 | GitHub: ramas, PRs, historial legible | F0-04, F2-07 | ✅ |
-| Q6 | RabbitMQ en un flujo de negocio real y recuperación de compras atascadas | F6-01 … F6-11 (incluye recuperación y prueba de carrera) | ⬜ |
+| Q6 | RabbitMQ en un flujo de negocio real y recuperación de compras atascadas | F6-01 … F6-11 (incluye recuperación y prueba de carrera) | ✅ |
 | Q7 | Agente de IA con información pública | F9-06, F9-07 | ⬜ |
 | Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ⬜ |
 | Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ⬜ |
@@ -86,7 +88,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 - [x] **F1-09** `V10__seed_catalogos.sql` (solo categorías y cuentas PLATAFORMA e IMPUESTOS; nunca admin ni credenciales) y datos de prueba en `database/seed-dev/`, fuera de migraciones de producción y sin secretos.
 - [x] **F1-10** Validar: migrar desde cero en un contenedor temporal Docker `pgvector/pgvector:pg16` con `flyway/flyway` sobre `database/migrations`, usando el mismo comando de `.github/workflows/ci.yml`; sin errores, `flyway info` limpio. No usar docker-compose.yml, que llega en F2-02.
 
-**Salida:** BD completa (26 tablas) creada solo con migraciones; vistas `bi` consultables y diccionario completo regenerado desde las migraciones.
+**Salida:** BD completa (26 tablas al cerrar Fase 1; 27 desde V11/F6-11) creada solo con migraciones; vistas `bi` consultables y diccionario completo regenerado desde las migraciones.
 
 ### Fase 2 — Esqueleto de la solución
 - [x] **F2-01** Crear solución con los 5 proyectos `src/` y los 5 de `tests/` con referencias correctas.
@@ -156,14 +158,16 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
   - Firma HMAC, propiedad del recinto y compra COMPLETADA; UPDATE condicional VALIDO → USADO con fecha_uso/validado_por y auditoría VALIDATE transaccional. Veinte escaneos con dos administradores permiten una sola entrada. Contratos, roles, errores y comandos separados en [BOLETOS_VALIDACION.md](BOLETOS_VALIDACION.md).
 - [x] **F5-08** Job/handler de expiración solo de compras `PENDIENTE`, con UPDATE condicional y devolución de cupo una sola vez por el ganador, en la misma transacción.
   - Handler interno por lotes registrado en API/Worker, sin temporizador ni endpoint; activación periódica/coordinación de instancias en F6-07. Auditoría UPDATE y devolución en la misma transacción; pruebas de repetición, carreras y rollback. Guía local: [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md).
-- [ ] **F5-09** **Prueba de concurrencia:** N hilos sobre cupo K ⇒ vendidos = K exactos.
-  - En el flujo actual se comprueban reservas PENDIENTE: ocho clientes HTTP distintos, casos 40/7, 40/8 y 33/9, cantidades 1/2/3; cupo final cero, cantidades exactas, rechazo sin compras parciales y una auditoría por ganadora. Evidencia: [PRUEBAS_F5_CONCURRENCIA.md](PRUEBAS_F5_CONCURRENCIA.md). La comprobación de ventas COMPLETADA/pagos/ledger/boletos permanece pendiente al integrar F7-02/F7-03 antes de cumplir la salida de Fase 5.
+- [x] **F5-09** **Prueba de concurrencia:** N hilos sobre cupo K ⇒ vendidos = K exactos.
+  - Reserva: ocho clientes HTTP, casos 40/7, 40/8 y 33/9 con cantidades 1/2/3. Ventas completas: F6-09 aporta 500/1000 solicitudes concurrentes contra cupo 100, exactamente 100 compras COMPLETADA, pagos APROBADO, boletos y ledger/saldos conciliados en cada escenario. Verificadas nuevamente con el proveedor durable V11 en las 360 pruebas Release aprobadas de F6-11. Evidencia: [PRUEBAS_F5_CONCURRENCIA.md](PRUEBAS_F5_CONCURRENCIA.md) y [PRUEBAS_F6_CARGA.md](PRUEBAS_F6_CARGA.md); revisión de salida: [VALIDACION_FASES_5_6.md](VALIDACION_FASES_5_6.md).
 - [x] **F5-10** Prueba de idempotencia: misma `Idempotency-Key` ⇒ una sola compra.
   - Cuarenta solicitudes HTTP con una clave propia, disputa entre clientes, reintento tras falta de cupo y reutilización tras cancelar/cambiar precio: una compra/detalle/auditoría y una sola reserva. Evidencia: [PRUEBAS_F5_IDEMPOTENCIA.md](PRUEBAS_F5_IDEMPOTENCIA.md). Consumidores en F6 y finalización/ledger/emisión se validarán al integrar F7; salida de Fase 5 y F5-09 pendientes.
 
 **Salida:** compra completa y correcta de punta a punta, sin sobreventa bajo concurrencia.
 
-**Dependencia confirmada con el usuario:** mantener el orden y preparar F5-04/F5-05 como componentes. No habilitar finalización HTTP sin registro financiero: AGENTS.md §5 exige ledger en la misma transacción de COMPLETADA. La conexión del flujo a POST y la salida de Fase 5 quedan pendientes hasta integrar F7-02/F7-03. No marcar anticipadamente tareas de F7. La consulta en memoria del pago simulado también requiere respaldo durable antes de habilitar F6-11; un resultado desconocido tras reinicio no prueba rechazo ni ausencia de pago.
+Salida Fase 5 cerrada localmente con F5-09/F6-11 y la integración financiera adelantada F7-01–F7-03. El contrato vigente es 202 + Location y procesamiento por Worker; no se reintroduce finalización síncrona. Revisión y límites en [VALIDACION_FASES_5_6.md](VALIDACION_FASES_5_6.md). CI remoto se verifica al publicar el PR.
+
+**Dependencia resuelta con autorización del usuario:** F5-04/F5-05 se prepararon como componentes y F7-01–F7-03 se adelantaron para exigir ledger en la misma transacción de COMPLETADA. F6-03/F6-04 integran el contrato 202 y el Worker; F6-11 añade el diario durable. F5-09 cierra la evidencia de ventas completas. No se marcaron tareas financieras antes de implementarlas. Un error de consulta o respaldo histórico inconsistente no autoriza devolver cupo.
 
 ### Fase 6 — Venta asíncrona con RabbitMQ
 - [x] **F6-01** Abstracciones `IMessagePublisher` y topología (exchanges, colas, retry, DLQ) declarada en código.
@@ -183,10 +187,12 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
   - Servicio opt-in, scope por ciclo, lote 100/intervalo 30 s configurables. Advisory lock transaccional PostgreSQL no bloqueante comparte estado/cupo/auditoría; otra instancia omite el ciclo, commit/rollback/dispose lo liberan. Conserva UPDATE condicional y solo PENDIENTE vencidas, sin tocar PROCESANDO. Dos hosts reales, rollback en shutdown y reintento con scope nuevo probados; 267 pruebas Release en verde, build sin warnings y format limpio. Configuración/Swagger local en [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md); revisión en [VALIDACION_F6_EXPIRACION_WORKER.md](VALIDACION_F6_EXPIRACION_WORKER.md).
 - [x] **F6-08** Pruebas con Testcontainers (RabbitMQ real): duplicado, fallo → DLQ, caída del consumidor. Cinco escenarios con el procesador real; guía y evidencia en `docs/PRUEBAS_F6_RESILIENCIA.md`. Suite completa: 340 pruebas aprobadas.
 - [x] **F6-09** Prueba de carga básica (p. ej. 500–1000 compras concurrentes) y evidencia de resultados. API real con 500/1000 solicitudes simultáneas contra cupo 100; 100 compras COMPLETADA, pagos, boletos y ledger conciliado en cada escenario. Tiempos y comandos en [PRUEBAS_F6_CARGA.md](PRUEBAS_F6_CARGA.md). Suite Release: 342 aprobadas, ninguna fallida/omitida; build sin warnings y formato limpio.
-- [x] **F6-10** Documentar topología con diagrama. [TOPOLOGIA_RABBITMQ.md](TOPOLOGIA_RABBITMQ.md): exchanges/rutas/colas, TTL/backoff/DLQ, confirms, ACK, deduplicación y límites del pago simulado. Guías de outbox/correo actualizadas al flujo financiero activo; F6-11 permanece pendiente.
-- [ ] **F6-11** Job de recuperación de compras PROCESANDO cuyo tiempo desde procesando_desde supera el timeout configurable (5 minutos por defecto): consultar pago por referencia compras.public_id; con pago APROBADO completar y emitir boletos idempotentemente; si no, pasar condicionalmente a FALLIDA y devolver cupo una sola vez en la misma transacción. Prueba de carrera procesar/expirar/cancelar ⇒ cupo devuelto exactamente una vez.
+- [x] **F6-10** Documentar topología con diagrama. [TOPOLOGIA_RABBITMQ.md](TOPOLOGIA_RABBITMQ.md): exchanges/rutas/colas, TTL/backoff/DLQ, confirms, ACK, deduplicación y límites del pago simulado. Guías de outbox/correo actualizadas al flujo financiero activo; ampliadas con F6-11 y su diario durable.
+- [x] **F6-11** Job de recuperación de compras PROCESANDO cuyo tiempo desde procesando_desde supera el timeout configurable (5 minutos por defecto): consultar pago por referencia compras.public_id; con pago APROBADO completar y emitir boletos idempotentemente; rechazo o ausencia confirmada sin efectos financieros pasa condicionalmente a FALLIDA y devuelve cupo una sola vez. Consulta fallida o respaldo histórico inconsistente conserva PROCESANDO para conciliación. Diario durable aprobado V11, job opt-in, rollback de deduplicación provisional y seis carreras procesar/expirar/cancelar/recuperar. Dieciocho casos nuevos; 360 pruebas Release aprobadas, 0 fallidas/omitidas; build sin warnings, formato limpio. Guía y límites: [RECUPERACION_COMPRAS.md](RECUPERACION_COMPRAS.md).
 
 **Salida:** el flujo de compra corre por colas, resiste duplicados y fallos, recupera compras PROCESANDO atascadas sin duplicar cobros, boletos ni devoluciones de cupo, y queda evidencia en `notificaciones` y `outbox_mensajes`.
+
+Salida Fase 6 cerrada localmente en el alcance de la pasarela simulada: F6-01–F6-11 completas, diario V11 aprobado, 360 pruebas Release en verde, build sin warnings y formato limpio. Revisión de §§5/12 y límites en [VALIDACION_FASES_5_6.md](VALIDACION_FASES_5_6.md). No hay integración de cobro externo ni conciliación administrativa automática; CI remoto se verifica al publicar el PR.
 
 ### Fase 7 — Finanzas
 

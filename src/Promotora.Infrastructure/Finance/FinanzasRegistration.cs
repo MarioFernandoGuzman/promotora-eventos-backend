@@ -11,6 +11,13 @@ namespace Promotora.Infrastructure.Finance;
 
 public static class FinanzasRegistration
 {
+    public static IServiceCollection AddPagoSimuladoDurable(this IServiceCollection services, FakePaymentOptions options, string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        if (options.TasaFallo is < 0m or > 1m) throw new ArgumentOutOfRangeException(nameof(options));
+        services.AddSingleton<IPaymentGateway>(sp => new PasarelaSimuladaDurable(connectionString, options, sp.GetRequiredService<Promotora.Application.Shared.Ports.IClock>()));
+        return services;
+    }
     public static IServiceCollection AddFinalizacionCompras(this IServiceCollection services)
     {
         services.AddScoped<ICobroRepository, EfCobroRepository>();

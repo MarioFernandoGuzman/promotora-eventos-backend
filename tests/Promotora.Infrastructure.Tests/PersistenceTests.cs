@@ -21,9 +21,9 @@ public sealed class PersistenceTests(PostgresFixture fixture) : IClassFixture<Po
         var ct = TestContext.Current.CancellationToken;
         await using var db = fixture.CreateContext();
         var entities = db.Model.GetEntityTypes().ToArray();
-        Assert.Equal(26, entities.Count(e => e.GetViewName() is null));
+        Assert.Equal(27, entities.Count(e => e.GetViewName() is null));
         Assert.Equal(16, entities.Count(e => e.GetViewName() is not null));
-        Assert.Equal(198, entities.Where(e => e.GetViewName() is null).Sum(e => e.GetProperties().Count()));
+        Assert.Equal(203, entities.Where(e => e.GetViewName() is null).Sum(e => e.GetProperties().Count()));
         await using var connection = new NpgsqlConnection(fixture.ConnectionString);
         await connection.OpenAsync(ct);
         foreach (var entity in entities)

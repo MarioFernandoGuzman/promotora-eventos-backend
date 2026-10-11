@@ -32,7 +32,7 @@ public sealed class CompraResilienciaTests(PostgresFixture postgres, RabbitMqFix
     [Fact]
     public async Task VeinteDuplicadosConDosConsumidoresConfirmanUnaVentaYPagoSinRepetirEfectos()
     {
-        var compra = await PrepararAsync(); var estado = new Control(); var gateway = new PagoObservado();
+        var compra = await PrepararAsync(); var estado = new Control(); var gateway = new PagoObservado(postgres.ConnectionString);
         await using var uno = Servicios(estado, gateway); await using var dos = Servicios(estado, gateway);
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var first = uno.GetRequiredService<ICompraMessageConsumer>().EjecutarAsync(stop.Token);
@@ -50,7 +50,7 @@ public sealed class CompraResilienciaTests(PostgresFixture postgres, RabbitMqFix
     [Fact]
     public async Task ExcepcionTrasLedgerRevierteYRetryCompletaLaVentaUnaSolaVez()
     {
-        var compra = await PrepararAsync(); var estado = new Control { Fallos = 1 }; var gateway = new PagoObservado();
+        var compra = await PrepararAsync(); var estado = new Control { Fallos = 1 }; var gateway = new PagoObservado(postgres.ConnectionString);
         await using var services = Servicios(estado, gateway); using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var consumer = services.GetRequiredService<ICompraMessageConsumer>().EjecutarAsync(stop.Token);
         try
@@ -71,7 +71,7 @@ public sealed class CompraResilienciaTests(PostgresFixture postgres, RabbitMqFix
     public async Task TresFallosTrasLedgerLleganADlqSinPagoLedgerBoletosNiDedupConfirmados()
     {
         var compra = await PrepararAsync(); var estado = new Control { Fallos = int.MaxValue };
-        await using var services = Servicios(estado, new()); using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        await using var services = Servicios(estado, new(postgres.ConnectionString)); using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var consumer = services.GetRequiredService<ICompraMessageConsumer>().EjecutarAsync(stop.Token);
         try
         {
@@ -94,7 +94,7 @@ public sealed class CompraResilienciaTests(PostgresFixture postgres, RabbitMqFix
     {
         var compra = await PrepararAsync();
         var estado = new Control { BloquearEmision = !despuesCommit, BloquearTrasCommit = despuesCommit };
-        await using var services = Servicios(estado, new()); using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        await using var services = Servicios(estado, new(postgres.ConnectionString)); using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var consumer = services.GetRequiredService<ICompraMessageConsumer>().EjecutarAsync(stop.Token);
         try
         {
@@ -113,7 +113,7 @@ public sealed class CompraResilienciaTests(PostgresFixture postgres, RabbitMqFix
             Assert.True(original!.Redelivered); Assert.Equal(compra.MensajeId.ToString(CultureInfo.InvariantCulture), original.BasicProperties.MessageId);
             await channel.BasicNackAsync(original.DeliveryTag, false, requeue: true, Ct);
         }
-        var nuevoEstado = new Control(); var nuevaPasarela = new PagoObservado();
+        var nuevoEstado = new Control(); var nuevaPasarela = new PagoObservado(postgres.ConnectionString);
         await using var reiniciado = Servicios(nuevoEstado, nuevaPasarela); using var restart = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var siguiente = reiniciado.GetRequiredService<ICompraMessageConsumer>().EjecutarAsync(restart.Token);
         try
@@ -270,9 +270,9 @@ public sealed class CompraResilienciaTests(PostgresFixture postgres, RabbitMqFix
             }
         }
     }
-    private sealed class PagoObservado : IPaymentGateway
+    private sealed class PagoObservado(string connectionString) : IPaymentGateway
     {
-        private readonly FakePaymentGateway inner = new(new(), Clock);
+        private readonly PasarelaSimuladaDurable inner = new(connectionString, new(), Clock);
         public int Cobros;
         public Task<Result<RespuestaPago>> CobrarAsync(SolicitudPago solicitud, CancellationToken ct)
         {

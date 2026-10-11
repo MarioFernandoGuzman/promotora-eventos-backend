@@ -190,7 +190,7 @@ Flujo de compra:
 5. El cliente consulta `GET /api/v1/compras/{publicId}` (polling) hasta ver el estado final.
 6. Job de recuperación (F6-11): si PROCESANDO supera el timeout desde procesando_desde (configurable, 5 minutos por defecto), consulta el pago por referencia public_id. Con pago APROBADO completa y emite boletos idempotentemente; si no, pasa condicionalmente a FALLIDA y devuelve cupo una sola vez. Probar la carrera procesar/expirar/cancelar.
 
-La pasarela de pago es un **puerto**; el adaptador del proyecto es simulado (`FakePaymentGateway`, tasa de fallo configurable para pruebas).
+La pasarela de pago es un **puerto**; el adaptador de API/Worker es `PasarelaSimuladaDurable`, con tasa de fallo configurable y diario INSERT-only `pagos_simulados` en V11 (F6-11 aprobado). Confirma el resultado en una conexión independiente antes de devolverlo. `FakePaymentGateway` queda como simulador puro para cálculo/pruebas. Recuperación solo consulta: nunca vuelve a cobrar; consulta fallida o respaldo histórico inconsistente conserva PROCESANDO sin devolver cupo. Solo ausencia confirmada en el simulador durable permite FALLIDA sin pago. Esto no constituye un protocolo de pasarela externa.
 
 ---
 
@@ -209,7 +209,7 @@ La pasarela de pago es un **puerto**; el adaptador del proyecto es simulado (`Fa
 ## 8. Seguridad, auditoría y logs
 
 - JWT de acceso de vida corta + refresh tokens (D-07 confirmada). Policies: `Cliente`, `Administrador`, `DuenoRecinto`.
-- `refresh_tokens` se crea en V1__identidad.sql (26 tablas en total); definición completa en BASE_DE_DATOS.md §4.1. Solo guardar token_hash SHA-256, nunca el token en claro. Cada refresh rota el token; reutilizar uno revocado revoca toda la familia y se audita.
+- `refresh_tokens` se crea en V1__identidad.sql (26 tablas originales; 27 con pagos_simulados aprobado en F6-11); definición completa en BASE_DE_DATOS.md §4.1. Solo guardar token_hash SHA-256, nunca el token en claro. Cada refresh rota el token; reutilizar uno revocado revoca toda la familia y se audita.
 - El primer SUPERADMIN se crea al arrancar la API si no existe ninguno, con `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno; `usuarios.debe_cambiar_password = true` (columna NOT NULL DEFAULT false). Nunca usuarios ni credenciales en migraciones. V10__seed_catalogos.sql solo siembra categorías y cuentas PLATAFORMA/IMPUESTOS.
 - Endpoints públicos: catálogo de eventos, detalle, mapa de recinto, agente de IA (con rate limit). Todo lo demás requiere autenticación.
 - Rate limiting nativo (`AddRateLimiter`) en login, registro, compra y agente IA. CORS restringido al frontend.

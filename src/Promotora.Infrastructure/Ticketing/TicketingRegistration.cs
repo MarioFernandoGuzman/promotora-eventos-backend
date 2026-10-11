@@ -10,6 +10,13 @@ namespace Promotora.Infrastructure.Ticketing;
 
 public static class TicketingRegistration
 {
+    public static IServiceCollection AddRecuperacionCompras(this IServiceCollection services)
+    {
+        services.AddScoped<IRecuperacionCompraRepository, EfRecuperacionCompraRepository>();
+        services.AddScoped<IValidator<RecuperarComprasCommand>, RecuperarComprasValidator>();
+        services.AddCommandHandler<RecuperarComprasCommand, RecuperacionLoteDto, RecuperarComprasHandler>();
+        return services;
+    }
     public static IServiceCollection AddExpiracionCompras(this IServiceCollection services)
     {
         services.AddScoped<IExpiracionCompraRepository, EfExpiracionCompraRepository>();

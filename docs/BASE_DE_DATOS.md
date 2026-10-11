@@ -19,7 +19,7 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 
 ## 1. Visión general
 
-26 tablas agrupadas por módulo (coinciden con los módulos de código):
+27 tablas agrupadas por módulo (coinciden con los módulos de código); F6-11 añade el diario del proveedor simulado aprobado por el usuario:
 
 | Módulo | Tablas | Propósito |
 |---|---|---|
@@ -27,7 +27,7 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 | Venues | `recintos`, `localidades` | Lugares físicos y sus zonas (mapa) |
 | Catalog | `categorias_evento`, `presentadores`, `eventos`, `evento_presentadores`, `tipos_entrada` | Qué se vende y a qué precio/cupo |
 | Ticketing | `compras`, `detalle_compra`, `boletos` | Venta y emisión de boletos |
-| Finance | `pagos`, `cuentas_financieras`, `movimientos_financieros` | Dinero: cobros, cuentas y ledger |
+| Finance | `pagos`, `pagos_simulados`, `cuentas_financieras`, `movimientos_financieros` | Dinero: intentos, diario del proveedor simulado, cuentas y ledger |
 | Reviews | `resenas` | Opiniones de clientes |
 | AI | `documentos_rag`, `chunks_rag`, `logs_agente_ia` | RAG y trazabilidad del agente |
 | Audit / Messaging | `logs_auditoria`, `notificaciones`, `outbox_mensajes`, `mensajes_procesados` | Auditoría y mensajería confiable |
@@ -77,9 +77,18 @@ erDiagram
   USUARIOS |o--o{ NOTIFICACIONES : recibe
   USUARIOS ||--o{ DOCUMENTOS_RAG : "subido_por"
   DOCUMENTOS_RAG ||--o{ CHUNKS_RAG : "se divide en"
+  PAGOS_SIMULADOS {
+    uuid referencia PK
+    numeric monto
+    varchar moneda
+    varchar estado
+    timestamptz fecha
+  }
 ```
 
 `outbox_mensajes` y `mensajes_procesados` no tienen FK: son infraestructura de mensajería referenciada por valor (`agregado`, `agregado_id`, `mensaje_id`).
+
+`pagos_simulados` tampoco tiene FK: `referencia` coincide por valor con `compras.public_id`, pero el resultado del proveedor se confirma en una conexión independiente y debe sobrevivir al rollback de la compra. No representa el ledger ni una pasarela externa.
 
 ---
 
@@ -101,7 +110,7 @@ erDiagram
 
 ## 4. Diccionario de datos
 
-Regenerado en F1-11 desde los catálogos de PostgreSQL 16 tras aplicar V1–V9 con Flyway: **26 tablas y 198 columnas**. Los tipos, claves, nulabilidad, defaults, CHECKs e índices siguientes reflejan las migraciones, que son la fuente de verdad. — indica ausencia de default o clave; los IDs usan GENERATED ALWAYS AS IDENTITY. Los triggers de integridad se describen en §6; el DDL completo permanece en database/migrations/.
+Regenerado en F1-11 desde los catálogos de PostgreSQL 16 tras aplicar V1–V9 con Flyway (26 tablas y 198 columnas), ampliado en F6-11 con V11: **27 tablas y 203 columnas**. Los tipos, claves, nulabilidad, defaults, CHECKs e índices siguientes reflejan las migraciones, que son la fuente de verdad. — indica ausencia de default o clave; los IDs numéricos usan GENERATED ALWAYS AS IDENTITY. Los triggers de integridad se describen en §6; el DDL completo permanece en database/migrations/.
 
 ### 4.1 Identity
 
@@ -495,6 +504,20 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 ---
 
 ### 4.5 Finance
+
+#### `pagos_simulados` ➕ — F6-11, aprobación explícita del usuario
+
+Diario del proveedor simulado: una fila inmutable por referencia; no se borra ni sobrescribe al cambiar tasas o reiniciar el host. Solo SELECT/INSERT para promotora_app; trigger bloquea UPDATE/DELETE/TRUNCATE incluso al propietario. bi_reader no tiene acceso. No contiene secretos ni datos de tarjeta.
+
+| Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
+|---|---|---|---|---|
+| `referencia` | `uuid` | NOT NULL | — | PK, sin FK |
+| `monto` | `numeric(10,2)` | NOT NULL | — | CHECK monto >= 0 |
+| `moneda` | `character varying(3)` | NOT NULL | — | CHECK moneda = 'GTQ' |
+| `estado` | `character varying(20)` | NOT NULL | — | CHECK estado IN ('APROBADO','RECHAZADO') |
+| `fecha` | `timestamp with time zone` | NOT NULL | `now()` | — |
+
+La PK proporciona unicidad e índice de consulta. Sin índices adicionales. El adaptador inserta con ON CONFLICT DO NOTHING, consulta la fila confirmada y exige los mismos importes. Ausencia tras consulta exitosa significa que este simulador durable no registró cobro; error de consulta no significa ausencia. Un pago/ledger/boleto histórico sin respaldo consistente requiere conciliación, no devolución automática.
 
 #### `pagos` ➕
 Intentos de cobro de una compra (una compra puede tener varios si el primero falla).
@@ -970,6 +993,7 @@ Solo escritura / consulta (no cuentan como CRUD): `detalle_compra` (parte de com
 | `V8__mensajeria.sql` | `notificaciones`, `outbox_mensajes`, `mensajes_procesados` |
 | `V9__indices_triggers_permisos.sql` | Índices, constraint trigger diferido de perfil, triggers de integridad (§6), cuentas cerradas e inmutabilidad de ledger/logs; roles y `REVOKE` |
 | `V10__seed_catalogos.sql` | Solo categorías de evento y cuentas PLATAFORMA e IMPUESTOS (GTQ); nunca usuarios ni credenciales |
+| `V11__pasarela_simulada.sql` | Diario inmutable `pagos_simulados`, permisos SELECT/INSERT y trigger; sin FK ni cambios al ledger |
 | `R__bi_vistas.sql` | Vistas `bi.*` (repetible), rol `bi_reader` |
 
 Datos de prueba (eventos, recintos, compras de ejemplo) en `database/seed-dev/`, **fuera** de las migraciones de producción.
@@ -985,4 +1009,4 @@ El primer SUPERADMIN se crea al arrancar la API, solo si no existe ninguno, leye
 | D-08 | ¿Asientos numerados? | No: solo localidades con cupo |
 | D-11 | ¿Quién asume IVA y comisión? | La comisión se cobra al cliente como cargo por servicio; el IVA se muestra aparte |
 | D-12 | Un rol por usuario | Sí (`usuarios.rol` + una fila de perfil) |
-| D-07 | Refresh tokens | Sí: tabla `refresh_tokens` definida en §4.1 → 26 tablas |
+| D-07 | Refresh tokens | Sí: tabla `refresh_tokens` definida en §4.1; esquema original v2 de 26 tablas, 27 tras diario simulado F6-11 |

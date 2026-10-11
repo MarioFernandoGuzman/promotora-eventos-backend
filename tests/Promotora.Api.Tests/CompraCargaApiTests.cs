@@ -35,7 +35,7 @@ public sealed class CompraCargaApiTests(PostgresFixture postgres, RabbitMqFixtur
         await using var factory = new IdentityApiFactory(connection);
         var clientes = Enumerable.Range(0, 8).Select(_ => factory.CreateClient()).ToArray();
         var services = new ServiceCollection(); services.AddPromotoraInfrastructure(connection);
-        services.AddPagoSimulado(new()); services.AddEmisionBoletos(factory.QrKey, 5);
+        services.AddPagoSimuladoDurable(new(), connection); services.AddEmisionBoletos(factory.QrKey, 5);
         services.AddFinalizacionCompras(); services.AddExpiracionCompras(); services.AddProcesamientoCompras();
         services.AddRabbitMqMessaging(rabbit.Options); services.AddOutboxRelay(); services.AddCompraConsumer(new(Prefetch: 8));
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
