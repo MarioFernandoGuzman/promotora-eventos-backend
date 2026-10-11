@@ -284,6 +284,8 @@ Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la 
 
 ## 15. Acuerdos de trabajo vigentes
 
+- Excepción de orden aprobada después de F6-07: adelantar F7-01 → F7-02 → F7-03, una tarea por commit, para desbloquear finalización financiera y pruebas completas; después retomar pendientes de F6-03/F6-04 y F6-08 → F6-09 → F6-10 → F6-11, cerrar salidas F5/F6 y continuar F7-04. No marcar tareas financieras antes de completarlas ni sustituir pruebas de compra pagada por efectos artificiales.
+
 - Una tarea del plan a la vez y en orden de fases. Antes de cada tarea, describir en 3–5 líneas el trabajo y los archivos; esperar «ok» si toca esquema, seguridad, mensajería o dinero.
 - D-08: sin asientos numerados. D-14: MailHog en desarrollo. OpenAI:ApiKey la gestiona el usuario con user-secrets; nunca escribirla en archivos.
 - Ramas desde develop actualizado: documentación en docs/f1-aclaraciones; PR-B F1-02/F1-03 en feature/f1-identidad-recintos-catalogo; PR-C F1-04 a F1-06 en feature/f1-ventas-finanzas-ia-mensajeria; PR-D F1-07 a F1-10 y F1-11 (después de F1-07) en feature/f1-integridad-bi-seed. Cada PR empieza después de que el usuario mergee el anterior y actualice develop.

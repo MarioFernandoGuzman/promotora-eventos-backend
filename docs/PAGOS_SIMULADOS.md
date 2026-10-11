@@ -26,7 +26,7 @@ En otra terminal con su configuración local:
 dotnet run --project src/Promotora.Worker
 ```
 
-Cambiar la configuración requiere reiniciar el host. Todavía no existe un flujo HTTP de cobro conectado: POST /api/v1/compras continúa reservando PENDIENTE. Las operaciones de Swagger siguen siendo 54. La integración exige registrar pago y ledger de forma transaccional en F7 y no se añade un endpoint de pago independiente.
+Cambiar la configuración requiere reiniciar el host. Todavía no existe un flujo HTTP de cobro conectado: POST /api/v1/compras continúa reservando PENDIENTE. Consulta el Swagger actual para las operaciones disponibles. La integración exige registrar pago y ledger de forma transaccional en F7 y no se añade un endpoint de pago independiente.
 
 ## Pruebas locales
 
@@ -52,6 +52,6 @@ Se prueban aprobación/rechazo configurable, 20 llamadas concurrentes con una re
 
 ## Límite de la simulación y dependencia financiera
 
-La consulta conserva resultados únicamente en memoria y no se comparte entre procesos. Un reinicio pierde esa consulta; null significa desconocido, no confirma rechazo ni ausencia de pago. La persistencia de pagos por intento corresponde a F7-02. Antes de activar la recuperación F6-11 debe resolverse la consulta durable de referencias de esta simulación; no permitir devolver cupo basándose únicamente en una memoria vacía.
+La consulta conserva resultados únicamente en memoria y no se comparte entre procesos. Un reinicio pierde esa consulta; null significa desconocido, no confirma rechazo ni ausencia de pago. F7-02 proporciona el registro transaccional de intentos y resultados mediante IRegistroPagoPort; ver [REGISTRO_PAGOS.md](REGISTRO_PAGOS.md). Antes de activar la recuperación F6-11 debe resolverse la consulta durable de referencias de esta simulación; no permitir devolver cupo basándose únicamente en una memoria vacía.
 
 Decisión de integración tomada con el usuario: mantener el orden de fases y preparar los componentes de pago/emisión, sin finalizar una compra HTTP hasta que F7-02/F7-03 proporcionen el registro de pago/ledger requerido por AGENTS.md §5. La salida completa de Fase 5 permanece pendiente de esa integración; no se consideran realizados los cobros persistidos de F7 en este bloque.

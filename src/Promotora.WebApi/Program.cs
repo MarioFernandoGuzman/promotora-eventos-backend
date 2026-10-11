@@ -53,10 +53,12 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
         builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
     builder.Services.AddIdentityManagement();
     builder.Services.AddIdentityRegistration();
+    builder.Services.AddCuentasFinancieras();
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
     builder.Services.AddTicketing(new CompraOptions(builder.Configuration.GetValue("Ticketing:ReservaMinutos", 15)));
     builder.Services.AddEmisionBoletosBase64(builder.Configuration["Boletos:SigningKey"], builder.Configuration.GetValue<int?>("Boletos:CategoriaCarreraId"));
+    builder.Services.AddFinalizacionCompras();
     builder.Services.AddImages(builder.Configuration["Images:RootPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "uploads"));
 }
 

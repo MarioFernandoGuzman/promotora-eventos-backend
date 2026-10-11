@@ -1,13 +1,31 @@
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Promotora.Application.Finance;
 using Promotora.Application.Finance.Ports;
+using Promotora.Application.Shared;
 using Promotora.Application.Ticketing;
 using Promotora.Domain.Finance;
+using Promotora.Infrastructure.Shared;
 
 namespace Promotora.Infrastructure.Finance;
 
 public static class FinanzasRegistration
 {
+    public static IServiceCollection AddFinalizacionCompras(this IServiceCollection services)
+    {
+        services.AddScoped<ICobroRepository, EfCobroRepository>();
+        services.AddScoped<ICompletarCompraPort, CompletarCompraService>();
+        return services;
+    }
+
+    public static IServiceCollection AddCuentasFinancieras(this IServiceCollection services)
+    {
+        services.AddScoped<ICuentaRepository, EfCuentaRepository>();
+        services.AddScoped<IValidator<CerrarCuentaCommand>, CerrarCuentaValidator>();
+        services.AddCommandHandler<CerrarCuentaCommand, CuentaDto, CerrarCuentaHandler>();
+        return services;
+    }
+
     public static IServiceCollection AddPagoSimulado(this IServiceCollection services, FakePaymentOptions options)
     {
         if (options.TasaFallo is < 0m or > 1m) throw new ArgumentOutOfRangeException(nameof(options));
