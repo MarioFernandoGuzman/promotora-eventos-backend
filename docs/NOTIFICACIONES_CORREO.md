@@ -10,7 +10,7 @@ El handler inserta mensajes_procesados(mensaje_id, EnviarConfirmacionConsumer) e
 
 El correo de texto contiene los identificadores y códigos de los boletos. El código QR es el token para presentar en puerta; no se genera una imagen QR ni un PDF en esta tarea. El mensaje privado solo pasa a SMTP: notificaciones.mensaje guarda una descripción genérica, sin cuerpo, tokens ni datos del proveedor. ENVIADO significa aceptado por el servidor SMTP, no entregado al buzón final.
 
-La emisión de compra.completada desde el finalizador sigue pendiente de F7. El consumidor está implementado y probado con compras existentes preparadas en contenedores; el flujo local actual de compra permanece PENDIENTE y no envía confirmación. No actives Compras:ConsumerEnabled para eludir esa dependencia.
+La emisión de compra.completada está integrada en el finalizador financiero F7-03 y el consumidor de compras F6-04. Con relay, consumidor financiero y notificaciones habilitados, una compra completada alimenta la confirmación. Sigue [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md) para activar el flujo con firma QR y categoría externa, y [TOPOLOGIA_RABBITMQ.md](TOPOLOGIA_RABBITMQ.md) para ver rutas, commits y ACK. F6-11 (recuperación durable) sigue pendiente.
 
 ## Bienvenida — F6-06
 
