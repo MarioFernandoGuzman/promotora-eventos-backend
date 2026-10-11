@@ -20,10 +20,11 @@ public sealed class ProcesarCompraService(ICompraMensajeRepository mensajes, IMe
                 return Result<Unit>.Failure(new Error("compra.mensaje", "Identidad de mensaje inválida.", ErrorType.Validation));
             var asistentes = await mensajes.LeerAsync(mensaje, token);
             if (asistentes.IsFailure) return Result<Unit>.Failure(asistentes.Errors);
-            if (!await dedup.RegistrarAsync(mensaje.MensajeId, "ProcesarCompraConsumer", token))
-                return Result<Unit>.Success(Unit.Value);
             var compra = await tomas.TomarAsync(mensaje.PublicId, token);
             if (compra is null) return Result<Unit>.Success(Unit.Value);
+            // Una entrega omitida no debe bloquear la recuperación de PROCESANDO con un marcador sin efectos.
+            if (!await dedup.RegistrarAsync(mensaje.MensajeId, "ProcesarCompraConsumer", token))
+                return Result<Unit>.Failure(new Error("compra.deduplicacion", "La compra pendiente tiene un mensaje ya confirmado; requiere conciliación.", ErrorType.Conflict));
             var intento = await pagos.IniciarEnTransaccionAsync(compra.PublicId, "SIMULADA", token);
             if (intento.IsFailure) return Result<Unit>.Failure(intento.Errors);
             var cobro = await gateway.CobrarAsync(new(compra.PublicId, compra.Total, compra.Moneda), token);

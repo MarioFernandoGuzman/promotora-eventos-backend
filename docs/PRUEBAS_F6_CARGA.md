@@ -51,4 +51,4 @@ Cada fila confirmó 100 pagos, 100 boletos, 300 movimientos y suma Q12,320.00. L
 
 Estos resultados prueban integridad y carga básica reproducible en el entorno local. TestServer opera en memoria; no mide red externa, TLS, balanceador, una pasarela externa ni entrega SMTP. Los tiempos dependen de CPU, Docker, arranque y otras pruebas concurrentes. No constituyen un SLA ni una estimación de capacidad en producción. Para observar la compra en Swagger y el Worker local, consulta [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md) y [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md).
 
-F6-11 (recuperación y consulta durable de la pasarela) sigue pendiente; esta prueba no la sustituye.
+Desde F6-11, estos escenarios también usan el proveedor durable de V11. Las mediciones de la tabla corresponden al bloque original F6-09 con el simulador en memoria; no se presentan como tiempos del adaptador nuevo. Recuperación y consulta durable tienen sus pruebas propias en [RECUPERACION_COMPRAS.md](RECUPERACION_COMPRAS.md).

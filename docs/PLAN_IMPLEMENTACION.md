@@ -33,7 +33,9 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 
 Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
 
-El modelo objetivo tiene **26 tablas**, incluida `refresh_tokens`. Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9.
+Acuerdo F6-11 aprobado por el usuario: V11 añade `pagos_simulados` (referencia UUID PK, monto NUMERIC(10,2), moneda VARCHAR(3), estado APROBADO/RECHAZADO y fecha TIMESTAMPTZ; todos obligatorios). Diario inmutable sin FK, commit independiente del proveedor simulado. No modifica el ledger ni añade endpoints. API/Worker usan la consulta durable; la recuperación nunca cobra y no devuelve cupo ante error de consulta o respaldo histórico inconsistente.
+
+El modelo objetivo tiene **27 tablas**, incluidas `refresh_tokens` y `pagos_simulados` (26 originales más V11 aprobada en F6-11). Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9, ampliado con V11.
 
 Entrega de Fase 1: PR-B (F1-02/F1-03) en `feature/f1-identidad-recintos-catalogo`; PR-C (F1-04 a F1-06) en `feature/f1-ventas-finanzas-ia-mensajeria`; PR-D (F1-07 a F1-10 y F1-11, ejecutada después de F1-07) en `feature/f1-integridad-bi-seed`. Cada rama parte de develop actualizado después de que el usuario mergee el PR anterior. Solo commits locales en español, con `Refs: <ID>` en el cuerpo, mostrando git status y mensaje antes de cada commit; sin push ni merge del agente y sin modificar main/develop.
 
@@ -50,7 +52,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | Q3 | Arquitectura formal, no un solo archivo | F2-01, F2-06, F12-03 | ⬜ |
 | Q4 | Backend REST en tecnología permitida (.NET) | F2-01, F2-05 | ✅ |
 | Q5 | GitHub: ramas, PRs, historial legible | F0-04, F2-07 | ✅ |
-| Q6 | RabbitMQ en un flujo de negocio real y recuperación de compras atascadas | F6-01 … F6-11 (incluye recuperación y prueba de carrera) | ⬜ |
+| Q6 | RabbitMQ en un flujo de negocio real y recuperación de compras atascadas | F6-01 … F6-11 (incluye recuperación y prueba de carrera) | ✅ |
 | Q7 | Agente de IA con información pública | F9-06, F9-07 | ⬜ |
 | Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ⬜ |
 | Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ⬜ |
@@ -184,7 +186,7 @@ Pruebas obligatorias de F5-01: subtotal 300.00 → comisión 30.00, IVA 39.60, t
 - [x] **F6-08** Pruebas con Testcontainers (RabbitMQ real): duplicado, fallo → DLQ, caída del consumidor. Cinco escenarios con el procesador real; guía y evidencia en `docs/PRUEBAS_F6_RESILIENCIA.md`. Suite completa: 340 pruebas aprobadas.
 - [x] **F6-09** Prueba de carga básica (p. ej. 500–1000 compras concurrentes) y evidencia de resultados. API real con 500/1000 solicitudes simultáneas contra cupo 100; 100 compras COMPLETADA, pagos, boletos y ledger conciliado en cada escenario. Tiempos y comandos en [PRUEBAS_F6_CARGA.md](PRUEBAS_F6_CARGA.md). Suite Release: 342 aprobadas, ninguna fallida/omitida; build sin warnings y formato limpio.
 - [x] **F6-10** Documentar topología con diagrama. [TOPOLOGIA_RABBITMQ.md](TOPOLOGIA_RABBITMQ.md): exchanges/rutas/colas, TTL/backoff/DLQ, confirms, ACK, deduplicación y límites del pago simulado. Guías de outbox/correo actualizadas al flujo financiero activo; F6-11 permanece pendiente.
-- [ ] **F6-11** Job de recuperación de compras PROCESANDO cuyo tiempo desde procesando_desde supera el timeout configurable (5 minutos por defecto): consultar pago por referencia compras.public_id; con pago APROBADO completar y emitir boletos idempotentemente; si no, pasar condicionalmente a FALLIDA y devolver cupo una sola vez en la misma transacción. Prueba de carrera procesar/expirar/cancelar ⇒ cupo devuelto exactamente una vez.
+- [x] **F6-11** Job de recuperación de compras PROCESANDO cuyo tiempo desde procesando_desde supera el timeout configurable (5 minutos por defecto): consultar pago por referencia compras.public_id; con pago APROBADO completar y emitir boletos idempotentemente; rechazo o ausencia confirmada sin efectos financieros pasa condicionalmente a FALLIDA y devuelve cupo una sola vez. Consulta fallida o respaldo histórico inconsistente conserva PROCESANDO para conciliación. Diario durable aprobado V11, job opt-in, rollback de deduplicación provisional y seis carreras procesar/expirar/cancelar/recuperar. Dieciocho casos nuevos; 360 pruebas Release aprobadas, 0 fallidas/omitidas; build sin warnings, formato limpio. Guía y límites: [RECUPERACION_COMPRAS.md](RECUPERACION_COMPRAS.md).
 
 **Salida:** el flujo de compra corre por colas, resiste duplicados y fallos, recupera compras PROCESANDO atascadas sin duplicar cobros, boletos ni devoluciones de cupo, y queda evidencia en `notificaciones` y `outbox_mensajes`.
 

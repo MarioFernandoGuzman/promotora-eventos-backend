@@ -29,7 +29,7 @@ public sealed class CompraOutboxApiTests(PostgresFixture postgres, RabbitMqFixtu
         await new TicketingApiTestSupport(postgres).LoginAsync(client, RolUsuario.CLIENTE, Ct);
         var compra = await TicketingApiTestSupport.ComprarAsync(client, datos.EventoId, datos.TipoId, 2, Ct);
         var services = new ServiceCollection(); services.AddPromotoraInfrastructure(postgres.ConnectionString);
-        services.AddPagoSimulado(new()); services.AddEmisionBoletos(factory.QrKey, 5); services.AddFinalizacionCompras();
+        services.AddPagoSimuladoDurable(new(), postgres.ConnectionString); services.AddEmisionBoletos(factory.QrKey, 5); services.AddFinalizacionCompras();
         services.AddExpiracionCompras();
         services.AddProcesamientoCompras(); services.AddRabbitMqMessaging(rabbit.Options); services.AddCompraConsumer(new(Prefetch: 1));
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });

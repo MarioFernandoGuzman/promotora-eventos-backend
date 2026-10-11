@@ -50,6 +50,7 @@ public sealed class PromotoraDbContext(DbContextOptions<PromotoraDbContext> opti
     public DbSet<NotificacionRow> Notificaciones => Set<NotificacionRow>();
     public DbSet<OutboxMensajeRow> OutboxMensajes => Set<OutboxMensajeRow>();
     public DbSet<PagoRow> Pagos => Set<PagoRow>();
+    public DbSet<PagoSimuladoRow> PagosSimulados => Set<PagoSimuladoRow>();
     public DbSet<PresentadorRow> Presentadores => Set<PresentadorRow>();
     public DbSet<RecintoRow> Recintos => Set<RecintoRow>();
     public DbSet<RefreshTokenRow> RefreshTokens => Set<RefreshTokenRow>();

@@ -19,7 +19,8 @@ builder.Services.AddSerilog(configuration => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}"));
 builder.Services.AddPromotoraInfrastructure(builder.Configuration.GetConnectionString("Promotora"));
-builder.Services.AddPagoSimulado(new FakePaymentOptions(builder.Configuration.GetValue("PagosSimulados:TasaFallo", 0m)));
+if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora")))
+    builder.Services.AddPagoSimuladoDurable(new FakePaymentOptions(builder.Configuration.GetValue("PagosSimulados:TasaFallo", 0m)), builder.Configuration.GetConnectionString("Promotora")!);
 if (!string.IsNullOrWhiteSpace(builder.Configuration["RabbitMQ:Host"]))
 {
     builder.Services.AddRabbitMqMessaging(new RabbitMqOptions
@@ -82,6 +83,17 @@ if (builder.Configuration.GetValue("Expiracion:Enabled", false))
         throw new InvalidOperationException("Expiración habilitada requiere conexión PostgreSQL externa.");
     builder.Services.AddExpiracionWorker(new(builder.Configuration.GetValue("Expiracion:BatchSize", 100),
         builder.Configuration.GetValue("Expiracion:PollIntervalSeconds", 30)));
+}
+if (builder.Configuration.GetValue("Recuperacion:Enabled", false))
+{
+    if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora"))
+        || string.IsNullOrWhiteSpace(builder.Configuration["Boletos:SigningKey"])
+        || builder.Configuration.GetValue<int?>("Boletos:CategoriaCarreraId") is null)
+        throw new InvalidOperationException("Recuperación requiere PostgreSQL, firma QR y categoría de carreras externos.");
+    builder.Services.AddCompraConsumerComponents();
+    builder.Services.AddRecuperacionCompras();
+    builder.Services.AddRecuperacionWorker(new(builder.Configuration.GetValue("Recuperacion:BatchSize", 100),
+        builder.Configuration.GetValue("Recuperacion:PollIntervalSeconds", 30), builder.Configuration.GetValue("Recuperacion:TimeoutMinutos", 5)));
 }
 var host = builder.Build();
 await using var hostLifetime = (IAsyncDisposable)host;

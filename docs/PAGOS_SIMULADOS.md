@@ -1,8 +1,8 @@
 # Pago simulado — F5-04
 
-Application/Finance define IPaymentGateway, SolicitudPago y RespuestaPago. Infrastructure/Finance implementa FakePaymentGateway y lo registra como singleton en API y Worker. No se contacta una pasarela externa ni se reciben datos de tarjeta. No requiere paquetes, migraciones ni credenciales adicionales.
+Application/Finance define IPaymentGateway, SolicitudPago y RespuestaPago. Infrastructure/Finance implementa FakePaymentGateway como simulador puro y PasarelaSimuladaDurable como adaptador singleton de API/Worker desde F6-11. El segundo confirma el diario `pagos_simulados` de V11 en una conexión independiente; no contacta una pasarela externa ni recibe datos de tarjeta. No requiere paquetes ni credenciales adicionales. Configuración y recuperación: [RECUPERACION_COMPRAS.md](RECUPERACION_COMPRAS.md).
 
-CobrarAsync recibe la referencia compras.public_id, el total congelado y moneda GTQ. Devuelve Result con APROBADO/RECHAZADO; un rechazo simulado es un resultado normal de la pasarela. Datos inválidos devuelven Validation; reutilizar una referencia con otro monto devuelve Conflict. ConsultarAsync devuelve el resultado conocido o null si la referencia no está registrada en esta instancia.
+CobrarAsync recibe la referencia compras.public_id, el total congelado y moneda GTQ. Devuelve Result con APROBADO/RECHAZADO; un rechazo simulado es un resultado normal de la pasarela. Datos inválidos devuelven Validation; reutilizar una referencia con otro monto devuelve Conflict. ConsultarAsync del adaptador durable consulta PostgreSQL y devuelve el resultado confirmado o null si no existe; un error de conexión se propaga y no significa ausencia.
 
 Cada referencia conserva un único resultado, monto y fecha UTC; llamadas concurrentes comparten ese resultado. La decisión usa una muestra derivada de la referencia, de modo que con igual configuración el estado resulta reproducible. Todo cálculo monetario es decimal. Las compras gratuitas se aprueban, sin implicar movimientos financieros.
 
@@ -26,7 +26,7 @@ En otra terminal con su configuración local:
 dotnet run --project src/Promotora.Worker
 ```
 
-Cambiar la configuración requiere reiniciar el host. F6-03/F6-04 conectan el cobro simulado en Worker: POST /api/v1/compras devuelve 202 y el cliente consulta su estado por publicId. Pago/ledger/saldos/emisión se confirman juntos; no hay endpoint de pago independiente. Configuración y prueba local en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
+Cambiar la configuración requiere reiniciar el host. El primer resultado durable de una referencia permanece aunque cambie la tasa: no se sobrescribe. F6-03/F6-04 conectan el cobro simulado en Worker: POST /api/v1/compras devuelve 202 y el cliente consulta su estado por publicId. Pago/ledger/saldos/emisión se confirman juntos; el diario del proveedor simulado se confirma independientemente. No hay endpoint de pago independiente. Configuración y prueba local en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
 
 ## Pruebas locales
 
@@ -52,6 +52,6 @@ Se prueban aprobación/rechazo configurable, 20 llamadas concurrentes con una re
 
 ## Límite de la simulación y dependencia financiera
 
-La consulta conserva resultados únicamente en memoria y no se comparte entre procesos. Un reinicio pierde esa consulta; null significa desconocido, no confirma rechazo ni ausencia de pago. F7-02 proporciona el registro transaccional de intentos y resultados mediante IRegistroPagoPort; ver [REGISTRO_PAGOS.md](REGISTRO_PAGOS.md). Antes de activar la recuperación F6-11 debe resolverse la consulta durable de referencias de esta simulación; no permitir devolver cupo basándose únicamente en una memoria vacía.
+FakePaymentGateway puro conserva resultados únicamente en memoria y no se comparte entre procesos; su null no confirma ausencia de pago. API/Worker usan PasarelaSimuladaDurable: V11 sobrevive al rollback de la compra y a reinicios. F7-02 mantiene el registro transaccional de intentos mediante IRegistroPagoPort; ver [REGISTRO_PAGOS.md](REGISTRO_PAGOS.md). El job F6-11 consulta el diario durable; nunca devuelve cupo ante error de consulta o respaldo histórico inconsistente. El simulador sigue sin cobros externos: cambiarlo por una pasarela real exige otro protocolo de toma/recuperación/conciliación.
 
 Decisión de integración tomada con el usuario: mantener el orden de fases y preparar los componentes de pago/emisión, sin finalizar una compra HTTP hasta que F7-02/F7-03 proporcionen el registro de pago/ledger requerido por AGENTS.md §5. La base F7-02/F7-03 y la integración F6-03/F6-04 ya están implementadas. La salida completa de Fase 5 permanece pendiente de la prueba de ventas completadas F5-09.
