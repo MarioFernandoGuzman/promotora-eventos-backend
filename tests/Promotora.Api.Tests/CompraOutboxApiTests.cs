@@ -52,6 +52,7 @@ public sealed class CompraOutboxApiTests(PostgresFixture postgres, RabbitMqFixtu
             {
                 using var payload = System.Text.Json.JsonDocument.Parse(message.Body);
                 Assert.Equal(compra.PublicId, payload.RootElement.GetProperty("publicId").GetGuid());
+                Assert.Single(payload.RootElement.EnumerateObject());
                 encontrado = true;
             }
             await channel.BasicAckAsync(message.DeliveryTag, false, Ct);

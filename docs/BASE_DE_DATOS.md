@@ -462,6 +462,8 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 #### `boletos` 🔧
 Un boleto = una persona = un QR. Se **generan** al completarse la compra (una fila por unidad de `cantidad`). codigo_qr contiene un token firmado HMAC-SHA256; UNIQUE no valida la firma. Application exige nombre_asistente y documento_identidad para carreras, aunque sean nullable en BD; datos_extra puede incluir talla de camiseta y contacto de emergencia. fecha_uso y validado_por registran la validación en puerta.
 
+Acuerdo F6-03/F6-04: POST /api/v1/compras recibe asistentes por ítem. Mientras la compra está pendiente, se conservan en `outbox_mensajes.payload`, asociados a tipo_entrada_id, sin nuevas tablas o columnas. El Worker los relaciona con detalle_compra al emitir; RabbitMQ recibe solamente publicId. El outbox conserva estos datos después de publicar, sin purga automática definida; no se copian a logs ni DLQ.
+
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
 | `id` | `bigint` | NOT NULL | `GENERATED ALWAYS AS IDENTITY` | `PK (boletos_pkey)` |

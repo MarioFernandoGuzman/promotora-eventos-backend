@@ -182,6 +182,7 @@ Reintentos: cola `compras.procesar.retry` (TTL con backoff, DLX de vuelta al exc
 
 Flujo de compra:
 1. `POST /api/v1/compras` valida → reserva cupo atómico → crea compra `PENDIENTE` (`expira_en`) → inserta en `outbox_mensajes` (misma tx) → **202 Accepted** + `Location`.
+   Acuerdo F6-03/F6-04: asistentes opcionales por ítem, obligatorios en carreras. Se conservan en el payload del outbox existente por tipo_entrada; el relay publica solo publicId. No incluir esos datos en logs, RabbitMQ ni DLQ. Permanecen en PostgreSQL también después de publicar; no existe todavía una política automática de purga.
 2. `Worker` (outbox relay, `FOR UPDATE SKIP LOCKED`) publica a `compra.procesar`.
 3. Consumidor procesa, completa y emite `compra.completada`.
    Toma la compra con `UPDATE compras SET estado='PROCESANDO', procesando_desde=now() WHERE id=@id AND estado='PENDIENTE'`; 0 filas ⇒ ACK y omitir. La referencia ante la pasarela es `compras.public_id` para mantener el cobro idempotente.

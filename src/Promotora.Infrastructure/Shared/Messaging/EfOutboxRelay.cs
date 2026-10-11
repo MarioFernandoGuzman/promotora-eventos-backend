@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Promotora.Application.Shared.Messaging;
 using Promotora.Application.Shared.Ports;
@@ -27,7 +28,11 @@ public sealed class EfOutboxRelay(PromotoraDbContext db, IMessagePublisher publi
             var confirmado = false;
             try
             {
-                await publisher.PublicarAsync(new(row.Id, row.Tipo, Encoding.UTF8.GetBytes(payload.RootElement.GetRawText())), ct);
+                // Los asistentes permanecen en PostgreSQL; ni RabbitMQ ni su DLQ reciben datos personales.
+                var body = row.Tipo == TiposMensaje.ProcesarCompra
+                    ? JsonSerializer.SerializeToUtf8Bytes(new { publicId = payload.RootElement.GetProperty("publicId") })
+                    : Encoding.UTF8.GetBytes(payload.RootElement.GetRawText());
+                await publisher.PublicarAsync(new(row.Id, row.Tipo, body), ct);
                 confirmado = true;
             }
             catch (Exception) when (!ct.IsCancellationRequested)

@@ -1,69 +1,145 @@
-# Preparación de compras asíncronas — F6-03/F6-04
+# Compras asíncronas — F6-03/F6-04
 
-## Estado real
+## Flujo implementado
 
-POST `/api/v1/compras` ahora confirma juntos reserva, compra PENDIENTE, detalles, auditoría y un mensaje de outbox `compra.procesar`. El payload contiene únicamente `{ "publicId": "UUID de la compra" }`. El relay de F6-02 puede publicarlo a `compras.procesar`; todavía no hay procesamiento financiero habilitado. No representa pago ni venta completada.
+La API reserva cupo y confirma compra PENDIENTE, detalles, auditoría y outbox juntos. El relay publica después del commit. RabbitMQ recibe únicamente `{ "publicId": "UUID" }`, con MessageId igual al ID del outbox; los montos se leen de PostgreSQL.
 
-Producción sigue respondiendo **201 nueva / 200 repetida**. `ICompraProcesamientoEstado` informa disponibilidad del flujo completo; su registro actual `CompraProcesamientoPendiente` retorna false. No existe configuración para saltar esta protección. El contrato **202 + Location** está preparado en el controller y probado sustituyendo ese puerto únicamente en tests. Cuando se integre F7, PENDIENTE/PROCESANDO devolverán 202 también ante la misma clave; un estado terminal reutilizado devolverá 200. Location apunta a GET `/api/v1/compras/{publicId}`, que siempre comprueba propiedad.
+Los ítems admiten `asistentes`: una persona por unidad cuando se proporciona, obligatorio en carreras. Cada persona tiene `nombreAsistente`, `documentoIdentidad` y `datosExtraJson` opcional (string JSON válido). Los datos se validan antes de reservar; no se aceptan nombres/documentos vacíos en carreras. Si se repite una clave propia, se conserva la solicitud original, incluyendo asistentes. Los ítems del mismo tipo se agrupan conservando el orden de las personas.
 
-F6-03/F6-04 permanecen pendientes en el plan hasta integrar pago, ledger, saldos y emisión. No se habilita COMPLETADA sin registrar los componentes congelados en la misma transacción. No se modifican las migraciones.
+Los asistentes se guardan por tipoEntradaId en outbox_mensajes.payload, y se relacionan con detalle_compra al emitir. El relay los elimina del cuerpo enviado al broker. No se incluyen en RabbitMQ, DLQ, logs ni respuestas de compra. Persisten en el outbox después de publicar y también se copian a boletos al completar. Todavía no existe purga automática del outbox; el equipo debe definir esa política antes de producción.
 
-## Módulos y garantías
+## Procesamiento y transacción
 
-- Application/Ticketing: CrearCompraHandler escribe IOutboxWriter después de la auditoría, dentro de ITicketingTransaction. Un fallo revierte todas las reservas, detalles, compra, auditoría y outbox.
-- Infrastructure: el writer existente persiste JSONB; el registro de disponibilidad mantiene bloqueada la activación. El relay utiliza el ID de outbox como MessageId.
-- WebApi: controller traduce el resultado a 201/200 o al contrato preparado 202; no accede a EF ni RabbitMQ.
-- Idempotencia: repetir una clave propia devuelve la compra original antes de reservar o escribir; incluso si cambia precio/estado o se cancela, no genera otro mensaje. Clave ajena responde 409 sin revelar compra.
+Application/Ticketing/ProcesarCompraService implementa IProcesarCompraMensajePort mediante puertos. Comprueba que el ID y publicId recibidos coinciden con un outbox de compra existente; un mensaje arbitrario no permite cobrar otra compra.
 
-El mensaje solo identifica la compra; el futuro consumidor debe leer los montos congelados y la referencia `compras.public_id` desde PostgreSQL. No confiar en un monto, cliente o cuenta que viniera del mensaje.
+Una única transacción engloba deduplicación, UPDATE PENDIENTE→PROCESANDO con fecha UTC, intento de pago, resultado, ledger/saldos, COMPLETADA, boletos, auditorías y outbox compra.completada. Los duplicados confirmados y compras que pierden la toma se omiten. Solo se envía ACK después del commit.
 
-## Componentes de consumidor — F6-04
+El pago RECHAZADO registra su resultado, pasa condicionalmente PROCESANDO→FALLIDA y devuelve cupo una vez, todo junto con la deduplicación. No genera ledger ni boletos. Ante un error esperado se revierte la transacción y el transporte lleva el mensaje a DLQ; la reserva sigue PENDIENTE y puede expirar/cancelarse. Una excepción reintenta con backoff; shutdown revierte y deja el mensaje sin ACK. Nunca se publica directamente desde esta transacción.
 
-`ProcesarCompraConsumer` consume async con `autoAck=false`, prefetch configurable y un despacho por canal (sin compartir publicaciones concurrentes). Verifica Type, ContentType, MessageId positivo, JSON objeto con publicId UUID no vacío, tamaño máximo 64 KiB y header x-intentos entero no negativo. Copia la memoria del cuerpo dentro del callback de v7. Crea un scope por entrega y llama a `IProcesarCompraMensajePort`; solo Success tras commit permite ACK. Mensajes malformados o Result fallido se trasladan a DLQ; una excepción transitoria permite retry. No registra payload, credenciales ni excepciones sensibles.
+**Alcance de la pasarela:** el adaptador del proyecto es SIMULADA, sin cobros externos. Su llamada ocurre dentro de la transacción del consumidor para que un fallo revierta también la toma y permita reentrega. Mantiene el resultado por publicId en memoria durante la vida del Worker. No sustituirla por una pasarela externa con este mismo protocolo: necesita recuperación y conciliación durable. F6-11 sigue pendiente; no se habilita el job de recuperación ni se interpreta un resultado desconocido como rechazo. PROCESANDO normalmente no es visible a otras conexiones porque se confirma junto con el resultado final.
 
-Con header x-intentos ausente, el primer intento vale cero. Tras cada fallo se incrementa; con MaxIntentos=3 hay **tres ejecuciones totales**, luego DLQ. Retrasos base de 5 s, 10 s, etc., acotados a 300 s mediante TTL por mensaje en la cola retry, con retorno al exchange de compras. Conserva MessageId, Type, body y headers; elimina Expiration al enviar a DLQ. Espera confirms y mandatory antes de confirmar el original. Caer después del traslado y antes del ACK puede duplicar: la deduplicación sigue siendo necesaria. Si el traslado falla, cierra el canal sin ACK y el broker reentrega. Shutdown cancela el puerto, revierte su transacción y deja el original sin confirmar.
+## Transporte y módulos
 
-`EfMensajeProcesadoRepository.RegistrarAsync` utiliza INSERT parametrizado con ON CONFLICT DO NOTHING sobre (mensaje_id, consumidor) y fecha IClock UTC. Requiere una transacción activa: false permite ACK/omitir; si la transacción falla, el registro desaparece junto con los efectos. No registra un mensaje por anticipado fuera de los efectos del negocio.
+Infrastructure valida Type, ContentType, MessageId, publicId, tamaño y x-intentos. Despacho serial por canal, prefetch configurable, mensajes persistentes, publisher confirms y ACK manual. Una excepción usa TTL exponencial acotado; tres ejecuciones totales por defecto, luego DLQ. Result fallido y mensaje malformado van a DLQ. Si falla el traslado, se cierra el canal sin ACK. Nunca registrar cuerpos, QR ni excepciones con configuración sensible.
 
-`EfCompraTomaRepository.TomarAsync` exige transacción activa, realiza UPDATE PENDIENTE→PROCESANDO por publicId con procesando_desde UTC y audita al ganador en esa transacción. Cero filas devuelve null sin leer montos ni auditar. El ganador obtiene los componentes congelados desde PostgreSQL. No cobra, finaliza, devuelve cupo ni emite boletos. El integrador de F7 deberá coordinar toma, referencia idempotente, deduplicación, pago/ledger/saldos/emisión y compra.completada; además probar reinicios y recuperación de F6-11.
+Worker registra el procesador real con AddProcesamientoCompras. AddCompraConsumerComponents conserva los repositorios base para pruebas de transporte. API/Worker conocen Infrastructure solamente para DI; los controllers siguen llamando handlers. La finalización usa ICompletarCompraPort.EnTransaccionAsync para no crear una transacción anidada.
 
-`ProcesarCompraConsumerService` administra reconexión del transporte en Worker, con espera cancellable de 2 s. El registro `AddCompraConsumer` exige que exista el puerto de integración financiera antes de activar el transporte. Ese puerto **no tiene implementación registrada de producción todavía**. El adaptador de tests escribe una categoría como efecto artificial, únicamente en PostgreSQL temporal; no simula una compra pagada ni sustituye las pruebas financieras de F7.
+## Preparar el entorno local
 
-| Configuración de Worker | Valor y estado |
-|---|---|
-| Compras:ConsumerEnabled | false; true se rechaza al arrancar hasta integrar F7 |
-| Compras:Prefetch | 16; rango 1–1000 |
-| Compras:MaxIntentos | 3 ejecuciones totales; rango 1–10 |
-| Compras:RetryBaseDelayMilliseconds | 5000; rango 1–300000 |
-
-No habilites el consumidor para probar compras pagadas en este bloque: la protección rechaza esa configuración y las compras permanecen pendientes. La prueba automática sí conecta el transporte real a un puerto explícito de pruebas y comprueba efectos/dedup atómicos, retry/DLQ, toma concurrente, traslado fallido y shutdown.
-
-TTL por mensaje en una sola cola puede sufrir espera detrás de mensajes anteriores con TTL mayor; no se promete un tiempo exacto de retry. Esta decisión conserva la topología acordada y no crea colas adicionales. [Semántica oficial de TTL](https://www.rabbitmq.com/docs/ttl) y [memoria/consumo async v7](https://www.rabbitmq.com/client-libraries/dotnet-api-guide).
-
-## Verificar localmente
-
-Configurar API/Swagger según [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md) y Worker/Management según [MENSAJERIA_OUTBOX.md](MENSAJERIA_OUTBOX.md). Desde la raíz, con Docker operativo:
+Primero configura la conexión y JWT de la API según [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md). Configura RabbitMQ y la conexión del Worker según [MENSAJERIA_OUTBOX.md](MENSAJERIA_OUTBOX.md). Las contraseñas existentes permanecen en user-secrets/variables; no hay un usuario o contraseña nuevo en este bloque.
 
 ```powershell
-dotnet restore
+docker compose up -d
 ```
 
 ```powershell
-dotnet build --no-restore -c Release -warnaserror
+docker compose run --rm flyway migrate
+```
+
+Consulta el ID real de Carrera con una conexión de tu entorno (no asumir el ID de pruebas):
+
+```sql
+SELECT id, nombre FROM categorias_evento WHERE nombre = 'Carrera';
 ```
 
 ```powershell
-dotnet test --no-build -c Release --report-trx
+$categoriaCarreraId = Read-Host 'ID de la categoría Carrera'
+```
+
+```powershell
+dotnet user-secrets set 'Boletos:CategoriaCarreraId' $categoriaCarreraId --project src/Promotora.WebApi
+```
+
+```powershell
+dotnet user-secrets set 'Boletos:CategoriaCarreraId' $categoriaCarreraId --project src/Promotora.Worker
+```
+
+Genera una clave QR en memoria, compatible con Windows PowerShell 5.1. Conserva la misma clave mientras existan boletos válidos: cambiarla invalida su firma.
+
+```powershell
+$qrBytes = New-Object byte[] 32
+```
+
+```powershell
+$qrRng = [Security.Cryptography.RandomNumberGenerator]::Create()
+```
+
+```powershell
+$qrRng.GetBytes($qrBytes)
+```
+
+```powershell
+$qrRng.Dispose()
+```
+
+```powershell
+$qrKey = [Convert]::ToBase64String($qrBytes)
+```
+
+```powershell
+dotnet user-secrets set 'Boletos:SigningKey' $qrKey --project src/Promotora.WebApi
+```
+
+```powershell
+dotnet user-secrets set 'Boletos:SigningKey' $qrKey --project src/Promotora.Worker
+```
+
+```powershell
+dotnet user-secrets set 'Outbox:Enabled' 'true' --project src/Promotora.Worker
+```
+
+```powershell
+dotnet user-secrets set 'Compras:ConsumerEnabled' 'true' --project src/Promotora.Worker
+```
+
+```powershell
+dotnet user-secrets set 'PagosSimulados:TasaFallo' '0' --project src/Promotora.Worker
+```
+
+Arranca la API y el Worker en terminales separadas. Las notificaciones se habilitan aparte con SMTP según [NOTIFICACIONES_CORREO.md](NOTIFICACIONES_CORREO.md).
+
+```powershell
+dotnet run --project src/Promotora.WebApi
+```
+
+```powershell
+dotnet run --project src/Promotora.Worker
+```
+
+## Swagger y comprobaciones
+
+Inicia sesión como CLIENTE, completa cambio de contraseña si aplica y usa Authorize en /swagger según la guía frontend. Obtén evento y tipoEntradaId disponibles del catálogo. POST /api/v1/compras exige Idempotency-Key nuevo por compra lógica.
+
+```json
+{
+  "eventoId": 1,
+  "items": [{
+    "tipoEntradaId": 1,
+    "cantidad": 2,
+    "asistentes": [
+      { "nombreAsistente": "Persona Uno", "documentoIdentidad": "DOCUMENTO-PRUEBA-1" },
+      { "nombreAsistente": "Persona Dos", "documentoIdentidad": "DOCUMENTO-PRUEBA-2" }
+    ]
+  }]
+}
+```
+
+Los IDs del ejemplo se reemplazan por los de tu entorno. GET /api/v1/compras/{publicId} permite polling propio; GET /api/v1/boletos lista los emitidos. Repetir Idempotency-Key no reserva ni cobra de nuevo. Revisa Management: compras.procesar termina sin mensajes pendientes ni sin ACK; DLQ permanece vacía para compras válidas. Los asistentes se consultan desde PostgreSQL, no aparecen en el mensaje del broker.
+
+Con 2 entradas de 100, se esperan subtotal 200, comisión 20, IVA 26.40 y total 246.40; dos boletos, un pago APROBADO y tres movimientos cuya suma es el total. Para probar rechazo, detén el Worker, configura TasaFallo=1, arráncalo y usa una nueva compra y clave: FALLIDA, cero boletos y cupo devuelto una vez. Restablece la tasa a 0 después. No provoca rechazos en compras gratuitas.
+
+## Pruebas automáticas
+
+```powershell
+dotnet build -c Release -warnaserror
+```
+
+```powershell
+dotnet test -c Release
 ```
 
 ```powershell
 dotnet format --no-restore --verify-no-changes
 ```
 
-```powershell
-dotnet run --project src/Promotora.WebApi
-```
-
-En Swagger autenticado como CLIENTE, crear una compra de un evento EN_VENTA con `Idempotency-Key` nueva. Resultado actual 201 PENDIENTE; repetir con la misma clave da 200 y el mismo publicId. Consultar por publicId y cancelar conserva las reglas previas. No hay usuario/contraseña nuevos: utiliza tus credenciales configuradas fuera del repo.
-
-Si ejecutas el relay, el mensaje aparecerá en `compras.procesar` y permanecerá sin consumir hasta que el flujo financiero esté listo. No esperes COMPLETADA en este bloque. La suite verifica HTTP→outbox→RabbitMQ, rollback tras escritura del outbox, contrato 202/Location preparado y un solo mensaje en las carreras de idempotencia/cupo.
+ProcesarCompraTests cubre RabbitMQ/PostgreSQL reales con el procesador financiero, duplicados, asistentes, rechazo y rollback/reintento. CompraAsistentesApiTests comprueba validación previa a reserva, agrupación y congelación. CompraConsumerTests conserva las pruebas aisladas de transporte/retry/DLQ. F6-08 ampliará caída/reinicio y fallos con efectos financieros; F6-09 hará carga de 500–1000 compras. No se cierran esas tareas con estas pruebas.

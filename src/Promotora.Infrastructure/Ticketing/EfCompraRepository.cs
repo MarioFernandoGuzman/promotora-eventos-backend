@@ -34,7 +34,7 @@ public sealed class EfCompraRepository(PromotoraDbContext db) : ICompraRepositor
         bool activo = evento.RecintoId == initial.RecintoId
             && await db.Recintos.AnyAsync(r => r.Id == evento.RecintoId && r.Activo, ct)
             && await db.CategoriasEvento.AnyAsync(c => c.Id == evento.CategoriaId && c.Activo, ct);
-        return new(evento.Id, evento.Estado, activo, evento.FechaInicioVenta, evento.FechaFinVenta, evento.MaxBoletosPorCompra);
+        return new(evento.Id, evento.Estado, activo, evento.FechaInicioVenta, evento.FechaFinVenta, evento.MaxBoletosPorCompra, evento.CategoriaId);
     }
 
     public async Task<IReadOnlyList<EntradaDisponible>> LockEntradasAsync(int eventoId, IReadOnlyList<int> tipos, CancellationToken ct)

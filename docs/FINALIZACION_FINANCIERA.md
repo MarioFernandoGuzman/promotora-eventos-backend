@@ -24,7 +24,7 @@ Una repetición sobre COMPLETADA comprueba el intento, respaldo financiero, cant
 
 ## Alcance del PR F7-01 a F7-03
 
-API y Worker registran el componente de finalización cuando existe conexión. Este bloque no registra IProcesarCompraMensajePort ni activa el consumidor financiero. POST /api/v1/compras continúa reservando PENDIENTE con su outbox; la activación y el contrato 202 se retomarán en F6-03/F6-04 después de integrar este PR. No se crea un endpoint de pago/finalización independiente ni un flag que permita finalizar sin ledger.
+API y Worker registran el componente de finalización cuando existe conexión. El PR financiero proporcionó este componente sin activar el consumidor. La integración posterior F6-04 registra IProcesarCompraMensajePort en Worker y utiliza EnTransaccionAsync para compartir toma/deduplicación y finalización sin transacciones anidadas. El contrato HTTP 202 se activa en F6-03; consultar el estado vigente y la configuración en COMPRAS_ASINCRONAS.md. No se crea un endpoint de pago/finalización independiente ni un flag que permita finalizar sin ledger.
 
 El registro de resultados en pagos sobrevive a nuevos contextos/procesos. FakePaymentGateway sigue conservando su consulta en memoria: falta resolver su respaldo durable antes de habilitar F6-11. Un resultado desconocido tras reinicio no autoriza devolver cupo ni volver a cobrar. La Fase 7 completa sigue pendiente de reembolsos, liquidaciones, consultas y conciliación de escenarios mixtos F7-04 a F7-08.
 
