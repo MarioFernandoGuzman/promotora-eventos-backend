@@ -35,6 +35,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration["RabbitMQ:Host"]))
 if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promotora")))
 {
     builder.Services.AddEmisionBoletosBase64(builder.Configuration["Boletos:SigningKey"], builder.Configuration.GetValue<int?>("Boletos:CategoriaCarreraId"));
+    builder.Services.AddFinalizacionCompras();
     builder.Services.AddExpiracionCompras();
     builder.Services.AddCompraConsumerComponents();
 }

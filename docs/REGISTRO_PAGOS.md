@@ -18,7 +18,7 @@ Solo persiste campos permitidos de RespuestaPago: referencia, monto, moneda, pas
 
 No se añade un endpoint de pago ni se activa el consumidor con esta tarea. Swagger conserva el endpoint de cierre de cuentas F7-01; POST /api/v1/compras continúa reservando PENDIENTE hasta conectar el flujo financiero.
 
-F7-03 debe resolver el pago aprobado junto con ledger, saldos, COMPLETADA, emisión y outbox en una misma transacción. El puerto exige la transacción del caller para permitir esa composición sin transacciones anidadas. Es posible confirmar primero el intento PENDIENTE antes de llamar a la pasarela y conservar ese ID para recuperarlo tras un fallo.
+F7-03 resuelve el pago aprobado junto con ledger, saldos, COMPLETADA, emisión y outbox en una misma transacción mediante el componente descrito en [FINALIZACION_FINANCIERA.md](FINALIZACION_FINANCIERA.md). El puerto exige la transacción del caller para permitir esa composición sin transacciones anidadas. Es posible confirmar primero el intento PENDIENTE antes de llamar a la pasarela y conservar ese ID para recuperarlo tras un fallo. La conexión del consumidor sigue pendiente de activación F6-03/F6-04.
 
 Los resultados registrados en PostgreSQL sobreviven a un nuevo contexto/proceso. Esto no vuelve durable el diccionario de FakePaymentGateway: sigue pendiente persistir/consultar la respuesta de la simulación antes de habilitar F6-11. Si el proceso cae entre la respuesta de la pasarela y el registro transaccional, un pago PENDIENTE no prueba rechazo. No devolver cupo ni repetir cobros basándose en un resultado desconocido.
 

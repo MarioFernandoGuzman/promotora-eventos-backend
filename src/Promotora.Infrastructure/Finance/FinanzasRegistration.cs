@@ -11,6 +11,13 @@ namespace Promotora.Infrastructure.Finance;
 
 public static class FinanzasRegistration
 {
+    public static IServiceCollection AddFinalizacionCompras(this IServiceCollection services)
+    {
+        services.AddScoped<ICobroRepository, EfCobroRepository>();
+        services.AddScoped<ICompletarCompraPort, CompletarCompraService>();
+        return services;
+    }
+
     public static IServiceCollection AddCuentasFinancieras(this IServiceCollection services)
     {
         services.AddScoped<ICuentaRepository, EfCuentaRepository>();
