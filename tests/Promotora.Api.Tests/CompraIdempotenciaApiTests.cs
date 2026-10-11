@@ -18,7 +18,7 @@ public sealed class CompraIdempotenciaApiTests(PostgresFixture fixture) : IClass
         await using var factory = new IdentityApiFactory(fixture.ConnectionString); using var cliente = factory.CreateClient();
         await new TicketingApiTestSupport(fixture).LoginAsync(cliente, RolUsuario.CLIENTE, ct); string key = Guid.NewGuid().ToString();
         var respuestas = await ConcurrentesAsync(40, _ => ComprarAsync(cliente, datos.EventoId, datos.TipoId, 3, key, ct), ct);
-        Assert.Equal(1, respuestas.Count(r => r.StatusCode == HttpStatusCode.Created)); Assert.Equal(39, respuestas.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.Equal(40, respuestas.Count(r => r.StatusCode == HttpStatusCode.Accepted));
         var compras = await Task.WhenAll(respuestas.Select(r => r.Content.ReadFromJsonAsync<CompraCreadaDto>(ct)));
         Guid publicId = compras[0]!.PublicId;
         Assert.Equal(1, await db.OutboxMensajes.CountAsync(m => m.AgregadoId == publicId.ToString("D") && m.Tipo == "compra.procesar", ct));
@@ -37,10 +37,10 @@ public sealed class CompraIdempotenciaApiTests(PostgresFixture fixture) : IClass
         await support.LoginAsync(uno, RolUsuario.CLIENTE, ct); await support.LoginAsync(dos, RolUsuario.CLIENTE, ct);
         string key = Guid.NewGuid().ToString();
         var respuestas = await ConcurrentesAsync(40, i => ComprarAsync(i % 2 == 0 ? uno : dos, datos.EventoId, datos.TipoId, 3, key, ct), ct);
-        Assert.Equal(1, respuestas.Count(r => r.StatusCode == HttpStatusCode.Created)); Assert.Equal(19, respuestas.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.Equal(20, respuestas.Count(r => r.StatusCode == HttpStatusCode.Accepted));
         Assert.Equal(20, respuestas.Count(r => r.StatusCode == HttpStatusCode.Conflict));
-        var ganadora = (await respuestas.Single(r => r.StatusCode == HttpStatusCode.Created).Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
-        int indiceGanador = Array.FindIndex(respuestas, r => r.StatusCode == HttpStatusCode.Created);
+        var ganadora = (await respuestas.First(r => r.StatusCode == HttpStatusCode.Accepted).Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
+        int indiceGanador = Array.FindIndex(respuestas, r => r.StatusCode == HttpStatusCode.Accepted);
         var perdedor = indiceGanador % 2 == 0 ? dos : uno;
         Assert.Equal(HttpStatusCode.NotFound, (await perdedor.GetAsync($"/api/v1/compras/{ganadora.PublicId}", ct)).StatusCode);
         foreach (var response in respuestas.Where(r => r.StatusCode == HttpStatusCode.Conflict))
@@ -59,7 +59,7 @@ public sealed class CompraIdempotenciaApiTests(PostgresFixture fixture) : IClass
         await using var db = fixture.CreateContext(); var datos = await CompraFixture.CrearAsync(db, 10, ct);
         await using var factory = new IdentityApiFactory(fixture.ConnectionString); using var cliente = factory.CreateClient();
         await new TicketingApiTestSupport(fixture).LoginAsync(cliente, RolUsuario.CLIENTE, ct); string key = Guid.NewGuid().ToString();
-        using var creada = await ComprarAsync(cliente, datos.EventoId, datos.TipoId, 3, key, ct); Assert.Equal(HttpStatusCode.Created, creada.StatusCode);
+        using var creada = await ComprarAsync(cliente, datos.EventoId, datos.TipoId, 3, key, ct); Assert.Equal(HttpStatusCode.Accepted, creada.StatusCode);
         var original = (await creada.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
         Assert.Equal(HttpStatusCode.OK, (await cliente.PostAsync($"/api/v1/compras/{original.PublicId}/cancelar", null, ct)).StatusCode);
         await db.TiposEntrada.Where(t => t.Id == datos.TipoId).ExecuteUpdateAsync(s => s.SetProperty(t => t.Precio, 120m), ct);
@@ -84,8 +84,8 @@ public sealed class CompraIdempotenciaApiTests(PostgresFixture fixture) : IClass
         Assert.Equal(HttpStatusCode.Conflict, (await ComprarAsync(dos, datos.EventoId, datos.TipoId, 4, key, ct)).StatusCode);
         Assert.False(await db.Compras.AnyAsync(c => c.IdempotencyKey == key, ct));
         Assert.Equal(HttpStatusCode.OK, (await uno.PostAsync($"/api/v1/compras/{reservada.PublicId}/cancelar", null, ct)).StatusCode);
-        using var reintento = await ComprarAsync(dos, datos.EventoId, datos.TipoId, 4, key, ct); Assert.Equal(HttpStatusCode.Created, reintento.StatusCode);
-        using var repetida = await ComprarAsync(dos, datos.EventoId, datos.TipoId, 4, key, ct); Assert.Equal(HttpStatusCode.OK, repetida.StatusCode);
+        using var reintento = await ComprarAsync(dos, datos.EventoId, datos.TipoId, 4, key, ct); Assert.Equal(HttpStatusCode.Accepted, reintento.StatusCode);
+        using var repetida = await ComprarAsync(dos, datos.EventoId, datos.TipoId, 4, key, ct); Assert.Equal(HttpStatusCode.Accepted, repetida.StatusCode);
         Assert.Equal((await reintento.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!.PublicId, (await repetida.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!.PublicId);
         await VerificarUnaCompraAsync(db, key, datos.TipoId, 1, ct);
     }

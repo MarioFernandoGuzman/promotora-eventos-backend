@@ -267,3 +267,8 @@ En Swagger, iniciar sesión → completar cambio obligatorio si aplica → Autho
 Planos de recintos activos son públicos; fotos de eventos BORRADOR o presentadores sin evento visible devuelven 404 en la ruta de imágenes. Antes de publicar, asociar presentadores y terminar configuración. Después de pasar a PROGRAMADO/EN_VENTA, quitar Authorize para comprobar catálogo/mapa/PNG. Otro dueño devuelve 403 en gestión y una sesión inicial sin cambio de contraseña sigue limitada. Al reemplazar una foto, usar la nueva URL de la respuesta.
 
 Cierre de Fase 4: 120 pruebas, build/format y 53 operaciones Swagger; evidencia y limitaciones en [VALIDACION_FASE_4.md](VALIDACION_FASE_4.md). El flujo de compra/boletos se implementa a partir de Fase 5.
+
+
+## Compras asíncronas (F6-03/F6-04)
+
+POST /api/v1/compras devuelve 202 con Location. Conserva Idempotency-Key en reintentos de la misma compra y consulta GET en Location hasta COMPLETADA, FALLIDA, CANCELADA o EXPIRADA. Solo entonces muestra el resultado; 202 no confirma pago. Repetir una clave de una compra final devuelve 200. Carreras requieren un asistente por boleto dentro de cada ítem; nombreAsistente y documentoIdentidad son obligatorios. No guardar documentos ni QR en logs del frontend. Ejemplos y comandos locales separados en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).

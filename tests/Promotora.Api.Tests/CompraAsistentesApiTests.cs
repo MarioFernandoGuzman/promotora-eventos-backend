@@ -41,11 +41,11 @@ public sealed class CompraAsistentesApiTests(PostgresFixture fixture) : IClassFi
         string key = Guid.NewGuid().ToString();
         using var request = Solicitud(datos.EventoId, [new(datos.TipoId, 1, [new("Persona 1", "DOC1")]), new(datos.TipoId, 1, [new("Persona 2", "DOC2")])], key);
         using var response = await client.SendAsync(request, Ct);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var compra = (await response.Content.ReadFromJsonAsync<CompraCreadaDto>(Ct))!;
         using var repeat = Solicitud(datos.EventoId, [new(datos.TipoId, 1)], key);
         using var repeated = await client.SendAsync(repeat, Ct);
-        Assert.Equal(HttpStatusCode.OK, repeated.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, repeated.StatusCode);
         var outbox = await db.OutboxMensajes.SingleAsync(o => o.AgregadoId == compra.PublicId.ToString("D"), Ct);
         var item = Assert.Single(outbox.Payload.RootElement.GetProperty("asistentes").EnumerateArray());
         Assert.Equal(datos.TipoId, item.GetProperty("tipoEntradaId").GetInt32());

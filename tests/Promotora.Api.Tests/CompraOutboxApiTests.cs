@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Promotora.Application.Identity.Ports;
@@ -9,15 +8,60 @@ using Promotora.Application.Shared.Ports;
 using Promotora.Application.Ticketing;
 using Promotora.Application.Ticketing.Ports;
 using Promotora.Domain.Identity;
+using Promotora.Infrastructure;
+using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Shared;
 using Promotora.Infrastructure.Shared.Messaging;
 using Promotora.Infrastructure.Tests;
+using Promotora.Infrastructure.Ticketing;
 
 namespace Promotora.Api.Tests;
 
 public sealed class CompraOutboxApiTests(PostgresFixture postgres, RabbitMqFixture rabbit) : IClassFixture<PostgresFixture>, IClassFixture<RabbitMqFixture>
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task Compra202LlegaPorRabbitMQACompletadaConPagoLedgerBoletosYPollingPropio()
+    {
+        await using var db = postgres.CreateContext(); var datos = await CompraFixture.CrearAsync(db, 5, Ct);
+        await using var factory = new IdentityApiFactory(postgres.ConnectionString); using var client = factory.CreateClient();
+        await new TicketingApiTestSupport(postgres).LoginAsync(client, RolUsuario.CLIENTE, Ct);
+        var compra = await TicketingApiTestSupport.ComprarAsync(client, datos.EventoId, datos.TipoId, 2, Ct);
+        var services = new ServiceCollection(); services.AddPromotoraInfrastructure(postgres.ConnectionString);
+        services.AddPagoSimulado(new()); services.AddEmisionBoletos(factory.QrKey, 5); services.AddFinalizacionCompras();
+        services.AddExpiracionCompras();
+        services.AddProcesamientoCompras(); services.AddRabbitMqMessaging(rabbit.Options); services.AddCompraConsumer(new(Prefetch: 1));
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var consumer = provider.GetRequiredService<ICompraMessageConsumer>().EjecutarAsync(stop.Token);
+        try
+        {
+            // Las pruebas anteriores dejan outboxes; sus estados finales se omiten idempotentemente.
+            await new EfOutboxRelay(db, provider.GetRequiredService<IMessagePublisher>(), new SystemClock(TimeProvider.System)).PublicarLoteAsync(100, Ct);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Ct); timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            CompraCreadaDto? estado;
+            do
+            {
+                estado = await client.GetFromJsonAsync<CompraCreadaDto>($"/api/v1/compras/{compra.PublicId}", timeout.Token);
+                if (estado!.Estado != "COMPLETADA") await Task.Delay(100, timeout.Token);
+            } while (estado.Estado != "COMPLETADA");
+            while (await rabbit.EstadoColaAsync(RabbitMqTopology.ComprasQueue, timeout.Token) != (0, 0))
+                await Task.Delay(100, timeout.Token);
+            var row = await db.Compras.AsNoTracking().SingleAsync(c => c.PublicId == compra.PublicId, Ct);
+            Assert.Equal(1, await db.Pagos.CountAsync(p => p.CompraId == row.Id && p.Estado == "APROBADO", Ct));
+            Assert.Equal(compra.Total, await db.MovimientosFinancieros.Where(m => m.CompraId == row.Id).SumAsync(m => m.Monto, Ct));
+            Assert.Equal(2, await db.Boletos.CountAsync(b => db.DetalleCompra.Any(d => d.Id == b.DetalleCompraId && d.CompraId == row.Id), Ct));
+            using var boletos = await client.GetAsync("/api/v1/boletos", Ct); Assert.Equal(HttpStatusCode.OK, boletos.StatusCode);
+            var payload = await boletos.Content.ReadAsStringAsync(Ct); Assert.Contains(compra.PublicId.ToString(), payload);
+        }
+        finally
+        {
+            await stop.CancelAsync();
+            try { await consumer.WaitAsync(TimeSpan.FromSeconds(15), Ct); }
+            catch (OperationCanceledException) when (stop.IsCancellationRequested) { }
+        }
+    }
 
     [Fact]
     public async Task CompraHttpProduceOutboxQueRelayEntregaConIdentidadEstable()
@@ -83,13 +127,11 @@ public sealed class CompraOutboxApiTests(PostgresFixture postgres, RabbitMqFixtu
     }
 
     [Fact]
-    public async Task ContratoPreparado202ConLocationYRepeticionSinDuplicarLuegoCancelada200()
+    public async Task Contrato202DeProduccionConLocationYRepeticionSinDuplicarLuegoCancelada200()
     {
         await using var db = postgres.CreateContext();
         var datos = await CompraFixture.CrearAsync(db, 5, Ct);
-        await using var baseFactory = new IdentityApiFactory(postgres.ConnectionString);
-        await using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-            services.AddSingleton<ICompraProcesamientoEstado, DisponibleSoloEnTest>()));
+        await using var factory = new IdentityApiFactory(postgres.ConnectionString);
         using var client = factory.CreateClient();
         await new TicketingApiTestSupport(postgres).LoginAsync(client, RolUsuario.CLIENTE, Ct);
         string key = Guid.NewGuid().ToString("N");
@@ -117,7 +159,6 @@ public sealed class CompraOutboxApiTests(PostgresFixture postgres, RabbitMqFixtu
         Assert.Equal("CANCELADA", (await terminal.Content.ReadFromJsonAsync<CompraCreadaDto>(Ct))!.Estado);
     }
 
-    private sealed class DisponibleSoloEnTest : ICompraProcesamientoEstado { public bool Disponible => true; }
     private sealed record Actual(int? UsuarioId) : IUsuarioActual { public string? IpOrigen => null; }
     private sealed class FallarOutbox(IOutboxWriter inner) : IOutboxWriter
     {

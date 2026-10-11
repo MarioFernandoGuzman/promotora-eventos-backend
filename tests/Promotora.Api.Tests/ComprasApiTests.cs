@@ -35,7 +35,7 @@ public sealed class ComprasApiTests(PostgresFixture fixture) : IClassFixture<Pos
         string key = Guid.NewGuid().ToString();
         var body = new { eventoId = datos.EventoId, items = new[] { new ItemCompra(datos.TipoId, 1), new ItemCompra(datos.TipoId, 2) } };
         var response = await CompraAsync(client, body, key, ct);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var compra = (await response.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
         Assert.Equal("PENDIENTE", compra.Estado);
         Assert.Equal(300m, compra.Subtotal); Assert.Equal(30m, compra.ComisionPlataforma); Assert.Equal(39.60m, compra.Impuestos); Assert.Equal(369.60m, compra.Total);
@@ -45,7 +45,7 @@ public sealed class ComprasApiTests(PostgresFixture fixture) : IClassFixture<Pos
         // Se conserva la compra aunque la solicitud, precio y estado del evento cambien.
         await db.Eventos.Where(e => e.Id == datos.EventoId).ExecuteUpdateAsync(s => s.SetProperty(e => e.Estado, "FINALIZADO"), ct);
         var repetida = await CompraAsync(client, new { eventoId = datos.EventoId, items = new[] { new ItemCompra(datos.TipoId, 1) } }, key, ct);
-        Assert.Equal(HttpStatusCode.OK, repetida.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, repetida.StatusCode);
         var original = (await repetida.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
         Assert.Equal(compra.PublicId, original.PublicId); Assert.Equal(compra.Total, original.Total);
         Assert.Equal(100m, Assert.Single(original.Items).PrecioUnitario);
@@ -134,8 +134,7 @@ public sealed class ComprasApiTests(PostgresFixture fixture) : IClassFixture<Pos
         using var client = factory.CreateClient(); await LoginAsync(client, RolUsuario.CLIENTE, ct);
         string key = Guid.NewGuid().ToString();
         var responses = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => CompraAsync(client, new { eventoId = datos.EventoId, items = new[] { new ItemCompra(datos.TipoId, 2) } }, key, ct)));
-        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Created);
-        Assert.Equal(9, responses.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.Equal(10, responses.Count(r => r.StatusCode == HttpStatusCode.Accepted));
         Assert.Equal(1, await db.Compras.CountAsync(c => c.IdempotencyKey == key, ct));
         Assert.Equal(8, await db.TiposEntrada.Where(t => t.Id == datos.TipoId).Select(t => t.CupoDisponible).SingleAsync(ct));
     }
@@ -151,7 +150,7 @@ public sealed class ComprasApiTests(PostgresFixture fixture) : IClassFixture<Pos
         string key = Guid.NewGuid().ToString();
         var body = new { eventoId = datos.EventoId, items = new[] { new ItemCompra(datos.TipoId, 2) } };
         var responses = await Task.WhenAll(CompraAsync(primero, body, key, ct), CompraAsync(segundo, body, key, ct));
-        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Created);
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Accepted);
         await ProblemAsync(Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict), HttpStatusCode.Conflict, ct);
         Assert.Equal(1, await db.Compras.CountAsync(c => c.IdempotencyKey == key, ct));
         Assert.Equal(8, await db.TiposEntrada.Where(t => t.Id == datos.TipoId).Select(t => t.CupoDisponible).SingleAsync(ct));
@@ -180,7 +179,7 @@ public sealed class ComprasApiTests(PostgresFixture fixture) : IClassFixture<Pos
         using var client = factory.CreateClient(); int usuarioId = await LoginAsync(client, RolUsuario.CLIENTE, ct);
         string key = Guid.NewGuid().ToString();
         var body = new { eventoId = datos.EventoId, items = new[] { new ItemCompra(datos.TipoId, 1) } };
-        Assert.Equal(HttpStatusCode.Created, (await CompraAsync(client, body, key, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, (await CompraAsync(client, body, key, ct)).StatusCode);
         await db.Usuarios.Where(u => u.Id == usuarioId && u.Estado == "ACTIVO").ExecuteUpdateAsync(s => s.SetProperty(u => u.Estado, "INACTIVO"), ct);
         await ProblemAsync(await CompraAsync(client, body, key, ct), HttpStatusCode.Unauthorized, ct);
         await ProblemAsync(await CompraAsync(client, body, Guid.NewGuid().ToString(), ct), HttpStatusCode.Unauthorized, ct);
@@ -224,7 +223,7 @@ public sealed class ComprasApiTests(PostgresFixture fixture) : IClassFixture<Pos
         await using var factory = new IdentityApiFactory(fixture.ConnectionString);
         using var client = factory.CreateClient(); await LoginAsync(client, RolUsuario.CLIENTE, ct);
         var response = await CompraAsync(client, new { eventoId = datos.EventoId, items = new[] { new ItemCompra(datos.TipoId, 2) } }, Guid.NewGuid().ToString(), ct);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var compra = (await response.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
         Assert.Equal(0m, compra.Total); Assert.Equal(0m, compra.ComisionPlataforma); Assert.Equal(0m, compra.Impuestos);
         int id = await db.Compras.Where(c => c.PublicId == compra.PublicId).Select(c => c.Id).SingleAsync(ct);

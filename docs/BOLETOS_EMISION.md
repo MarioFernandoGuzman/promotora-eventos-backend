@@ -1,6 +1,6 @@
 # Emisión de boletos y firma — F5-05
 
-Estado: componente interno implementado, registrado y probado. No se añadió un endpoint de emisión ni se conectó el cobro/emisión a POST /api/v1/compras. Esa integración espera F7-02/F7-03 para confirmar pago, ledger, saldo y COMPLETADA juntos. Swagger tiene 59 operaciones; POST sigue reservando PENDIENTE. Las consultas de boletos/QR y validación en puerta F5-06/F5-07 están implementadas; ver [BOLETOS_VALIDACION.md](BOLETOS_VALIDACION.md).
+Estado: componente interno conectado al consumidor F6-04. POST /api/v1/compras responde 202; el Worker confirma pago, ledger, saldos, COMPLETADA y emisión juntos. Asistentes obligatorios en carreras se reciben por ítem y se recuperan del outbox local. No existe endpoint de emisión separado. Guía local y Swagger en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md); validación en puerta en [BOLETOS_VALIDACION.md](BOLETOS_VALIDACION.md).
 
 ## Módulos
 
@@ -12,7 +12,7 @@ Estado: componente interno implementado, registrado y probado. No se añadió un
 | Infrastructure/Ticketing | PostgreSQL, bloqueo de compra, mapeo manual y HmacTicketTokenService |
 | API/Worker | DI con configuración externa; sin nuevos controllers ni consumidores |
 
-EmitirAsync administra su transacción. EnTransaccionAsync exige una transacción existente y permite al futuro finalizador de F7 incorporar emisión sin abrir otra transacción. El llamador debe revertir ante Result fallido o excepción. Estos son puertos internos de backend; no sustituyen la autorización por propiedad de las consultas HTTP futuras.
+EmitirAsync administra su transacción. EnTransaccionAsync exige una transacción existente y permite al finalizador financiero incorporar emisión sin abrir otra transacción. El llamador debe revertir ante Result fallido o excepción. Estos son puertos internos de backend; no sustituyen la autorización por propiedad de las consultas HTTP futuras.
 
 Se bloquea compras FOR UPDATE antes de leer boletos. Compra debe estar COMPLETADA y tener detalles válidos. Si ya hay exactamente un boleto por unidad, se devuelven los existentes con sus firmas/datos originales, aunque estén USADO/ANULADO; no se reactivan ni se vuelven a emitir. Una emisión parcial existente devuelve conflicto y requiere conciliación, sin completar silenciosamente una situación anómala.
 

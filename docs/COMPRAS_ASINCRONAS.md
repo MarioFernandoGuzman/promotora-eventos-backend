@@ -2,7 +2,7 @@
 
 ## Flujo implementado
 
-La API reserva cupo y confirma compra PENDIENTE, detalles, auditoría y outbox juntos. El relay publica después del commit. RabbitMQ recibe únicamente `{ "publicId": "UUID" }`, con MessageId igual al ID del outbox; los montos se leen de PostgreSQL.
+La API responde **202 Accepted + Location** y confirma reserva, compra PENDIENTE, detalles, auditoría y outbox juntos. Repetir una clave propia devuelve 202 mientras siga PENDIENTE/PROCESANDO; un estado final reutilizado devuelve 200. GET en Location verifica propiedad. El frontend debe hacer polling, no asumir que 202 significa pago aprobado. El relay publica después del commit. RabbitMQ recibe únicamente `{ "publicId": "UUID" }`, con MessageId igual al ID del outbox; los montos se leen de PostgreSQL.
 
 Los ítems admiten `asistentes`: una persona por unidad cuando se proporciona, obligatorio en carreras. Cada persona tiene `nombreAsistente`, `documentoIdentidad` y `datosExtraJson` opcional (string JSON válido). Los datos se validan antes de reservar; no se aceptan nombres/documentos vacíos en carreras. Si se repite una clave propia, se conserva la solicitud original, incluyendo asistentes. Los ítems del mismo tipo se agrupan conservando el orden de las personas.
 
@@ -142,4 +142,6 @@ dotnet test -c Release
 dotnet format --no-restore --verify-no-changes
 ```
 
-ProcesarCompraTests cubre RabbitMQ/PostgreSQL reales con el procesador financiero, duplicados, asistentes, rechazo y rollback/reintento. CompraAsistentesApiTests comprueba validación previa a reserva, agrupación y congelación. CompraConsumerTests conserva las pruebas aisladas de transporte/retry/DLQ. F6-08 ampliará caída/reinicio y fallos con efectos financieros; F6-09 hará carga de 500–1000 compras. No se cierran esas tareas con estas pruebas.
+ProcesarCompraTests cubre PostgreSQL real con el procesador financiero, duplicados, asistentes, rechazo y rollback/reintento. CompraOutboxApiTests recorre HTTP 202, relay, RabbitMQ real, procesamiento financiero y polling COMPLETADA sin sustituir el procesador de negocio. CompraAsistentesApiTests comprueba validación previa a reserva, agrupación y congelación. CompraConsumerTests conserva las pruebas aisladas de transporte/retry/DLQ. F6-08 ampliará caída/reinicio y fallos con efectos financieros; F6-09 hará carga de 500–1000 compras. No se cierran esas tareas con estas pruebas.
+
+Validación final del bloque: 335 pruebas Release aprobadas, cero fallos/omitidas, build sin warnings y formato limpio. Revisión contra AGENTS.md §§5/12 sin incumplimientos detectados en F6-03/F6-04; no hay cambios de esquema, migraciones ni paquetes. F6-08 a F6-11 y F5-09 siguen pendientes, por lo que no se declara cerrada la fase completa.
