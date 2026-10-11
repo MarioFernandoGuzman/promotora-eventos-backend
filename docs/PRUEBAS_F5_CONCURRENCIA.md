@@ -8,7 +8,9 @@ Además del HTTP, se comprueba que las cantidades de detalle sumen exactamente e
 
 ## Alcance actual y dependencia
 
-F5-09 valida la concurrencia de la reserva disponible en POST /compras. Las filas ganadoras son PENDIENTE: no se llaman ventas cobradas ni se simula que el flujo financiero está terminado. No se generan pagos/ledger en producción. La prueba de compras COMPLETADA, pagos, movimientos y boletos se debe ampliar al conectar F7-02/F7-03, antes de declarar el criterio de salida de Fase 5. Esta dependencia mantiene el orden ya acordado para F5-04/F5-05.
+La prueba original verifica reserva PENDIENTE. F6-09 amplía la evidencia con `CompraCargaApiTests`: 500 y 1000 solicitudes concurrentes, ocho clientes, cupo 100 y finalización real por outbox/RabbitMQ. Cada caso confirma exactamente 100 compras COMPLETADA, 100 pagos APROBADO, 100 boletos, 300 movimientos y Q12,320.00 conciliados; el resto responde 409 y el cupo termina en cero. No se sustituyen efectos financieros por dobles.
+
+F6-11 repite ambos casos con el proveedor durable y V11. Suite: 360 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. F5-09 queda cerrada con estas ventas completas; tiempos históricos y comandos de carga en [PRUEBAS_F6_CARGA.md](PRUEBAS_F6_CARGA.md). Revisión de salida en [VALIDACION_FASES_5_6.md](VALIDACION_FASES_5_6.md).
 
 ## Comandos separados
 
@@ -30,4 +32,4 @@ dotnet test --no-build -c Release --report-trx
 dotnet format --verify-no-changes --no-restore
 ```
 
-No cambia usuario/contraseña ni añade endpoint o migración. Swagger sigue con 59 operaciones; uso manual de compras en [COMPRAS_API.md](COMPRAS_API.md), expiración en [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md).
+El cierre F5-09 no cambia credenciales ni añade endpoints. Contrato actual 202 + Location y uso manual en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md); expiración en [EXPIRACION_COMPRAS.md](EXPIRACION_COMPRAS.md). La migración V11 pertenece a F6-11, documentada en [RECUPERACION_COMPRAS.md](RECUPERACION_COMPRAS.md).
