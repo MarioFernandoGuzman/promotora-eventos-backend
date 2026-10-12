@@ -585,6 +585,8 @@ Cada cambio de dinero es una fila. **Solo `INSERT`** (se revoca `UPDATE`/`DELETE
 | Reembolso | `REEMBOLSO` revierte los tres componentes en las mismas cuentas |
 | Liquidación al dueño | `LIQUIDACION` negativo en la cuenta del dueño (retiro) |
 
+Contrato F7-05 aprobado: POST /api/v1/cuentas/{id}/liquidar solo ADMINISTRADOR habilitado, con monto positivo de hasta dos decimales e Idempotency-Key por cuenta. Una operación nueva requiere DUENO ACTIVA, saldo suficiente y conciliado; el débito, saldo y auditoría comparten transacción. compra_id queda NULL. descripcion reserva `liquidacion:v1:<SHA-256 hexadecimal de la clave UTF-8>`; buscar e insertar bajo bloqueo de cuenta evita duplicados sin cambiar esquema. No existe un índice único para esa referencia: todo escritor debe seguir el protocolo. Repetir mismo monto devuelve el movimiento original; cambiarlo devuelve 409. Sin transferencia externa. Guía: [LIQUIDACIONES.md](LIQUIDACIONES.md).
+
 Al completar una compra, la suma de sus movimientos de cobro debe igualar `compras.total` (antes de reembolsos). Los componentes de monto cero no generan movimientos, por el CHECK ≠ 0. La comisión es un cargo al cliente; el IVA se muestra aparte. Su tasa se configura en appsettings y el cálculo pertenece a Domain. La facturación electrónica queda fuera de alcance.
 
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |

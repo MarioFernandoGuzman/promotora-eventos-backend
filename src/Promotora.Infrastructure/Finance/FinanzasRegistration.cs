@@ -36,6 +36,9 @@ public static class FinanzasRegistration
     public static IServiceCollection AddCuentasFinancieras(this IServiceCollection services)
     {
         services.AddScoped<ICuentaRepository, EfCuentaRepository>();
+        services.AddScoped<ILiquidacionRepository, EfLiquidacionRepository>();
+        services.AddScoped<IValidator<LiquidarCuentaCommand>, LiquidarCuentaValidator>();
+        services.AddCommandHandler<LiquidarCuentaCommand, LiquidacionDto, LiquidarCuentaHandler>();
         services.AddScoped<IValidator<CerrarCuentaCommand>, CerrarCuentaValidator>();
         services.AddCommandHandler<CerrarCuentaCommand, CuentaDto, CerrarCuentaHandler>();
         return services;

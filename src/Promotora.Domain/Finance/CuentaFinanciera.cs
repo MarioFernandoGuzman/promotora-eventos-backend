@@ -12,6 +12,17 @@ public sealed class CuentaFinanciera(int id, string tipo, int? duenoId, string m
     public string Estado { get; private set; } = estado;
     public DateTime? FechaCierre { get; private set; } = fechaCierre;
 
+    public Result<decimal> Liquidar(decimal monto)
+    {
+        if (monto <= 0m || monto > 9999999999.99m || decimal.Round(monto, 2) != monto)
+            return Result<decimal>.Failure(new Error("liquidacion.monto", "El monto debe ser positivo, con máximo dos decimales y dentro del rango monetario.", ErrorType.Validation));
+        if (Tipo != "DUENO" || DuenoId is null || Estado != "ACTIVA")
+            return Result<decimal>.Failure(new Error("liquidacion.cuenta", "Solo se liquidan cuentas de dueño activas.", ErrorType.Conflict));
+        if (Saldo < monto)
+            return Result<decimal>.Failure(new Error("liquidacion.saldo", "Saldo insuficiente para liquidar.", ErrorType.Conflict));
+        return Result<decimal>.Success(-monto);
+    }
+
     public Result<Unit> Cerrar(DateTime fecha)
     {
         if (fecha.Kind != DateTimeKind.Utc) return Result<Unit>.Failure(new Error("cuenta.fecha", "La fecha debe ser UTC.", ErrorType.Validation));
