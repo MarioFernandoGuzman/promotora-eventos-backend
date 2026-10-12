@@ -229,7 +229,9 @@ Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas
 - [x] **F8-01** Crear reseña: solo con boleto `USADO` del evento, una por (evento, cliente).
   - Contrato aprobado: POST /api/v1/resenas, CLIENTE habilitado con boleto USADO, nace PENDIENTE; calificación 1–5 y comentario opcional máximo 510 caracteres. Cliente desde sesión, unicidad PostgreSQL con ON CONFLICT y auditoría transaccional. Sin cambios de esquema/paquetes. Guía: [RESENAS.md](RESENAS.md).
   - Verificación: 428 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Seis casos Domain y dos API nuevos (510/511, roles, asistencia real, evento ajeno y diez creaciones concurrentes). Swagger: 66 operaciones. F8-02–F8-05 aprobadas para continuar en orden; detener antes de Fase 9 por indicación del usuario.
-- [ ] **F8-02** Moderación por administrador (`APROBADA`/`RECHAZADA`).
+- [x] **F8-02** Moderación por administrador (`APROBADA`/`RECHAZADA`).
+  - GET /api/v1/resenas: cola administrativa paginada, PENDIENTE por defecto, filtros estado/eventoId. PATCH /api/v1/resenas/{id}/moderar con estadoNuevo APROBADA/RECHAZADA, solo ADMINISTRADOR habilitado, desde PENDIENTE; misma decisión repetida 200 sin otra auditoría, incompatible 409. Bloqueo de fila, UPDATE condicional y MODERATE transaccional. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 436 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Seis casos Domain y dos API nuevos, incluida carrera de dos administradores distintos. Swagger: 68 operaciones.
 - [ ] **F8-03** Listado público de reseñas aprobadas por evento.
 - [ ] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.
 - [ ] **F8-05** Editar/retirar reseña propia; auditoría.

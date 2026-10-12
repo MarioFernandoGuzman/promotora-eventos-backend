@@ -7,6 +7,28 @@ namespace Promotora.Infrastructure.Reviews;
 
 public sealed class EfResenaRepository(PromotoraDbContext db) : IResenaRepository
 {
+    public async Task<ResenaParaGestion?> LockAsync(int id, CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("La gestión requiere transacción.");
+        var rows = await db.Resenas.FromSqlInterpolated($"SELECT * FROM resenas WHERE id={id} FOR UPDATE").AsNoTracking().ToArrayAsync(ct);
+        var r = rows.SingleOrDefault();
+        return r is null ? null : new(r.ClienteId, new(r.Id, r.EventoId, r.Calificacion, r.Comentario, r.Estado, r.FechaCreacion));
+    }
+    public Task<bool> CambiarEstadoAsync(int id, string esperado, string nuevo, CancellationToken ct) => CambiarAsync(id, esperado, nuevo, ct);
+    private async Task<bool> CambiarAsync(int id, string esperado, string nuevo, CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("Cambiar estado requiere transacción.");
+        return await db.Resenas.Where(r => r.Id == id && r.Estado == esperado).ExecuteUpdateAsync(s => s.SetProperty(r => r.Estado, nuevo), ct) == 1;
+    }
+    public async Task<Promotora.Application.Shared.PaginaDto<ResenaDto>> AdministracionAsync(ResenasAdministracionQuery request, CancellationToken ct)
+    {
+        var query = db.Resenas.AsNoTracking().Where(r => r.Estado == request.Estado);
+        if (request.EventoId is int evento) query = query.Where(r => r.EventoId == evento);
+        int total = await query.CountAsync(ct);
+        var items = await query.OrderByDescending(r => r.FechaCreacion).ThenByDescending(r => r.Id).Skip((request.Page - 1) * request.PageSize).Take(request.PageSize)
+            .Select(r => new ResenaDto(r.Id, r.EventoId, r.Calificacion, r.Comentario, r.Estado, r.FechaCreacion)).ToArrayAsync(ct);
+        return new(items, request.Page, request.PageSize, total);
+    }
     public Task<int?> ClienteIdAsync(int usuarioId, CancellationToken ct) => db.Clientes.Where(c => c.UsuarioId == usuarioId).Select(c => (int?)c.Id).SingleOrDefaultAsync(ct);
     public Task<bool> EventoExisteAsync(int eventoId, CancellationToken ct) => db.Eventos.AnyAsync(e => e.Id == eventoId, ct);
     public Task<bool> AsistioAsync(int clienteId, int eventoId, CancellationToken ct) =>

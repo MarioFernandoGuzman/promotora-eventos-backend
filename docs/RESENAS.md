@@ -18,6 +18,14 @@ Verificación F8-01: 428 pruebas Release aprobadas, cero fallidas/omitidas; buil
 
 ## Prueba local
 
+### Moderación — F8-02
+
+GET /api/v1/resenas es la cola administrativa, PENDIENTE por defecto; admite estado PENDIENTE/APROBADA/RECHAZADA y eventoId opcional. page 1–100000, pageSize 1–100, default 20; orden fechaCreacion/ID descendentes. Solo ADMINISTRADOR habilitado. No expone clienteId, nombre, correo ni tokens.
+
+PATCH /api/v1/resenas/{id}/moderar recibe `{"estadoNuevo":"APROBADA"}` o RECHAZADA. Solo PENDIENTE puede cambiar; misma decisión repetida devuelve 200 sin otra auditoría. Dos administradores con decisiones opuestas: uno gana y el otro recibe 409. ID inexistente 404, body inválido 400, sesión/rol inválido 401/403. Transición condicional y MODERATE en la misma transacción. Como administrador, consultar la cola, aprobar/rechazar y repetir; la fila desaparece del filtro PENDIENTE.
+
+Verificación F8-02: 436 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Swagger: 68 operaciones.
+
 Usar credenciales y secretos existentes; autenticación en [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md). Infraestructura y API según [DESARROLLO_LOCAL.md](DESARROLLO_LOCAL.md); venta completa en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
 
 ```powershell
