@@ -232,7 +232,9 @@ Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas
 - [x] **F8-02** Moderación por administrador (`APROBADA`/`RECHAZADA`).
   - GET /api/v1/resenas: cola administrativa paginada, PENDIENTE por defecto, filtros estado/eventoId. PATCH /api/v1/resenas/{id}/moderar con estadoNuevo APROBADA/RECHAZADA, solo ADMINISTRADOR habilitado, desde PENDIENTE; misma decisión repetida 200 sin otra auditoría, incompatible 409. Bloqueo de fila, UPDATE condicional y MODERATE transaccional. Guía: [RESENAS.md](RESENAS.md).
   - Verificación: 436 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Seis casos Domain y dos API nuevos, incluida carrera de dos administradores distintos. Swagger: 68 operaciones.
-- [ ] **F8-03** Listado público de reseñas aprobadas por evento.
+- [x] **F8-03** Listado público de reseñas aprobadas por evento.
+  - GET /api/v1/eventos/{id}/resenas, anónimo, solo APROBADA; página 1–100000 y tamaño 1–100 (default 20), orden fecha/ID descendentes. Sin identidad del cliente; evento inexistente 404, existente sin aprobadas 200 vacío. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 437 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Nuevo caso API de privacidad, estados, evento y paginación. Swagger: 69 operaciones.
 - [ ] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.
 - [ ] **F8-05** Editar/retirar reseña propia; auditoría.
 

@@ -43,6 +43,14 @@ dotnet run --project src/Promotora.Worker
 
 ## Comprobaciones automáticas
 
+### Listado público — F8-03
+
+GET /api/v1/eventos/{id}/resenas no requiere login y solo devuelve APROBADA del evento indicado, sin clienteId, nombre o correo. page 1–100000, pageSize 1–100 (default 20), orden fechaCreacion/ID descendentes. Evento existente sin aprobadas: lista vacía 200; inexistente 404; ID/página inválidos 400. Incluye eventos históricos existentes. Las páginas son consultas operativas, no un snapshot entre peticiones.
+
+Para comprobarlo en Swagger, retirar Authorize y consultar antes/después de moderar: PENDIENTE y RECHAZADA no aparecen; APROBADA sí. Una página fuera de resultados conserva total y devuelve items vacío.
+
+Verificación F8-03: 437 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Swagger: 69 operaciones.
+
 Docker operativo; los tests usan PostgreSQL temporal sin modificar tu base local.
 
 ```powershell

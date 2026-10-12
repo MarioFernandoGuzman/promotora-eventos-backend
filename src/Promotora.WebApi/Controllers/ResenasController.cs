@@ -9,8 +9,19 @@ namespace Promotora.WebApi.Controllers;
 public sealed record CrearResenaRequest(int EventoId, short Calificacion, string? Comentario);
 public sealed class ResenasController(ICommandHandler<CrearResenaCommand, ResenaDto> crear,
     ICommandHandler<ModerarResenaCommand, ResenaDto> moderar,
-    IQueryHandler<ResenasAdministracionQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> administracion) : ApiControllerBase
+    IQueryHandler<ResenasAdministracionQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> administracion,
+    IQueryHandler<ResenasEventoQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> publicas) : ApiControllerBase
 {
+    [HttpGet("/api/v1/eventos/{id:int}/resenas")]
+    [AllowAnonymous]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [EndpointSummary("Reseñas APROBADA de un evento; acceso público")]
+    [EndpointDescription("Solo aprobadas, sin datos de identidad del cliente. page 1–100000, pageSize 1–100 (default 20), orden fechaCreacion/ID descendentes. Evento existente sin aprobadas: 200 lista vacía; inexistente: 404. Ejemplo: GET /api/v1/eventos/1/resenas?page=1&pageSize=20.")]
+    [ProducesResponseType<Promotora.Application.Shared.PaginaDto<ResenaDto>>(200)]
+    [ProducesResponseType<ValidationProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(404)]
+    public async Task<ActionResult<Promotora.Application.Shared.PaginaDto<ResenaDto>>> Publicas(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) => FromResult(await publicas.HandleAsync(new(id, page, pageSize), ct));
+
     public sealed record ModerarResenaRequest(string EstadoNuevo);
     [HttpGet]
     [Authorize(Policy = IdentityPolicies.Administrador)]
