@@ -7,6 +7,19 @@ namespace Promotora.Infrastructure.Reviews;
 
 public sealed class EfResenaRepository(PromotoraDbContext db) : IResenaRepository
 {
+    public async Task<Promotora.Application.Shared.PaginaDto<ResenaDto>> MisAsync(int clienteId, int page, int pageSize, CancellationToken ct)
+    {
+        var query = db.Resenas.AsNoTracking().Where(r => r.ClienteId == clienteId); int total = await query.CountAsync(ct);
+        var items = await query.OrderByDescending(r => r.FechaCreacion).ThenByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(r => new ResenaDto(r.Id, r.EventoId, r.Calificacion, r.Comentario, r.Estado, r.FechaCreacion)).ToArrayAsync(ct);
+        return new(items, page, pageSize, total);
+    }
+    public async Task<bool> EditarAsync(int id, int clienteId, string esperado, ContenidoResena contenido, CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("Editar requiere transacción.");
+        return await db.Resenas.Where(r => r.Id == id && r.ClienteId == clienteId && r.Estado == esperado)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.Calificacion, contenido.Calificacion).SetProperty(r => r.Comentario, contenido.Comentario).SetProperty(r => r.Estado, "PENDIENTE"), ct) == 1;
+    }
     public async Task<CalificacionPresentadorDto?> CalificacionAsync(int presentadorId, CancellationToken ct)
     {
         if (!await db.Presentadores.AnyAsync(p => p.Id == presentadorId && p.Activo, ct)) return null;

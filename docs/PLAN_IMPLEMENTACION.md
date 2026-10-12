@@ -238,9 +238,13 @@ Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas
 - [x] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.
   - GET /api/v1/presentadores/{id}/calificacion, público, solo APROBADA mediante evento_presentadores. Agregado suma/cantidad en un snapshot; media por reseña a dos decimales en Domain. Sin aprobadas: promedio null/cantidad 0; inexistente/inactivo 404. Sin datos privados. Guía: [RESENAS.md](RESENAS.md).
   - Verificación: 442 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Cuatro casos Domain y uno API con asociaciones/co-presentadores y exclusión de pendientes/rechazadas. Swagger: 70 operaciones.
-- [ ] **F8-05** Editar/retirar reseña propia; auditoría.
+- [x] **F8-05** Editar/retirar reseña propia; auditoría.
+  - GET /api/v1/resenas/mis, PUT /api/v1/resenas/{id} y POST /api/v1/resenas/{id}/retirar solo CLIENTE habilitado/autor. Estado esperado explícito, bloqueo y UPDATE condicional; edición retorna PENDIENTE, retiro RECHAZADA sin borrar/liberar unicidad; reenvío por edición. Auditoría UPDATE con motivos ResenaEditada/ResenaRetirada y MODERATE con motivos de decisión, sin comentario. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación final: 454 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Doce casos nuevos en esta tarea: seis Domain y seis API, propiedad, reintentos, retiro/reenvío, cambios de estado concurrentes, pérdida de publicación/promedio hasta moderar, tokens anteriores a baja y rollback de edición/retiro. Swagger: 73 operaciones.
 
 **Salida:** reseñas moderadas y calificación por artista/equipo visible.
+
+Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release aprobadas (34 casos nuevos), build sin warnings y formato limpio. Revisión del diff y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). CI remoto se verifica al publicar el PR. Detener antes de Fase 9 por indicación expresa del usuario; espera definir qué utilizará para IA.
 
 ### Fase 9 — Agente de IA y RAG (OpenAI)
 - [ ] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores OpenAI + pgvector.

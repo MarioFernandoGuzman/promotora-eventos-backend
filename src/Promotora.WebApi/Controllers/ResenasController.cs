@@ -11,8 +11,51 @@ public sealed class ResenasController(ICommandHandler<CrearResenaCommand, Resena
     ICommandHandler<ModerarResenaCommand, ResenaDto> moderar,
     IQueryHandler<ResenasAdministracionQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> administracion,
     IQueryHandler<ResenasEventoQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> publicas,
-    IQueryHandler<CalificacionPresentadorQuery, CalificacionPresentadorDto> calificacion) : ApiControllerBase
+    IQueryHandler<CalificacionPresentadorQuery, CalificacionPresentadorDto> calificacion,
+    IQueryHandler<MisResenasQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> propias,
+    ICommandHandler<EditarResenaCommand, ResenaDto> editar,
+    ICommandHandler<RetirarResenaCommand, ResenaDto> retirar) : ApiControllerBase
 {
+    public sealed record EditarResenaRequest(short Calificacion, string? Comentario, string EstadoEsperado);
+    public sealed record RetirarResenaRequest(string EstadoEsperado);
+    [HttpGet("mis")]
+    [Authorize(Policy = IdentityPolicies.Cliente)]
+    [Authorize(Policy = IdentityPolicies.SesionCompleta)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [EndpointSummary("Mis reseñas en todos sus estados, incluidas retiradas")]
+    [EndpointDescription("Solo autor habilitado. page 1–100000, pageSize 1–100 (default 20), orden fechaCreacion/ID descendentes. Conservar estado de esta respuesta como estadoEsperado para editar/retirar.")]
+    [ProducesResponseType<Promotora.Application.Shared.PaginaDto<ResenaDto>>(200)]
+    [ProducesResponseType<ValidationProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(401)]
+    [ProducesResponseType<ProblemDetails>(403)]
+    public async Task<ActionResult<Promotora.Application.Shared.PaginaDto<ResenaDto>>> Mis([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) => FromResult(await propias.HandleAsync(new(page, pageSize), ct));
+
+    [HttpPut("{id:int}")]
+    [Authorize(Policy = IdentityPolicies.Cliente)]
+    [Authorize(Policy = IdentityPolicies.SesionCompleta)]
+    [EndpointSummary("Editar reseña propia y devolverla a revisión")]
+    [EndpointDescription("Body: {\"calificacion\":4,\"comentario\":\"Nueva opinión\",\"estadoEsperado\":\"APROBADA\"}. Nota 1–5, comentario opcional máximo 510. Estado esperado PENDIENTE/APROBADA/RECHAZADA. Retorna PENDIENTE y conserva fechaCreacion. Ajena/inexistente 404; estado distinto 409. Repetir mismo contenido ya PENDIENTE devuelve 200 sin nueva auditoría.")]
+    [ProducesResponseType<ResenaDto>(200)]
+    [ProducesResponseType<ValidationProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(401)]
+    [ProducesResponseType<ProblemDetails>(403)]
+    [ProducesResponseType<ProblemDetails>(404)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    public async Task<ActionResult<ResenaDto>> Editar(int id, EditarResenaRequest request, CancellationToken ct) => FromResult(await editar.HandleAsync(new(id, request.Calificacion, request.Comentario, request.EstadoEsperado), ct));
+
+    [HttpPost("{id:int}/retirar")]
+    [Authorize(Policy = IdentityPolicies.Cliente)]
+    [Authorize(Policy = IdentityPolicies.SesionCompleta)]
+    [EndpointSummary("Retirar reseña propia sin borrar la fila")]
+    [EndpointDescription("Body: {\"estadoEsperado\":\"APROBADA\"}. Retorna RECHAZADA; si ya lo está, 200 sin otra auditoría. Ajena/inexistente 404; cambio de estado incompatible 409. Puede reenviarse editando la misma fila; no crear otra. Audita UPDATE con motivo ResenaRetirada.")]
+    [ProducesResponseType<ResenaDto>(200)]
+    [ProducesResponseType<ValidationProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(401)]
+    [ProducesResponseType<ProblemDetails>(403)]
+    [ProducesResponseType<ProblemDetails>(404)]
+    [ProducesResponseType<ProblemDetails>(409)]
+    public async Task<ActionResult<ResenaDto>> Retirar(int id, RetirarResenaRequest request, CancellationToken ct) => FromResult(await retirar.HandleAsync(new(id, request.EstadoEsperado), ct));
+
     [HttpGet("/api/v1/presentadores/{id:int}/calificacion")]
     [AllowAnonymous]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]

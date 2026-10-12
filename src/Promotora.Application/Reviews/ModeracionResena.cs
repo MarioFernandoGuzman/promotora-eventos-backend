@@ -45,7 +45,8 @@ public sealed class ModerarResenaHandler(IResenaRepository resenas, ResenaAccess
         if (bloqueada.Resena.Estado == request.EstadoNuevo) return Result<ResenaDto>.Success(bloqueada.Resena);
         if (!await resenas.CambiarEstadoAsync(request.Id, "PENDIENTE", request.EstadoNuevo, token))
             return Result<ResenaDto>.Failure(new Error("resena.conflicto", "La reseña cambió de estado.", ErrorType.Conflict));
-        await audit.WriteAsync(actual.UsuarioId, "MODERATE", "resenas", request.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
+        await audit.WriteAsync(actual.UsuarioId, "MODERATE", "resenas", request.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen,
+            new DetalleAuditoria(request.EstadoNuevo == "APROBADA" ? MotivoAuditoria.ResenaAprobada : MotivoAuditoria.ResenaRechazada), token);
         return Result<ResenaDto>.Success(bloqueada.Resena with { Estado = request.EstadoNuevo });
     }, ct);
 }

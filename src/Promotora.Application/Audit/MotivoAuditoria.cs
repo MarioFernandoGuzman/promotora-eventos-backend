@@ -12,5 +12,9 @@ public enum MotivoAuditoria
     EdicionUsuario,
     BajaLogica,
     CambioPassword,
-    CambioPasswordRechazado
+    CambioPasswordRechazado,
+    ResenaEditada,
+    ResenaRetirada,
+    ResenaAprobada,
+    ResenaRechazada
 }

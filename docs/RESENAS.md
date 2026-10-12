@@ -16,15 +16,15 @@ Domain/Reviews valida el contenido; Application coordina validación, sesión, a
 
 Verificación F8-01: 428 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Swagger tiene 66 operaciones en este bloque.
 
-## Prueba local
-
-### Moderación — F8-02
+## Moderación — F8-02
 
 GET /api/v1/resenas es la cola administrativa, PENDIENTE por defecto; admite estado PENDIENTE/APROBADA/RECHAZADA y eventoId opcional. page 1–100000, pageSize 1–100, default 20; orden fechaCreacion/ID descendentes. Solo ADMINISTRADOR habilitado. No expone clienteId, nombre, correo ni tokens.
 
 PATCH /api/v1/resenas/{id}/moderar recibe `{"estadoNuevo":"APROBADA"}` o RECHAZADA. Solo PENDIENTE puede cambiar; misma decisión repetida devuelve 200 sin otra auditoría. Dos administradores con decisiones opuestas: uno gana y el otro recibe 409. ID inexistente 404, body inválido 400, sesión/rol inválido 401/403. Transición condicional y MODERATE en la misma transacción. Como administrador, consultar la cola, aprobar/rechazar y repetir; la fila desaparece del filtro PENDIENTE.
 
 Verificación F8-02: 436 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Swagger: 68 operaciones.
+
+## Prueba local de creación
 
 Usar credenciales y secretos existentes; autenticación en [FRONTEND_SWAGGER_AUTENTICACION.md](FRONTEND_SWAGGER_AUTENTICACION.md). Infraestructura y API según [DESARROLLO_LOCAL.md](DESARROLLO_LOCAL.md); venta completa en [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
 
@@ -41,21 +41,55 @@ dotnet run --project src/Promotora.Worker
 3. Volver a Authorize como el CLIENTE propietario y crear reseña para ese evento: 200 PENDIENTE.
 4. Repetir: 409 sin otra fila ni auditoría. Comentario de 510 caracteres válido; 511 devuelve 400. Admin/dueño no pueden crear reseñas como clientes.
 
-## Comprobaciones automáticas
-
-### Calificación por presentador — F8-04
+## Calificación por presentador — F8-04
 
 GET /api/v1/presentadores/{id}/calificacion, público, devuelve presentadorId, promedio (dos decimales) y cantidad. Sin reseñas aprobadas: promedio null y cantidad 0, no una nota cero. Solo APROBADA asociadas mediante evento_presentadores; cada reseña cuenta una vez para cada presentador de su evento. Se calcula suma/cantidad de reseñas, no promedio de promedios por evento. Cantidad/suma se consultan juntas en PostgreSQL. Presentador inexistente o inactivo: 404; ID inválido: 400. En Swagger sin Authorize, consultar antes y después de aprobar reseñas; PENDIENTE/RECHAZADA no alteran el resultado.
 
 Verificación F8-04: 442 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Swagger: 70 operaciones.
 
-### Listado público — F8-03
+## Listado público — F8-03
 
 GET /api/v1/eventos/{id}/resenas no requiere login y solo devuelve APROBADA del evento indicado, sin clienteId, nombre o correo. page 1–100000, pageSize 1–100 (default 20), orden fechaCreacion/ID descendentes. Evento existente sin aprobadas: lista vacía 200; inexistente 404; ID/página inválidos 400. Incluye eventos históricos existentes. Las páginas son consultas operativas, no un snapshot entre peticiones.
 
 Para comprobarlo en Swagger, retirar Authorize y consultar antes/después de moderar: PENDIENTE y RECHAZADA no aparecen; APROBADA sí. Una página fuera de resultados conserva total y devuelve items vacío.
 
 Verificación F8-03: 437 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Swagger: 69 operaciones.
+
+## Mis reseñas, edición y retiro — F8-05
+
+GET /api/v1/resenas/mis requiere CLIENTE habilitado, incluye solo sus reseñas en todos los estados y no admite clienteId externo. Paginación default 20/máximo 100, page 1–100000; orden fechaCreacion/ID descendentes. Usar el estado devuelto como estadoEsperado en las operaciones siguientes.
+
+PUT /api/v1/resenas/{id}, solo autor, recibe:
+
+```json
+{"calificacion":4,"comentario":"Nueva opinión","estadoEsperado":"APROBADA"}
+```
+
+Conserva ID y fechaCreacion, permite editar PENDIENTE/APROBADA/RECHAZADA y retorna PENDIENTE. Deja de aparecer en listado/promedio público hasta aprobar nuevamente. Límite 510 también al editar. Repetir el mismo contenido ya PENDIENTE devuelve 200 sin otra auditoría. Audita UPDATE transaccional.
+
+POST /api/v1/resenas/{id}/retirar, solo autor, recibe:
+
+```json
+{"estadoEsperado":"APROBADA"}
+```
+
+Pasa a RECHAZADA sin borrar la fila ni liberar su unicidad. Repetir cuando ya es RECHAZADA devuelve 200 sin otra auditoría. Puede editarse esa misma fila para reenviarla a revisión; crear otra para el mismo evento sigue devolviendo 409. Retiro y rechazo comparten estado según el esquema aprobado; cuando el retiro cambia estado se audita UPDATE con detalle.motivo ResenaRetirada. La edición usa ResenaEditada y la moderación MODERATE con ResenaAprobada/ResenaRechazada; no se guarda el texto en auditoría. Se usan acciones admitidas por el CHECK de V7, sin modificar el esquema.
+
+Edición/retiro: 200 resultado, 400 ID/contenido/estadoEsperado inválido, 401/403 sesión o rol no habilitado, 404 ajena/inexistente y 409 si cambió de estado de forma incompatible. Bloqueo de usuario/reseña, UPDATE condicional y auditoría en una misma transacción. Un fallo de auditoría revierte contenido y estado. Mientras el estado siga PENDIENTE, las ediciones sucesivas se aplican en orden y la última deja el texto vigente; no se mantiene un historial de versiones del comentario.
+
+### Recorrido manual completo en Swagger
+
+1. Crear como cliente con boleto USADO; consultar /resenas/mis y anotar id/estado.
+2. Como admin, aprobar mediante /moderar. Sin Authorize, comprobar listado público y promedio del presentador asociado.
+3. Como autor, editar con estadoEsperado APROBADA. Debe responder PENDIENTE y desaparecer del listado/promedio; admin debe revisar de nuevo el contenido vigente.
+4. Aprobar otra vez; retirar como autor con estadoEsperado APROBADA. Se conserva en /mis como RECHAZADA y desaparece públicamente.
+5. Repetir el retiro: mismo resultado. Editar con estadoEsperado RECHAZADA para reenviar; otro cliente sobre ese ID recibe 404.
+
+Todos los cuerpos tienen ejemplos ejecutables en Swagger; sustituir los IDs por los de tu entorno. Reanudar API con Ctrl+C y dotnet run si estaba abierta antes de estos cambios. No se requieren secretos nuevos ni configuración de IA.
+
+## Comprobaciones automáticas
+
+Verificación final Fase 8: **454 pruebas Release aprobadas, 0 fallidas, 0 omitidas**, build sin warnings/errores y formato limpio. 34 casos nuevos: 22 Domain y 12 API con PostgreSQL real. Swagger tiene 73 operaciones, ocho nuevas de reseñas. Evidencia y revisión de salida: [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). Fase 9 no se inicia hasta la indicación del usuario sobre IA.
 
 Docker operativo; los tests usan PostgreSQL temporal sin modificar tu base local.
 

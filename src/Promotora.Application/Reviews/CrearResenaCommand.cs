@@ -14,6 +14,8 @@ public sealed record ResenaDto(int Id, int EventoId, short Calificacion, string?
 public sealed record CrearResenaCommand(int EventoId, short Calificacion, string? Comentario) : ICommand<ResenaDto>;
 public interface IResenaRepository
 {
+    Task<Promotora.Application.Shared.PaginaDto<ResenaDto>> MisAsync(int clienteId, int page, int pageSize, CancellationToken ct);
+    Task<bool> EditarAsync(int id, int clienteId, string esperado, ContenidoResena contenido, CancellationToken ct);
     Task<CalificacionPresentadorDto?> CalificacionAsync(int presentadorId, CancellationToken ct);
     Task<ResenaParaGestion?> LockAsync(int id, CancellationToken ct);
     Task<bool> CambiarEstadoAsync(int id, string esperado, string nuevo, CancellationToken ct);
