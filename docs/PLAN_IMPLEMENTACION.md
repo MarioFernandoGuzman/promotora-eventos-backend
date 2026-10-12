@@ -214,7 +214,9 @@ Salida Fase 6 cerrada localmente en el alcance de la pasarela simulada: F6-01–
 - [x] **F7-06** Consultas: estado de cuenta por dueño, extracto de movimientos con filtros.
   - Tres rutas GET aprobadas: /api/v1/cuentas, /api/v1/cuentas/{id}, /api/v1/cuentas/{id}/movimientos. ADMINISTRADOR todas; DUENO_RECINTO solo propias, incluidas cerradas; cuenta ajena/inexistente 404 y CLIENTE 403. Filtros por dueño/moneda/tipo/estado y extracto por tipo/compra/intervalo UTC desde inclusivo/hasta exclusivo. Paginación default 20/máximo 100, fechas e IDs del extracto descendentes. Sin esquema ni paquetes nuevos. Guía: [CONSULTAS_FINANCIERAS.md](CONSULTAS_FINANCIERAS.md).
   - Verificación: 414 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Cinco casos API nuevos con PostgreSQL real: permisos, propiedad, filtros, páginas, límites exactos de fechas, token anterior a baja/cambio obligatorio y Swagger (65 operaciones).
-- [ ] **F7-07** Prueba de conciliación: `saldo == SUM(movimientos)` tras escenarios mixtos.
+- [x] **F7-07** Prueba de conciliación: `saldo == SUM(movimientos)` tras escenarios mixtos.
+  - Dos escenarios nuevos con adaptadores reales y PostgreSQL: ventas pagadas/gratuita, reembolso, liquidaciones parciales del saldo, reintentos, cierre y consulta; seis administradores concurrentes mezclan tres reembolsos y tres retiros completos. Saldo/SUM por cuenta se comparan en un único snapshot tras cada etapa y al terminar la concurrencia. No se inventan efectos financieros. Evidencia: [VALIDACION_FASE_7.md](VALIDACION_FASE_7.md).
+  - Verificación: 416 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. F7-08 pendiente antes de cerrar la fase.
 - [ ] **F7-08** Verificar que `UPDATE`/`DELETE` sobre el ledger falla (permisos/trigger).
 
 **Salida:** el dinero cuadra siempre y cada centavo es trazable.
