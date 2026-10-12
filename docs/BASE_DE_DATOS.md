@@ -621,6 +621,8 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 `calificacion` 1–5, `comentario`, `estado` ∈ `PENDIENTE`, `APROBADA`, `RECHAZADA`. UNIQUE (`evento_id`, `cliente_id`).
 Reglas de aplicación: solo clientes con boleto `USADO` del evento; moderación por ADMINISTRADOR; el promedio por presentador sale de `resenas APROBADA → evento_presentadores`.
 
+Contrato Fase 8 aprobado: comentario opcional máximo 510 caracteres, calificación 1–5. Crear nace PENDIENTE; autor puede editar para volver a PENDIENTE y retirar usando RECHAZADA sin DELETE, incluso editar rechazada/retirada para revisión. Moderador solo ADMINISTRADOR, desde PENDIENTE. Listados paginados y agregados públicos solo sobre APROBADA. Rutas y prueba local en [RESENAS.md](RESENAS.md). No se añade estado RETIRADA ni columnas. Detener Fase 9 hasta la indicación del usuario sobre IA.
+
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
 | `id` | `integer` | NOT NULL | `GENERATED ALWAYS AS IDENTITY` | `PK (resenas_pkey)` |

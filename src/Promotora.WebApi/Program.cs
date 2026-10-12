@@ -55,6 +55,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentityManagement();
     builder.Services.AddIdentityRegistration();
     builder.Services.AddCuentasFinancieras();
+    Promotora.Infrastructure.Reviews.ReviewsRegistration.AddReviews(builder.Services);
     builder.Services.AddReembolsos();
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
@@ -100,6 +101,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SchemaFilter<CatalogExamplesFilter>();
     options.SchemaFilter<CompraExamplesFilter>();
     options.SchemaFilter<Promotora.WebApi.Finance.FinanzasExamplesFilter>();
+    options.SchemaFilter<Promotora.WebApi.Reviews.ReviewsExamplesFilter>();
 });
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 

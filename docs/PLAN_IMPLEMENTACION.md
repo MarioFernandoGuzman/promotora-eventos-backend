@@ -177,6 +177,7 @@ Salida Fase 5 cerrada localmente con F5-09/F6-11 y la integración financiera ad
 - [x] **F6-03** `POST /compras` pasa a **202 Accepted**: reserva + outbox; el cobro y la emisión ocurren en el consumidor.
   - Contrato 202 + Location activo con el módulo real: reserva/detalles/auditoría/outbox transaccionales, consumidor financiero F6-04 y polling propio hasta estado final. Misma clave responde 202 mientras está PENDIENTE/PROCESANDO y 200 en estado final. Recorrido HTTP→RabbitMQ→pago/ledger/boletos→polling COMPLETADA probado con el procesador real; 335 pruebas Release aprobadas, build sin warnings y formato limpio. Asistentes por ítem aprobados, obligatorios en carreras; guardados en outbox, eliminados del mensaje RabbitMQ. Guía: [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
 - [x] **F6-04** `ProcesarCompraConsumer`: idempotente (`mensajes_procesados`), ACK manual, reintentos con backoff, DLQ. Toma con `UPDATE compras SET estado='PROCESANDO', procesando_desde=now() WHERE id=@id AND estado='PENDIENTE'`; 0 filas ⇒ ACK y omitir. Referencia idempotente ante la pasarela: `compras.public_id`.
+    - Corrección de sincronización de pruebas durante el PR de Fase 8: esperar deduplicación y efecto confirmados en PostgreSQL antes de verificar el reintento exitoso; comprobar también la cola retry. El escenario pausa el segundo intento antes del commit y demuestra que dos invocaciones no garantizan un efecto persistido. Sin cambios en el consumidor de producción ni en el esquema.
     - Integración completada: procesador real con pago simulado, ledger/saldos, emisión, auditoría y outbox en la misma transacción que la toma/deduplicación; rechazo devuelve cupo una vez. Asistentes por ítem aprobados, guardados en outbox; relay envía solo publicId. Consulta durable y recuperación pendientes de F6-11. 334 pruebas Release aprobadas, build sin warnings y formato limpio. La activación HTTP F6-03 se cierra en el commit siguiente de este bloque. Guía actualizada: [COMPRAS_ASINCRONAS.md](COMPRAS_ASINCRONAS.md).
     - Preparación anterior validada: transporte v7, ACK tras commit, retry/DLQ, toma condicional y repositorio de deduplicación. Ahora AddProcesamientoCompras registra el integrador real; la activación requiere conexión, RabbitMQ, clave QR y categoría de carreras externos. Las pruebas aisladas de transporte no sustituyen las pruebas con compras pagadas.
 - [x] **F6-05** Evento `compra.completada` → `EnviarConfirmacionConsumer` (correo + `notificaciones`).
@@ -226,13 +227,25 @@ Salida Fase 6 cerrada localmente en el alcance de la pasarela simulada: F6-01–
 Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas. Revisión del diff frente al criterio de salida y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_7.md](VALIDACION_FASE_7.md). Sin transferencia bancaria/pasarela externa; CI remoto se verifica al publicar el PR.
 
 ### Fase 8 — Reseñas
-- [ ] **F8-01** Crear reseña: solo con boleto `USADO` del evento, una por (evento, cliente).
-- [ ] **F8-02** Moderación por administrador (`APROBADA`/`RECHAZADA`).
-- [ ] **F8-03** Listado público de reseñas aprobadas por evento.
-- [ ] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.
-- [ ] **F8-05** Editar/retirar reseña propia; auditoría.
+- [x] **F8-01** Crear reseña: solo con boleto `USADO` del evento, una por (evento, cliente).
+  - Contrato aprobado: POST /api/v1/resenas, CLIENTE habilitado con boleto USADO, nace PENDIENTE; calificación 1–5 y comentario opcional máximo 510 caracteres. Cliente desde sesión, unicidad PostgreSQL con ON CONFLICT y auditoría transaccional. Sin cambios de esquema/paquetes. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 428 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Seis casos Domain y dos API nuevos (510/511, roles, asistencia real, evento ajeno y diez creaciones concurrentes). Swagger: 66 operaciones. F8-02–F8-05 aprobadas para continuar en orden; detener antes de Fase 9 por indicación del usuario.
+- [x] **F8-02** Moderación por administrador (`APROBADA`/`RECHAZADA`).
+  - GET /api/v1/resenas: cola administrativa paginada, PENDIENTE por defecto, filtros estado/eventoId. PATCH /api/v1/resenas/{id}/moderar con estadoNuevo APROBADA/RECHAZADA, solo ADMINISTRADOR habilitado, desde PENDIENTE; misma decisión repetida 200 sin otra auditoría, incompatible 409. Bloqueo de fila, UPDATE condicional y MODERATE transaccional. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 436 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Seis casos Domain y dos API nuevos, incluida carrera de dos administradores distintos. Swagger: 68 operaciones.
+- [x] **F8-03** Listado público de reseñas aprobadas por evento.
+  - GET /api/v1/eventos/{id}/resenas, anónimo, solo APROBADA; página 1–100000 y tamaño 1–100 (default 20), orden fecha/ID descendentes. Sin identidad del cliente; evento inexistente 404, existente sin aprobadas 200 vacío. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 437 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Nuevo caso API de privacidad, estados, evento y paginación. Swagger: 69 operaciones.
+- [x] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.
+  - GET /api/v1/presentadores/{id}/calificacion, público, solo APROBADA mediante evento_presentadores. Agregado suma/cantidad en un snapshot; media por reseña a dos decimales en Domain. Sin aprobadas: promedio null/cantidad 0; inexistente/inactivo 404. Sin datos privados. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 442 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Cuatro casos Domain y uno API con asociaciones/co-presentadores y exclusión de pendientes/rechazadas. Swagger: 70 operaciones.
+- [x] **F8-05** Editar/retirar reseña propia; auditoría.
+  - GET /api/v1/resenas/mis, PUT /api/v1/resenas/{id} y POST /api/v1/resenas/{id}/retirar solo CLIENTE habilitado/autor. Estado esperado explícito, bloqueo y UPDATE condicional; edición retorna PENDIENTE, retiro RECHAZADA sin borrar/liberar unicidad; reenvío por edición. Auditoría UPDATE con motivos ResenaEditada/ResenaRetirada y MODERATE con motivos de decisión, sin comentario. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación final: 454 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Doce casos nuevos en esta tarea: seis Domain y seis API, propiedad, reintentos, retiro/reenvío, cambios de estado concurrentes, pérdida de publicación/promedio hasta moderar, tokens anteriores a baja y rollback de edición/retiro. Swagger: 73 operaciones.
 
 **Salida:** reseñas moderadas y calificación por artista/equipo visible.
+
+Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release aprobadas (34 casos nuevos), build sin warnings y formato limpio. Revisión del diff y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). CI remoto se verifica al publicar el PR. Detener antes de Fase 9 por indicación expresa del usuario; espera definir qué utilizará para IA.
 
 ### Fase 9 — Agente de IA y RAG (OpenAI)
 - [ ] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores OpenAI + pgvector.
