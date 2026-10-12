@@ -55,6 +55,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentityManagement();
     builder.Services.AddIdentityRegistration();
     builder.Services.AddCuentasFinancieras();
+    builder.Services.AddReembolsos();
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
     builder.Services.AddTicketing(new CompraOptions(builder.Configuration.GetValue("Ticketing:ReservaMinutos", 15)));

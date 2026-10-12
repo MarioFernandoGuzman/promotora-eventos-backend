@@ -11,6 +11,14 @@ namespace Promotora.Infrastructure.Finance;
 
 public static class FinanzasRegistration
 {
+    public static IServiceCollection AddReembolsos(this IServiceCollection services)
+    {
+        services.AddScoped<ICobroRepository, EfCobroRepository>();
+        services.AddScoped<IReembolsoRepository, EfReembolsoRepository>();
+        services.AddScoped<IValidator<ReembolsarCompraCommand>, ReembolsarCompraValidator>();
+        services.AddCommandHandler<ReembolsarCompraCommand, ReembolsoDto, ReembolsarCompraHandler>();
+        return services;
+    }
     public static IServiceCollection AddPagoSimuladoDurable(this IServiceCollection services, FakePaymentOptions options, string connectionString)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
