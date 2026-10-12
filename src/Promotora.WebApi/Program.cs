@@ -5,6 +5,7 @@ using Promotora.Application.Identity.Ports;
 using Promotora.Application.Identity.Sessions;
 using Promotora.Application.Ticketing;
 using Promotora.Infrastructure;
+using Promotora.Infrastructure.AI;
 using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Identity;
@@ -23,6 +24,21 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Configuration.GetValue("IA:Habilitada", false))
+{
+    string? clave = builder.Configuration["Ollama:ApiKey"] ?? builder.Configuration["OLLAMA_API_KEY"];
+    if (string.IsNullOrWhiteSpace(clave) && builder.Environment.IsDevelopment())
+        clave = Promotora.WebApi.AI.OllamaEnvironmentFile.LeerClave(Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", ".env")));
+    builder.Services.AddOllama(new OllamaOptions
+    {
+        ApiKey = clave ?? "",
+        ChatModel = builder.Configuration["Ollama:ChatModel"] ?? "gpt-oss:120b",
+        EmbeddingModel = builder.Configuration["Ollama:EmbeddingModel"] ?? "qwen3-embedding:4b",
+        EmbeddingUrl = new Uri(builder.Configuration["Ollama:EmbeddingUrl"] ?? "http://localhost:11434/"),
+        MaxTokensSalida = builder.Configuration.GetValue("Ollama:MaxTokensSalida", 512),
+        TimeoutSegundos = builder.Configuration.GetValue("Ollama:TimeoutSegundos", 60)
+    });
+}
 builder.Services.AddSerilog(configuration => configuration
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
