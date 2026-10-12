@@ -60,6 +60,9 @@ public sealed class PostgresFixture : IAsyncLifetime
     public PromotoraDbContext CreateContext() => new(
         new DbContextOptionsBuilder<PromotoraDbContext>().UsePromotoraPostgres(ConnectionString).Options);
 
+    // Solo el contenedor de esta fixture; credencial aleatoria mantenida en memoria, nunca la base local.
+    internal NpgsqlConnection CreateAdminConnection() => new(_postgres.GetConnectionString());
+
     public async ValueTask DisposeAsync()
     {
         if (_flyway is not null)

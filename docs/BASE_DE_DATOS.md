@@ -548,6 +548,8 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 #### `cuentas_financieras` ➕
 Dónde "vive" el dinero. Por moneda: una cuenta `PLATAFORMA` (comisiones), una `IMPUESTOS` (IVA) y una `DUENO` por dueño de recinto (ventas).
 
+Consultas F7-06 aprobadas: GET /api/v1/cuentas, GET /api/v1/cuentas/{id} y GET /api/v1/cuentas/{id}/movimientos. Administradores consultan todas; dueños solo propias, incluidas cerradas. Listados paginados (default 20, máximo 100); cuentas por dueño/moneda/tipo/estado, extracto por tipo/compra/intervalo UTC desde inclusivo/hasta exclusivo, orden fecha e ID descendentes. Sin cambios de esquema. Contrato completo en [CONSULTAS_FINANCIERAS.md](CONSULTAS_FINANCIERAS.md).
+
 Índices únicos parciales: `UNIQUE(moneda) WHERE tipo='PLATAFORMA'` y `UNIQUE(moneda) WHERE tipo='IMPUESTOS'`.
 Solo se cierra una cuenta DUENO con saldo = 0. PLATAFORMA e IMPUESTOS no se cierran. Un trigger rechaza movimientos en cuentas CERRADA.
 

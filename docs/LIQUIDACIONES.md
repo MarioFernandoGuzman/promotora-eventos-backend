@@ -40,7 +40,7 @@ Se reserva la descripción `liquidacion:v1:<SHA-256 hexadecimal de la clave UTF-
 
 El ledger conserva solo INSERT. Liquidaciones y reembolsos compiten por el saldo bajo los mismos bloqueos de cuentas: si el retiro deja saldo insuficiente para un reembolso total, este devuelve 409 sin efectos. No se libera cupo, cambia el pago ni se envían mensajes al liquidar.
 
-**Alcance:** registro contable simulado, sin transferencia bancaria, datos bancarios ni integración externa. Las consultas HTTP de cuentas/extractos corresponden a F7-06 y siguen pendientes.
+**Alcance:** registro contable simulado, sin transferencia bancaria, datos bancarios ni integración externa. Las consultas HTTP de cuentas/extractos de F7-06 se describen en [CONSULTAS_FINANCIERAS.md](CONSULTAS_FINANCIERAS.md).
 
 ## Probar localmente con Swagger
 
@@ -67,7 +67,7 @@ dotnet run --project src/Promotora.Worker
 ```
 
 1. Completar una compra pagada siguiendo la guía asíncrona y confirmar COMPLETADA. El dueño del recinto recibe el subtotal; comisión/IVA permanecen en las cuentas del sistema. Crear una venta de prueba específica para este escenario.
-2. Obtener el ID de cuenta mediante esta consulta **solo lectura** (hasta F7-06 no hay consultas HTTP de cuentas):
+2. Obtener el ID con GET /api/v1/cuentas en Swagger (como administrador, filtrar tipo=DUENO). También se puede usar esta consulta de diagnóstico **solo lectura**:
 
 ```powershell
 docker compose exec -T postgres psql -U postgres -d promotora -c "SELECT id, dueno_id, moneda, saldo, estado FROM cuentas_financieras WHERE tipo='DUENO' ORDER BY id;"
