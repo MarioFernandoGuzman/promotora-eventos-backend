@@ -40,7 +40,7 @@ Perfiles: **CLIENTE**, **ADMINISTRADOR**, **DUENO_RECINTO**.
 | ORM | EF Core + Npgsql (+ `EFCore.NamingConventions` para snake_case) |
 | Migraciones | **SQL versionado con Flyway** (`database/migrations`). EF Core **NO** genera migraciones |
 | Mensajería | **RabbitMQ** con `RabbitMQ.Client` (API async v7) detrás de puertos propios |
-| LLM y embeddings | **OpenAI (ChatGPT)** con el SDK oficial `OpenAI` (NuGet) detrás de `ILlmPort` / `IEmbeddingPort` |
+| LLM y embeddings | **Ollama Cloud** (`gpt-oss:120b`) para chat y **Ollama local** (`qwen3-embedding:4b`, 1536 dimensiones) para embeddings; HttpClient detrás de `ILlmPort` / `IEmbeddingPort` |
 | Vector search | `Pgvector.EntityFrameworkCore` (índice HNSW, coseno) |
 | Extracción de texto | `UglyToad.PdfPig` (PDF), `DocumentFormat.OpenXml` (DOCX), texto/MD directo |
 | Validación | FluentValidation |
@@ -63,7 +63,7 @@ src/
                               NO referencia a nada (ni EF, ni NuGets de infraestructura).
   Promotora.Application/      Casos de uso (commands/queries + handlers), DTOs, validadores y
                               PUERTOS (interfaces). Referencia solo a Domain.
-  Promotora.Infrastructure/   ADAPTADORES: EF Core, RabbitMQ, OpenAI, SMTP, JWT, exportadores,
+  Promotora.Infrastructure/   ADAPTADORES: EF Core, RabbitMQ, Ollama, SMTP, JWT, exportadores,
                               pasarela de pago. Implementa los puertos de Application.
   Promotora.WebApi/           Controllers, middlewares, auth, DI. Composition root del API.
   Promotora.Worker/           Host de procesos de fondo: consumidores RabbitMQ, outbox relay,
@@ -86,7 +86,7 @@ Worker ─┼──► Infrastructure ──► Application ──► Domain
 ```
 - `Domain` no depende de nadie. `Application` solo de `Domain`. `Infrastructure` de `Application` (y `Domain`).
 - `WebApi` y `Worker` son los únicos que conocen `Infrastructure` (para registrar DI).
-- **Los controllers nunca usan `DbContext`**, ni RabbitMQ, ni OpenAI directamente: llaman a handlers de `Application`.
+- **Los controllers nunca usan `DbContext`**, ni RabbitMQ, ni Ollama directamente: llaman a handlers de `Application`.
 - `Application` define los puertos; `Infrastructure` los implementa. Ej.: `IUnitOfWork`, `ICompraRepository`, `IMessagePublisher`, `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort`, `IPaymentGateway`, `IEmailSender`, `IReportExporter`, `IAuditLogger`, `IClock`, `ITicketTokenService`.
 
 ### Organización por módulos (carpetas de feature dentro de cada capa)
@@ -131,8 +131,8 @@ dotnet run --project src/Promotora.WebApi      # API + Swagger en /swagger
 dotnet run --project src/Promotora.Worker      # host desde F2; consumidores, relay y jobs en F6
 
 # Secretos (nunca en git)
-dotnet user-secrets set "OpenAI:ApiKey" "<tu-key>" --project src/Promotora.WebApi
-dotnet user-secrets set "OpenAI:ApiKey" "<tu-key>" --project src/Promotora.Worker
+dotnet user-secrets set "Ollama:ApiKey" "<tu-key>" --project src/Promotora.WebApi
+dotnet user-secrets set "Ollama:ApiKey" "<tu-key>" --project src/Promotora.Worker
 ```
 
 Puertos locales de referencia: Postgres 5432 · RabbitMQ 5672 (UI 15672) · MailHog SMTP 1025 (UI 8025).
@@ -201,7 +201,7 @@ La pasarela de pago es un **puerto**; el adaptador de API/Worker es `PasarelaSim
 - **Generación con citación:** el prompt incluye los chunks con ID; la respuesta devuelve las fuentes (`documento`, `página`, `chunkId`) que se guardan en `logs_agente_ia.fuentes_citadas`. **Si no hay contexto suficiente, responde que no lo sabe**; no inventa.
 - **Datos estructurados públicos:** además del RAG, el agente puede consultar (solo lectura) eventos en venta, precios, recintos y fechas mediante puertos de consulta acotados.
 - **Seguridad:** endpoint con rate limiting; el texto del usuario y los chunks se tratan como **datos no confiables** (delimitados en el prompt, instrucciones del sistema fijas, sin herramientas de escritura); límite de longitud de entrada; no se revelan system prompt ni claves.
-- **Configuración:** `OpenAI:ApiKey` (user-secrets/variable de entorno), `OpenAI:ChatModel` y `OpenAI:EmbeddingModel` configurables (verificar los nombres vigentes en la documentación de OpenAI). Embeddings por defecto: `text-embedding-3-small` → `vector(1536)`. **Cambiar de modelo de embeddings obliga a reindexar.**
+- **Configuración D-05 actualizada:** chat Ollama Cloud `gpt-oss:120b`; clave `OLLAMA_API_KEY` en `.env` local ignorado, introducida solo por el usuario (alternativas: variable de entorno o `Ollama:ApiKey` en user-secrets). Embeddings Ollama local `qwen3-embedding:4b` con 1536 dimensiones; no requiere clave cloud. Backend exclusivamente C# con HttpClient. **Cambiar de modelo de embeddings obliga a reindexar aunque conserve la dimensión.** Pruebas automáticas sin llamadas reales ni consumo cloud. El asistente José responde respetuosamente en español solo con información pública de la promotora, eventos, recintos y reglamentos documentados; no inventa ni accede a datos privados.
 - Cada consulta se registra en `logs_agente_ia` (consulta, respuesta, fuentes, tiempo, modelo, tokens, estado, `session_id`).
 
 ---
@@ -285,7 +285,9 @@ Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la 
 
 ## 15. Acuerdos de trabajo vigentes
 
-- Fase 8 aprobada en un PR, F8-01–F8-05 en orden y un commit por tarea. Comentario opcional máximo 510 caracteres, calificación 1–5. POST /api/v1/resenas (CLIENTE con boleto USADO, una por evento/cliente, PENDIENTE), GET /api/v1/resenas/mis (CLIENTE), GET /api/v1/resenas y PATCH /api/v1/resenas/{id}/moderar (ADMINISTRADOR). Públicas: GET /api/v1/eventos/{id}/resenas (APROBADA) y GET /api/v1/presentadores/{id}/calificacion (promedio/cantidad). PUT /api/v1/resenas/{id} y POST /api/v1/resenas/{id}/retirar solo autor: editar retorna PENDIENTE, retirar usa RECHAZADA sin borrar, permite editar rechazada/retirada para revisión. Moderar solo desde PENDIENTE. Listados paginados, cambios condicionales y auditoría, sin nuevo esquema. Detenerse antes de Fase 9 para que el usuario indique qué utilizará para IA.
+- Fase 9 desbloqueada por elección del usuario: Ollama Cloud con gpt-oss:120b, `.env` local y mínimo consumo en pruebas. Para embeddings se elige Ollama local qwen3-embedding:4b a 1536 dimensiones, evitando otra clave y consumo de API. Se conserva el orden F9-01–F9-11 y la arquitectura; F9-01 no habilita todavía el endpoint de chat. Nunca leer ni mostrar la clave real en herramientas o logs; el usuario la introduce fuera del control de versiones.
+
+- Fase 8 aprobada en un PR, F8-01–F8-05 en orden y un commit por tarea. Comentario opcional máximo 510 caracteres, calificación 1–5. POST /api/v1/resenas (CLIENTE con boleto USADO, una por evento/cliente, PENDIENTE), GET /api/v1/resenas/mis (CLIENTE), GET /api/v1/resenas y PATCH /api/v1/resenas/{id}/moderar (ADMINISTRADOR). Públicas: GET /api/v1/eventos/{id}/resenas (APROBADA) y GET /api/v1/presentadores/{id}/calificacion (promedio/cantidad). PUT /api/v1/resenas/{id} y POST /api/v1/resenas/{id}/retirar solo autor: editar retorna PENDIENTE, retirar usa RECHAZADA sin borrar, permite editar rechazada/retirada para revisión. Moderar solo desde PENDIENTE. Listados paginados, cambios condicionales y auditoría, sin nuevo esquema. Pausa histórica previa a Fase 9 resuelta por la elección de Ollama en D-05.
 
 - Bloque F7-06–F7-08 aprobado en un PR, una tarea/commit y en orden. F7-06: GET /api/v1/cuentas (filtros duenoId/moneda/tipo/estado), GET /api/v1/cuentas/{id}, GET /api/v1/cuentas/{id}/movimientos (tipo/compraId/desde/hasta). ADMINISTRADOR todas; DUENO_RECINTO solo propias, ajena/inexistente 404, filtros ajenos del listado producen vacío; CLIENTE 403. Paginación default 20/máximo 100, page 1–100000. Extracto por fecha e ID descendentes, desde UTC inclusivo/hasta exclusivo. F7-07 prueba escenarios financieros mixtos y F7-08 permisos/triggers del ledger en bases temporales; sin cambio de esquema.
 
@@ -296,7 +298,7 @@ Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la 
 - Excepción de orden aprobada después de F6-07: adelantar F7-01 → F7-02 → F7-03, una tarea por commit, para desbloquear finalización financiera y pruebas completas; después retomar pendientes de F6-03/F6-04 y F6-08 → F6-09 → F6-10 → F6-11, cerrar salidas F5/F6 y continuar F7-04. No marcar tareas financieras antes de completarlas ni sustituir pruebas de compra pagada por efectos artificiales.
 
 - Una tarea del plan a la vez y en orden de fases. Antes de cada tarea, describir en 3–5 líneas el trabajo y los archivos; esperar «ok» si toca esquema, seguridad, mensajería o dinero.
-- D-08: sin asientos numerados. D-14: MailHog en desarrollo. OpenAI:ApiKey la gestiona el usuario con user-secrets; nunca escribirla en archivos.
+- D-08: sin asientos numerados. D-14: MailHog en desarrollo. OLLAMA_API_KEY la introduce el usuario en .env local ignorado o configuración externa; el agente nunca escribe la clave real.
 - Ramas desde develop actualizado: documentación en docs/f1-aclaraciones; PR-B F1-02/F1-03 en feature/f1-identidad-recintos-catalogo; PR-C F1-04 a F1-06 en feature/f1-ventas-finanzas-ia-mensajeria; PR-D F1-07 a F1-10 y F1-11 (después de F1-07) en feature/f1-integridad-bi-seed. Cada PR empieza después de que el usuario mergee el anterior y actualice develop.
 - Solo commits locales, pequeños y en español, Conventional Commits y cuerpo `Refs: <ID>`. Mostrar git status y mensaje antes de cada commit. Nunca push, merge ni modificar main/develop. El usuario gestiona push y PR.
 - Marcar la tarea en el plan en el mismo commit; ejecutar build/test/format cuando existan y apliquen. En F1-10 no existe docker-compose.yml: usar contenedor temporal pgvector/pgvector:pg16 y flyway/flyway sobre database/migrations con el comando de .github/workflows/ci.yml.

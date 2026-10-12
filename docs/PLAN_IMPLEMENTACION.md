@@ -19,7 +19,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-02 | Arquitectura | ✅ | **Clean Architecture** (Domain · Application · Infrastructure · WebApi · Worker) |
 | D-03 | Base de datos | ✅ | PostgreSQL 16 + pgvector |
 | D-04 | Mensajería | ✅ | **RabbitMQ** (no Kafka) |
-| D-05 | LLM y embeddings | ✅ | **OpenAI (ChatGPT)**; embeddings `text-embedding-3-small` → `vector(1536)` |
+| D-05 | LLM y embeddings | ✅ | **Ollama Cloud** `gpt-oss:120b` para chat; Ollama local `qwen3-embedding:4b` para embeddings de 1536 dimensiones. `.env` ignorado con OLLAMA_API_KEY, gestionada por el usuario; C#/HttpClient y pruebas sin consumo cloud |
 | D-06 | Migraciones | ✅ | SQL con Flyway; EF Core no genera migraciones |
 | D-07 | ¿Refresh tokens además del JWT? | ✅ | Sí; tabla `refresh_tokens`, rotación y revocación de familia ante reutilización |
 | D-08 | ¿Asientos numerados? | ✅ | No: solo localidades con cupo |
@@ -31,7 +31,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-14 | Envío de correo | ✅ | MailHog en desarrollo |
 | D-15 | Política monetaria de compra | ✅ | Precios sin IVA; `Finanzas:TasaIva = 0.12`, `Finanzas:ComisionPorcentaje = 0.10` (valor inicial configurable, no dato legal). Comisión sobre subtotal, IVA sobre subtotal + comisión; decimal y redondeo AwayFromZero por componente a 2 decimales; montos congelados y reembolso solo total |
 
-Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
+Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OLLAMA_API_KEY en .env local ignorado o configuración externa.
 
 Acuerdo F6-11 aprobado por el usuario: V11 añade `pagos_simulados` (referencia UUID PK, monto NUMERIC(10,2), moneda VARCHAR(3), estado APROBADO/RECHAZADO y fecha TIMESTAMPTZ; todos obligatorios). Diario inmutable sin FK, commit independiente del proveedor simulado. No modifica el ledger ni añade endpoints. API/Worker usan la consulta durable; la recuperación nunca cobra y no devuelve cupo ante error de consulta o respaldo histórico inconsistente.
 
@@ -68,7 +68,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 
 ### Fase 0 — Decisiones y arranque
 - [x] **F0-01** Cerrar D-07, D-08, D-11 y D-14; aplazar explícitamente D-09 hasta F11-01.
-- [ ] **F0-02** Crear cuenta OpenAI y API key; guardarla fuera del repo (user-secrets).
+- [ ] **F0-02** Crear cuenta Ollama Cloud y API key; guardarla en `.env` local ignorado o configuración externa. Pendiente de confirmación del usuario; sustituye la selección histórica de OpenAI según D-05.
 - [x] **F0-03** Crear repositorio GitHub, `.gitignore` (.NET + `.env`), licencia y README inicial.
 - [x] **F0-04** Configurar protección de `main`, rama `develop`, plantilla de PR y convención de commits.
 - [x] **F0-05** Commitear `AGENTS.md`, `CLAUDE.md`, `docs/BASE_DE_DATOS.md` y este plan.
@@ -245,10 +245,10 @@ Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas
 
 **Salida:** reseñas moderadas y calificación por artista/equipo visible.
 
-Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release aprobadas (34 casos nuevos), build sin warnings y formato limpio. Revisión del diff y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). CI remoto se verifica al publicar el PR. Detener antes de Fase 9 por indicación expresa del usuario; espera definir qué utilizará para IA.
+Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release aprobadas (34 casos nuevos), build sin warnings y formato limpio. Revisión del diff y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). CI remoto se verifica al publicar el PR. La pausa antes de Fase 9 queda resuelta por la elección de Ollama según D-05.
 
-### Fase 9 — Agente de IA y RAG (OpenAI)
-- [ ] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores OpenAI + pgvector.
+### Fase 9 — Agente de IA y RAG (Ollama)
+- [ ] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores Ollama Cloud (chat), Ollama local (embeddings) + pgvector. Conservar vector(1536), sin rellenar vectores artificialmente. Configuración `.env` local solo en desarrollo; límites de entrada/salida y pruebas HTTP simuladas, sin llamadas reales.
 - [ ] **F9-02** Ingesta: `POST /ia/documentos` (PDF/DOCX/TXT/MD) con extracción de texto; CRUD y versionado de `documentos_rag`.
 - [ ] **F9-03** Chunking con solapamiento y guardado de página/orden.
 - [ ] **F9-04** Embeddings en lote → `chunks_rag`; estados `PENDIENTE → INDEXADO/ERROR`; reindexación.
@@ -347,7 +347,7 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 |---|---|
 | Sobreventa por concurrencia | `UPDATE` atómico + prueba de concurrencia en CI (F5-09) |
 | Mensajes duplicados o perdidos | Outbox + `mensajes_procesados` + ACK manual + DLQ |
-| Costo/latencia de OpenAI | Embeddings en lote, `top-k` acotado, límites de tokens y rate limit; LLM *fake* en pruebas |
+| Límites/latencia de Ollama Cloud y recursos locales | Embeddings locales en lote, `top-k` acotado, límites de contexto/salida y rate limit; HTTP/LLM *fake* en pruebas, sin consumir cuota cloud. qwen3-embedding:4b requiere descarga y recursos locales; no se promete cuota gratuita ilimitada |
 | Cambio de modelo de embeddings | La dimensión del vector queda fijada; reindexar si cambia |
 | Alcance excesivo | Asientos numerados fuera del alcance (D-08); frontend mínimo viable primero |
 | Pasarela real no disponible | Adaptador simulado detrás de puerto (D-10) |
