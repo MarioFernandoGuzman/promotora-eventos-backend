@@ -285,6 +285,8 @@ Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la 
 
 ## 15. Acuerdos de trabajo vigentes
 
+- F7-05 aprobado: POST /api/v1/cuentas/{id}/liquidar, solo ADMINISTRADOR habilitado, body monto positivo con dos decimales y header Idempotency-Key obligatorio (ASCII alfanumérico o . _ : -, 1–128 caracteres, sensible a mayúsculas, por cuenta). Solo DUENO ACTIVA con saldo suficiente y conciliado; LIQUIDACION negativa con compra_id NULL, saldo y auditoría en la misma transacción. Referencia reservada liquidacion:v1:<SHA-256 de la clave> en descripcion, búsqueda/inserción bajo bloqueo de cuenta sin nueva columna/índice. Repetir mismo monto devuelve 200 original incluso tras cierre; distinto monto con la misma clave devuelve 409. Registro contable simulado, sin transferencia externa.
+
 - F7-04 aprobado: POST /api/v1/compras/{publicId}/reembolsar sin body, solo ADMINISTRADOR habilitado. Reembolso total con movimientos originales en las mismas cuentas, saldo suficiente y cuentas afectadas ACTIVA (si no, 409). Pago APROBADO → REEMBOLSADO; compra permanece COMPLETADA. Solo VALIDO → ANULADO devuelve cupo; USADO mantiene historial aunque se reembolse todo. Repetición consistente devuelve 200 sin nuevos efectos. Alcance financiero simulado, sin transferencia externa ni modificación del diario inmutable del proveedor.
 
 - Excepción de orden aprobada después de F6-07: adelantar F7-01 → F7-02 → F7-03, una tarea por commit, para desbloquear finalización financiera y pruebas completas; después retomar pendientes de F6-03/F6-04 y F6-08 → F6-09 → F6-10 → F6-11, cerrar salidas F5/F6 y continuar F7-04. No marcar tareas financieras antes de completarlas ni sustituir pruebas de compra pagada por efectos artificiales.

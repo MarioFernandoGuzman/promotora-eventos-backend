@@ -99,6 +99,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SchemaFilter<VenuesExamplesFilter>();
     options.SchemaFilter<CatalogExamplesFilter>();
     options.SchemaFilter<CompraExamplesFilter>();
+    options.SchemaFilter<Promotora.WebApi.Finance.FinanzasExamplesFilter>();
 });
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
 
