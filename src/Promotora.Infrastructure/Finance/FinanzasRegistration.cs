@@ -35,6 +35,14 @@ public static class FinanzasRegistration
 
     public static IServiceCollection AddCuentasFinancieras(this IServiceCollection services)
     {
+        services.AddScoped<ICuentaConsultaRepository, EfCuentaConsultaRepository>();
+        services.AddScoped<ConsultaCuentaAccess>();
+        services.AddScoped<IValidator<CuentasQuery>, CuentasValidator>();
+        services.AddScoped<IValidator<ObtenerCuentaQuery>, ObtenerCuentaValidator>();
+        services.AddScoped<IValidator<MovimientosCuentaQuery>, MovimientosCuentaValidator>();
+        services.AddQueryHandler<CuentasQuery, Promotora.Application.Shared.PaginaDto<CuentaDto>, CuentasHandler>();
+        services.AddQueryHandler<ObtenerCuentaQuery, CuentaDto, ObtenerCuentaHandler>();
+        services.AddQueryHandler<MovimientosCuentaQuery, Promotora.Application.Shared.PaginaDto<MovimientoCuentaDto>, MovimientosCuentaHandler>();
         services.AddScoped<ICuentaRepository, EfCuentaRepository>();
         services.AddScoped<ILiquidacionRepository, EfLiquidacionRepository>();
         services.AddScoped<IValidator<LiquidarCuentaCommand>, LiquidarCuentaValidator>();

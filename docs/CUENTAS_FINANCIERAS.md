@@ -32,7 +32,7 @@ dotnet run --project src/Promotora.WebApi
 ```
 
 3. Haz login como administrador, cambia la contraseña inicial si corresponde y vuelve a hacer login. En Authorize pega solo accessToken. Crea un dueño mediante POST /api/v1/usuarios/duenos-recinto con los campos mostrados en Swagger y una contraseña elegida localmente. Su cuenta GTQ se crea en esa misma operación. Para los dueños anteriores sin cuenta, el alta automática no es retroactiva.
-4. Hasta F7-06, el ID de cuenta se puede consultar en tu PostgreSQL de desarrollo con esta lectura (no cambia datos):
+4. Desde F7-06, obtener el ID con GET /api/v1/cuentas en Swagger: un dueño ve sus cuentas y un administrador puede filtrar por duenoId. Ver [CONSULTAS_FINANCIERAS.md](CONSULTAS_FINANCIERAS.md). Como alternativa de diagnóstico, esta lectura PostgreSQL no cambia datos:
 
 ```powershell
 docker compose exec postgres psql -U postgres -d promotora -c "SELECT c.id AS cuenta_id, d.usuario_id, c.tipo, c.moneda, c.saldo, c.estado FROM cuentas_financieras c JOIN duenos_recinto d ON d.id = c.dueno_id ORDER BY c.id;"
