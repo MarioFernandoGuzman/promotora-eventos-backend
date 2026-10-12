@@ -841,6 +841,8 @@ documentos_rag: PENDIENTE → INDEXADO | ERROR      INDEXADO → INACTIVO
 ```
 Toda transición de estado usa UPDATE condicional con el estado esperado. Solo quien gana (1 fila afectada) devuelve el cupo, en la misma transacción. Al pasar a FALLIDA, EXPIRADA o CANCELADA se devuelve una sola vez. La expiración y la cancelación por el usuario solo proceden desde PENDIENTE; cancelar en PROCESANDO responde 409. En reembolsos se devuelve únicamente el cupo de boletos que pasaron de VALIDO a ANULADO.
 
+F7-04, política aprobada: reembolso total por ADMINISTRADOR habilitado; pago APROBADO → REEMBOLSADO y compra permanece COMPLETADA. Se insertan REEMBOLSO por el negativo exacto de cada movimiento original distinto de cero, en las mismas cuentas, sin recalcular tasas. Solo con cuentas afectadas ACTIVA y saldo suficiente. Boletos USADO conservan historial y no liberan cupo; ANULADO previo no libera otra vez. Pago, ledger/saldos, boletos/cupo y auditoría se confirman juntos. Repetición consistente devuelve 200 sin escrituras. No modifica pagos_simulados ni representa una devolución externa. Contrato y pruebas: [REEMBOLSOS.md](REEMBOLSOS.md).
+
 ---
 
 ## 6. Reglas de integridad que el esquema por sí solo no garantiza
