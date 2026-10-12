@@ -32,6 +32,7 @@ public sealed class CompraConsumerTests(PostgresFixture postgres, RabbitMqFixtur
         {
             await publisher.PublicarAsync(mensaje, Ct);
             await publisher.PublicarAsync(mensaje, Ct);
+            await EsperarEfectoConfirmadoAsync(mensaje.Id);
             await EsperarAsync(async () => Volatile.Read(ref estado.Invocaciones) >= 2 && await VaciaAsync(), Ct);
             await using var db = postgres.CreateContext();
             Assert.Equal(1, await db.CategoriasEvento.CountAsync(c => c.Nombre == $"efecto_{mensaje.Id}", Ct));
@@ -46,7 +47,7 @@ public sealed class CompraConsumerTests(PostgresFixture postgres, RabbitMqFixtur
     public async Task ExcepcionReintentaConBackoffYLlevaADlqAlTercerIntento(int fallos, bool dlq)
     {
         var mensaje = await MensajeAsync();
-        var estado = new EstadoPrueba { Fallos = fallos };
+        var estado = new EstadoPrueba { Fallos = fallos, PausarAntesDeCommit = !dlq };
         await using var services = Servicios(estado);
         await using var publisher = new RabbitMqMessagePublisher(rabbit.Options);
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(Ct);
@@ -62,6 +63,17 @@ public sealed class CompraConsumerTests(PostgresFixture postgres, RabbitMqFixtur
                 Assert.True(resultado.BasicProperties.Persistent);
                 Assert.Null(resultado.BasicProperties.Expiration);
                 Assert.Equal(3, Volatile.Read(ref estado.Invocaciones));
+            }
+            else
+            {
+                // Un segundo intento iniciado todavía puede tener su transacción sin confirmar.
+                await estado.Tomado.Task.WaitAsync(TimeSpan.FromSeconds(30), Ct);
+                Assert.Equal(2, Volatile.Read(ref estado.Invocaciones));
+                await using var antesDelCommit = postgres.CreateContext();
+                Assert.False(await antesDelCommit.MensajesProcesados.AnyAsync(m => m.MensajeId == mensaje.Id, Ct));
+                Assert.False(await antesDelCommit.CategoriasEvento.AnyAsync(c => c.Nombre == $"efecto_{mensaje.Id}", Ct));
+                estado.Continuar.TrySetResult();
+                await EsperarEfectoConfirmadoAsync(mensaje.Id);
             }
             await EsperarAsync(async () => Volatile.Read(ref estado.Invocaciones) >= (dlq ? 3 : 2) && await VaciaAsync(), Ct);
             await using var db = postgres.CreateContext();
@@ -218,8 +230,17 @@ public sealed class CompraConsumerTests(PostgresFixture postgres, RabbitMqFixtur
     private async Task<bool> VaciaAsync()
     {
         var (ready, pending) = await rabbit.EstadoColaAsync(RabbitMqTopology.ComprasQueue, Ct);
-        return ready == 0 && pending == 0;
+        var (retryReady, retryPending) = await rabbit.EstadoColaAsync(RabbitMqTopology.RetryQueue, Ct);
+        return ready == 0 && pending == 0 && retryReady == 0 && retryPending == 0;
     }
+
+    private Task EsperarEfectoConfirmadoAsync(long mensajeId) => EsperarAsync(async () =>
+    {
+        // Las estadísticas del broker no prueban que PostgreSQL haya confirmado el efecto.
+        await using var db = postgres.CreateContext();
+        return await db.MensajesProcesados.AnyAsync(m => m.MensajeId == mensajeId && m.Consumidor == "ProcesarCompraConsumer", Ct)
+            && await db.CategoriasEvento.AnyAsync(c => c.Nombre == $"efecto_{mensajeId}", Ct);
+    }, Ct);
 
     private async Task<BasicGetResult> RecibirAsync(string queue)
     {
@@ -250,7 +271,9 @@ public sealed class CompraConsumerTests(PostgresFixture postgres, RabbitMqFixtur
         public int Invocaciones;
         public int Fallos;
         public bool Bloquear;
+        public bool PausarAntesDeCommit;
         public TaskCompletionSource Tomado { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Continuar { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     private sealed class ProcesadorSoloDePrueba(PromotoraDbContext db, IUnitOfWork uow, IMensajeProcesadoRepository dedup, EstadoPrueba estado) : IProcesarCompraMensajePort
@@ -267,6 +290,11 @@ public sealed class CompraConsumerTests(PostgresFixture postgres, RabbitMqFixtur
                 await Task.Delay(Timeout.InfiniteTimeSpan, token);
             }
             if (invocacion <= estado.Fallos) throw new InvalidOperationException("Fallo transitorio de prueba");
+            if (estado.PausarAntesDeCommit)
+            {
+                estado.Tomado.TrySetResult();
+                await estado.Continuar.Task.WaitAsync(token);
+            }
             return Result<Unit>.Success(Unit.Value);
         }, ct);
     }
