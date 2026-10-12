@@ -11,6 +11,8 @@ public static class ReviewsRegistration
     {
         services.AddScoped<IResenaRepository, EfResenaRepository>();
         services.AddScoped<ResenaAccess>();
+        services.AddScoped<IValidator<CalificacionPresentadorQuery>, CalificacionPresentadorValidator>();
+        services.AddQueryHandler<CalificacionPresentadorQuery, CalificacionPresentadorDto, CalificacionPresentadorHandler>();
         services.AddScoped<IValidator<ResenasEventoQuery>, ResenasEventoValidator>();
         services.AddQueryHandler<ResenasEventoQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>, ResenasEventoHandler>();
         services.AddScoped<IValidator<ModerarResenaCommand>, ModerarResenaValidator>();

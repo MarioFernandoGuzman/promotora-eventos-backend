@@ -235,7 +235,9 @@ Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas
 - [x] **F8-03** Listado público de reseñas aprobadas por evento.
   - GET /api/v1/eventos/{id}/resenas, anónimo, solo APROBADA; página 1–100000 y tamaño 1–100 (default 20), orden fecha/ID descendentes. Sin identidad del cliente; evento inexistente 404, existente sin aprobadas 200 vacío. Guía: [RESENAS.md](RESENAS.md).
   - Verificación: 437 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Nuevo caso API de privacidad, estados, evento y paginación. Swagger: 69 operaciones.
-- [ ] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.
+- [x] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.
+  - GET /api/v1/presentadores/{id}/calificacion, público, solo APROBADA mediante evento_presentadores. Agregado suma/cantidad en un snapshot; media por reseña a dos decimales en Domain. Sin aprobadas: promedio null/cantidad 0; inexistente/inactivo 404. Sin datos privados. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 442 pruebas Release aprobadas, cero fallidas/omitidas; build sin warnings y formato limpio. Cuatro casos Domain y uno API con asociaciones/co-presentadores y exclusión de pendientes/rechazadas. Swagger: 70 operaciones.
 - [ ] **F8-05** Editar/retirar reseña propia; auditoría.
 
 **Salida:** reseñas moderadas y calificación por artista/equipo visible.

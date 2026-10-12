@@ -43,6 +43,12 @@ dotnet run --project src/Promotora.Worker
 
 ## Comprobaciones automáticas
 
+### Calificación por presentador — F8-04
+
+GET /api/v1/presentadores/{id}/calificacion, público, devuelve presentadorId, promedio (dos decimales) y cantidad. Sin reseñas aprobadas: promedio null y cantidad 0, no una nota cero. Solo APROBADA asociadas mediante evento_presentadores; cada reseña cuenta una vez para cada presentador de su evento. Se calcula suma/cantidad de reseñas, no promedio de promedios por evento. Cantidad/suma se consultan juntas en PostgreSQL. Presentador inexistente o inactivo: 404; ID inválido: 400. En Swagger sin Authorize, consultar antes y después de aprobar reseñas; PENDIENTE/RECHAZADA no alteran el resultado.
+
+Verificación F8-04: 442 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Swagger: 70 operaciones.
+
 ### Listado público — F8-03
 
 GET /api/v1/eventos/{id}/resenas no requiere login y solo devuelve APROBADA del evento indicado, sin clienteId, nombre o correo. page 1–100000, pageSize 1–100 (default 20), orden fechaCreacion/ID descendentes. Evento existente sin aprobadas: lista vacía 200; inexistente 404; ID/página inválidos 400. Incluye eventos históricos existentes. Las páginas son consultas operativas, no un snapshot entre peticiones.

@@ -7,6 +7,17 @@ namespace Promotora.Infrastructure.Reviews;
 
 public sealed class EfResenaRepository(PromotoraDbContext db) : IResenaRepository
 {
+    public async Task<CalificacionPresentadorDto?> CalificacionAsync(int presentadorId, CancellationToken ct)
+    {
+        if (!await db.Presentadores.AnyAsync(p => p.Id == presentadorId && p.Activo, ct)) return null;
+        // Un único agregado asegura cantidad y suma del mismo snapshot; no promedia promedios por evento.
+        var agregados = await (from r in db.Resenas
+                               join ep in db.EventoPresentadores on r.EventoId equals ep.EventoId
+                               where ep.PresentadorId == presentadorId && r.Estado == "APROBADA"
+                               select r).GroupBy(r => 1).Select(g => new { Cantidad = g.LongCount(), Suma = g.Sum(r => (long)r.Calificacion) }).ToArrayAsync(ct);
+        var agregado = agregados.SingleOrDefault(); long cantidad = agregado?.Cantidad ?? 0, suma = agregado?.Suma ?? 0;
+        return new(presentadorId, CalificacionMedia.Calcular(suma, cantidad), cantidad);
+    }
     public async Task<ResenaParaGestion?> LockAsync(int id, CancellationToken ct)
     {
         if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("La gestión requiere transacción.");

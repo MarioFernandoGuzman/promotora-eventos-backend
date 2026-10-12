@@ -10,8 +10,19 @@ public sealed record CrearResenaRequest(int EventoId, short Calificacion, string
 public sealed class ResenasController(ICommandHandler<CrearResenaCommand, ResenaDto> crear,
     ICommandHandler<ModerarResenaCommand, ResenaDto> moderar,
     IQueryHandler<ResenasAdministracionQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> administracion,
-    IQueryHandler<ResenasEventoQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> publicas) : ApiControllerBase
+    IQueryHandler<ResenasEventoQuery, Promotora.Application.Shared.PaginaDto<ResenaDto>> publicas,
+    IQueryHandler<CalificacionPresentadorQuery, CalificacionPresentadorDto> calificacion) : ApiControllerBase
 {
+    [HttpGet("/api/v1/presentadores/{id:int}/calificacion")]
+    [AllowAnonymous]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [EndpointSummary("Promedio y cantidad de reseñas aprobadas por presentador")]
+    [EndpointDescription("Público. Cada reseña aprobada de un evento asociado cuenta una vez para este presentador. Promedio a dos decimales; sin reseñas: promedio null y cantidad 0. Inexistente/inactivo: 404. Ejemplo: GET /api/v1/presentadores/1/calificacion.")]
+    [ProducesResponseType<CalificacionPresentadorDto>(200)]
+    [ProducesResponseType<ValidationProblemDetails>(400)]
+    [ProducesResponseType<ProblemDetails>(404)]
+    public async Task<ActionResult<CalificacionPresentadorDto>> Calificacion(int id, CancellationToken ct) => FromResult(await calificacion.HandleAsync(new(id), ct));
+
     [HttpGet("/api/v1/eventos/{id:int}/resenas")]
     [AllowAnonymous]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]

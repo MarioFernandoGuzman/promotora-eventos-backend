@@ -49,11 +49,11 @@ public sealed class ModeracionResenaApiTests(PostgresFixture postgres) : IClassF
         { using var respuesta = await admin.GetAsync("/api/v1/resenas?" + filtro, Ct); Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode); }
         using var rechazada = await admin.PatchAsJsonAsync($"/api/v1/resenas/{creada.Id}/moderar", new { estadoNuevo = "RECHAZADA" }, Ct); Assert.Equal(HttpStatusCode.OK, rechazada.StatusCode);
     }
-    internal static async Task<ResenaDto> CrearAsync(PostgresFixture postgres, IdentityApiFactory factory, HttpClient cliente, HttpClient admin, CancellationToken ct)
+    internal static async Task<ResenaDto> CrearAsync(PostgresFixture postgres, IdentityApiFactory factory, HttpClient cliente, HttpClient admin, CancellationToken ct, short calificacion = 5)
     {
         var (venta, _) = await ResenasTestSupport.VentaAsync(postgres, factory, cliente, ct); await ResenasTestSupport.UsarAsync(postgres, admin, venta, ct);
         await using var db = postgres.CreateContext(); int evento = await db.Compras.Where(c => c.Id == venta.Id).Select(c => c.EventoId).SingleAsync(ct);
-        using var response = await cliente.PostAsJsonAsync("/api/v1/resenas", new { eventoId = evento, calificacion = 5, comentario = "Buen evento" }, ct); Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var response = await cliente.PostAsJsonAsync("/api/v1/resenas", new { eventoId = evento, calificacion, comentario = "Buen evento" }, ct); Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<ResenaDto>(ct))!;
     }
 }
