@@ -226,7 +226,9 @@ Salida Fase 6 cerrada localmente en el alcance de la pasarela simulada: F6-01–
 Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas. Revisión del diff frente al criterio de salida y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_7.md](VALIDACION_FASE_7.md). Sin transferencia bancaria/pasarela externa; CI remoto se verifica al publicar el PR.
 
 ### Fase 8 — Reseñas
-- [ ] **F8-01** Crear reseña: solo con boleto `USADO` del evento, una por (evento, cliente).
+- [x] **F8-01** Crear reseña: solo con boleto `USADO` del evento, una por (evento, cliente).
+  - Contrato aprobado: POST /api/v1/resenas, CLIENTE habilitado con boleto USADO, nace PENDIENTE; calificación 1–5 y comentario opcional máximo 510 caracteres. Cliente desde sesión, unicidad PostgreSQL con ON CONFLICT y auditoría transaccional. Sin cambios de esquema/paquetes. Guía: [RESENAS.md](RESENAS.md).
+  - Verificación: 428 pruebas Release aprobadas, cero fallidas/omitidas, build sin warnings y formato limpio. Seis casos Domain y dos API nuevos (510/511, roles, asistencia real, evento ajeno y diez creaciones concurrentes). Swagger: 66 operaciones. F8-02–F8-05 aprobadas para continuar en orden; detener antes de Fase 9 por indicación del usuario.
 - [ ] **F8-02** Moderación por administrador (`APROBADA`/`RECHAZADA`).
 - [ ] **F8-03** Listado público de reseñas aprobadas por evento.
 - [ ] **F8-04** Agregados por presentador (promedio, cantidad) vía `evento_presentadores`.

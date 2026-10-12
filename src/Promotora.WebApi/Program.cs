@@ -55,6 +55,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentityManagement();
     builder.Services.AddIdentityRegistration();
     builder.Services.AddCuentasFinancieras();
+    Promotora.Infrastructure.Reviews.ReviewsRegistration.AddReviews(builder.Services);
     builder.Services.AddReembolsos();
     builder.Services.AddVenues();
     builder.Services.AddCatalog();
