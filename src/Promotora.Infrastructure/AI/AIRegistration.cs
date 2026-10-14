@@ -28,7 +28,9 @@ public static class AIRegistration
         services.AddScoped<RecuperarContexto>();
         services.AddScoped<IInformacionPublicaPort, EfInformacionPublicaPort>();
         services.AddScoped<IValidator<ConsultarAgenteCommand>, ConsultarAgenteValidator>();
-        services.AddCommandHandler<ConsultarAgenteCommand, ConsultaIaDto, ConsultarAgenteHandler>();
+        services.AddScoped<ConsultarAgenteHandler>();
+        services.AddScoped<IConsultaIaLogPort, EfConsultaIaLogPort>();
+        services.AddCommandHandler<ConsultarAgenteCommand, ConsultaIaDto, RegistrarConsultaHandler>();
         services.AddSingleton<DocumentoChunker>();
         services.AddScoped<IIndexacionRepository, EfIndexacionRepository>();
         services.AddScoped<IValidator<IndexarDocumentoCommand>, IndexarDocumentoValidator>();
