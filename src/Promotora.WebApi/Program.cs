@@ -44,7 +44,7 @@ if (builder.Configuration.GetValue("IA:Habilitada", false))
     {
         ApiKey = claveGemini ?? "",
         TimeoutSegundos = builder.Configuration.GetValue("Gemini:TimeoutSegundos", 60)
-    });
+    }, new Promotora.Application.AI.Rag.RagOptions(builder.Configuration.GetValue("Rag:TopK", 3), builder.Configuration.GetValue("Rag:SimilitudMinima", 0.65)));
 }
 builder.Services.AddSerilog(configuration => configuration
     .MinimumLevel.Information()

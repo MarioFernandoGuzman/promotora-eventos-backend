@@ -4,6 +4,9 @@ Versiones fijadas centralmente en `Directory.Packages.props`. Domain no tiene pa
 
 | Paquete | Versión | Uso | Licencia / fuente oficial |
 |---|---|---|---|
+| Microsoft.Extensions.Http | 10.0.10 | HttpClient administrado para puertos de IA, hosts HTTPS fijos y sin SDK cloud | [MIT](https://www.nuget.org/packages/Microsoft.Extensions.Http/10.0.10) |
+| PdfPig | 0.1.16 | Extracción PDF (namespace UglyToad.PdfPig) en Infrastructure; sin OCR | [Apache-2.0](https://www.nuget.org/packages/PdfPig/0.1.16) |
+| DocumentFormat.OpenXml | 3.5.1 | Extracción DOCX en Infrastructure; no requiere Office | [MIT](https://www.nuget.org/packages/DocumentFormat.OpenXml/3.5.1) |
 | RabbitMQ.Client | 7.2.2 | Adaptador async v7, topología durable y publisher confirms detrás de IMessagePublisher | [Apache-2.0 (opción de licencia dual)](https://github.com/rabbitmq/rabbitmq-dotnet-client/blob/main/LICENSE), [NuGet](https://www.nuget.org/packages/RabbitMQ.Client/7.2.2) |
 | Microsoft.AspNetCore.Authentication.JwtBearer | 10.0.10 | Validación JWT Bearer en WebApi | [MIT](https://www.nuget.org/packages/Microsoft.AspNetCore.Authentication.JwtBearer/10.0.10) |
 | System.IdentityModel.Tokens.Jwt | 8.19.2 | Firma HS256 detrás de ITokenService; alineado con la dependencia de JwtBearer | [MIT](https://www.nuget.org/packages/System.IdentityModel.Tokens.Jwt/8.19.2) |

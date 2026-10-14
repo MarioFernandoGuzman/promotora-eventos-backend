@@ -1,12 +1,12 @@
 using System.Globalization;
 using FluentValidation;
+using Promotora.Application.AI.Consultas;
 using Promotora.Application.AI.Ports;
 using Promotora.Application.Audit;
 using Promotora.Application.Identity.Ports;
 using Promotora.Application.Shared.Handlers;
 using Promotora.Application.Shared.Ports;
 using Promotora.Domain.Shared;
-using Promotora.Application.AI.Consultas;
 
 namespace Promotora.Application.AI.Documentos;
 

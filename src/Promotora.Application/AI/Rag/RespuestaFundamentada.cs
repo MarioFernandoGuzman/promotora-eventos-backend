@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Promotora.Application.AI.Consultas;
 using Promotora.Application.AI.Ports;
 using Promotora.Domain.Shared;
-using Promotora.Application.AI.Consultas;
 
 namespace Promotora.Application.AI.Rag;
 

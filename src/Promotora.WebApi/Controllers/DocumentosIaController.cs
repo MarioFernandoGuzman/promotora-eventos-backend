@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Promotora.Application.AI.Documentos;
-using Promotora.Domain.Shared;
 using Promotora.Application.Shared;
 using Promotora.Application.Shared.Handlers;
+using Promotora.Domain.Shared;
 using Promotora.WebApi.Identity;
 
 namespace Promotora.WebApi.Controllers;

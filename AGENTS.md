@@ -196,6 +196,8 @@ La pasarela de pago es un **puerto**; el adaptador de API/Worker es `PasarelaSim
 
 ## 7. IA: agente público + RAG
 
+- **Entrega F9:** carga y extracción por POST /api/v1/ia/documentos (PENDIENTE); indexación explícita por POST /api/v1/ia/documentos/{id}/reindexar, aprobada por el usuario y solo ADMINISTRADOR habilitado. Publica vectores/modelo y estado atómicamente, máximo 32 fragmentos; cloud fuera de la transacción. Reindexar un INDEXADO fallido conserva su índice anterior. La última versión publicada retira anteriores INDEXADO. El chat público es POST /api/v1/ia/consultas. Guía y límites en docs/IA_RAG.md.
+
 - **Ingesta** (`POST /api/v1/ia/documentos`, solo ADMINISTRADOR): subir archivo → extraer texto → *chunking* (~800 tokens, solapamiento ~100) → embeddings en lote → `documentos_rag` + `chunks_rag`. Estados del documento: `PENDIENTE → INDEXADO | ERROR`.
 - **Recuperación:** embedding de la pregunta → top-k por similitud coseno en `chunks_rag` (solo documentos `INDEXADO`) → umbral mínimo de similitud.
 - **Generación con citación:** el prompt incluye los chunks con ID; la respuesta devuelve las fuentes (`documento`, `página`, `chunkId`) que se guardan en `logs_agente_ia.fuentes_citadas`. **Si no hay contexto suficiente, responde que no lo sabe**; no inventa.
@@ -284,6 +286,8 @@ La pasarela de pago es un **puerto**; el adaptador de API/Worker es `PasarelaSim
 Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la API REST versionada y el mapa de recintos usa `localidades.geometria` (JSON con polígonos) sobre `recintos.imagen_plano_url`. Esto **no** relaja la restricción del backend.
 
 ## 15. Acuerdos de trabajo vigentes
+
+- El usuario autoriza terminar F9-03–F9-11 y luego detener implementación: reportes/Power BI se retoman después. Solicita análisis de endpoints, vistas y flujos para frontend, sin elegir aún D-09 ni crear interfaz. Aprueba POST /api/v1/ia/documentos/{id}/reindexar. Una tarea/commit en orden sobre la rama de Fase 9 existente, sin push/merge. Pruebas focalizadas por cambio y una suite completa al cierre; repetir solo ante cambios, fallos o dudas concretas. Evaluación cloud acotada del cierre: dos embeddings y una respuesta con texto público, sin reintentos ni cambios de contraseña del administrador local.
 
 - Excepción expresamente solicitada por el usuario el 13/10/2026: crear su .env privado local con las credenciales proporcionadas/existentes y utilizarlas para una prueba pequeña de embeddings y una conversación. No mostrarlas ni versionarlas; no ampliar esa autorización a divulgar claves. Start-Local.ps1 carga los valores permitidos para API/Worker sin repetir contraseñas y restaura el entorno al salir. El acceso local RabbitMQ queda limitado a recursos de esta aplicación, sin rol administrator. Esta excepción no altera el orden de F9 ni autoriza publicar secretos o activar pagos.
 

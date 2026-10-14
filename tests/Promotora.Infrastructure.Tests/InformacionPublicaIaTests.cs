@@ -15,6 +15,8 @@ public sealed class InformacionPublicaIaTests(PostgresFixture postgres) : IClass
             .SetProperty(e => e.FechaInicio, DateTime.UtcNow.AddDays(5)).SetProperty(e => e.FechaInicioVenta, (DateTime?)null).SetProperty(e => e.FechaFinVenta, (DateTime?)null), ct);
         var puerto = new EfInformacionPublicaPort(db, new SystemClock(TimeProvider.System));
         var fuente = Assert.Single(await puerto.BuscarAsync("¿Qué eventos hay?", ct));
+        Assert.Single(await puerto.BuscarAsync(fuente.Documento, ct));
+        Assert.Empty(await puerto.BuscarAsync("ContenidoInexistenteParaBusqueda", ct));
         Assert.StartsWith("/api/v1/catalogo/eventos/", fuente.Url); Assert.Contains("Precios base", fuente.Contenido);
         Assert.DoesNotContain("cliente_id", fuente.Contenido); Assert.DoesNotContain("password", fuente.Contenido);
         await db.Eventos.Where(e => e.Id == datos.EventoId).ExecuteUpdateAsync(s => s.SetProperty(e => e.Estado, "BORRADOR"), ct);

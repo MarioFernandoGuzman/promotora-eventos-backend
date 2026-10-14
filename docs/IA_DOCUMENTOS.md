@@ -1,6 +1,6 @@
 # Documentos RAG — F9-02
 
-La API permite a un ADMINISTRADOR habilitado cargar documentos públicos del negocio, revisar el texto extraído, crear versiones y desactivarlas. F9-02 guarda el texto en PostgreSQL como PENDIENTE. El chunking, los embeddings y la conversación con fuentes llegan en F9-03–F9-06; cargar un archivo todavía no hace que José pueda consultarlo.
+La API permite a un ADMINISTRADOR habilitado cargar documentos públicos del negocio, revisar el texto extraído, crear versiones y desactivarlas. La carga guarda el texto como PENDIENTE; para que José pueda consultarlo, ejecuta POST /api/v1/ia/documentos/{id}/reindexar. El flujo completo de Fase 9 está en [IA_RAG.md](IA_RAG.md). Esta guía conserva el recorrido de carga/versionado sin consumo cloud de F9-02.
 
 ## Arranque local y autenticación
 
@@ -59,7 +59,7 @@ Errores con ProblemDetails: 400 campos/filtros/archivo inválidos; 401/403 acces
 
 Se utiliza el esquema Flyway existente sin alterarlo. El contenido extraído se guarda en `documentos_rag.contenido`; no se conserva el binario ni el nombre/ruta suministrados por el cliente. `ruta_archivo` contiene una referencia lógica generada `db:documentos-rag/<UUID>`, compartida por las versiones de la misma serie. No es una URL pública ni un archivo en disco. Esta convención resuelve el agrupamiento sin agregar columnas o usar el título como identidad. Las filas históricas sin esta referencia no se reinterpretan: pueden consultarse/desactivarse, pero crear versiones desde ellas devuelve 409.
 
-La actualización crea una nueva fila y conserva las anteriores. Se bloquea la primera fila de la serie en la transacción y se exige partir de su última versión; dos solicitudes concurrentes basadas en la misma versión producen un 201 y un 409. Crear una versión no desactiva automáticamente la versión anterior: todavía no se activa/indexa el reemplazo. F9-04 deberá coordinar esa publicación. La desactivación afecta solo al ID indicado y usa UPDATE condicional; no borra documentos ni chunks. La recuperación existente excluye estados distintos de INDEXADO.
+La actualización crea una nueva fila y conserva las anteriores. Se bloquea la primera fila de la serie en la transacción y se exige partir de su última versión; dos solicitudes concurrentes basadas en la misma versión producen un 201 y un 409. Crear una versión no desactiva automáticamente la versión anterior: todavía no se activa/indexa el reemplazo. Al reindexar y publicar correctamente la nueva versión, F9-04 retira las anteriores INDEXADO. La desactivación afecta solo al ID indicado y usa UPDATE condicional; no borra documentos ni chunks. La recuperación excluye estados distintos de INDEXADO.
 
 Solo administradores deben cargar contenido público de la organización. El texto se trata como datos, no instrucciones ejecutables. La operación registra INGEST y la desactivación UPDATE en `logs_auditoria`, en la misma transacción; no registra el archivo/texto, secretos o rutas. Si falla auditoría, se revierte la creación.
 

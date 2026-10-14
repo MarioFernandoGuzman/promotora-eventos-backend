@@ -655,6 +655,8 @@ Documentos del negocio ingestados (reglamentos, políticas de reembolso, FAQ, gu
 Columnas: `titulo`, `tipo_documento`, `contenido` (texto extraído), `ruta_archivo`, `version`, `fecha_carga` (TIMESTAMPTZ), `estado` ➕* ∈ `PENDIENTE`, `INDEXADO`, `ERROR`, `INACTIVO`, `subido_por` ➕* (FK `usuarios`).
 Solo los `INDEXADO` participan en la recuperación.
 
+Fase 9: indexación explícita en POST /api/v1/ia/documentos/{id}/reindexar. Los chunks conservan modelo en metadata.modelo, orden y página; el chat filtra por modelo vigente. ERROR puede reintentarse hacia INDEXADO; reindexar INDEXADO sustituye sus chunks en una única transacción manteniendo INDEXADO, y un fallo conserva el índice anterior. La publicación de una nueva versión retira las anteriores INDEXADO de su referencia lógica. No se altera el esquema; ver [IA_RAG.md](IA_RAG.md).
+
 Convención F9-02: el texto se conserva en `contenido`, sin almacenar el binario original. `tipo_documento` identifica el formato extraído (PDF/DOCX/TXT/MD); `ruta_archivo` es una referencia lógica privada `db:documentos-rag/<UUID>` compartida por las versiones de una serie, no una ruta recibida del cliente ni un archivo público. Una nueva versión crea otra fila PENDIENTE bajo bloqueo de la primera fila de la serie, sin sobrescribir texto o estado previos. La desactivación administrativa condicional permite PENDIENTE/INDEXADO/ERROR → INACTIVO. Detalles y límites: [IA_DOCUMENTOS.md](IA_DOCUMENTOS.md).
 
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |

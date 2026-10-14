@@ -6,7 +6,7 @@ F9-01 implementa ILlmPort (Ollama Cloud gpt-oss:120b), IEmbeddingPort (Gemini AP
 
 El esquema conserva vector(1536), sin migraciones. El modelo de embeddings debe ser el mismo para indexar y consultar: cambiarlo requiere reindexar aunque conserve la dimensión. No se mezclan vectores de diferentes proveedores. El adaptador pide 1536 dimensiones y rechaza dimensión distinta, vectores cero y componentes no finitos.
 
-F9-01 no agrega endpoints: ingesta en F9-02–F9-04, respuestas con citas en F9-05/F9-06, datos públicos en F9-07, logs en F9-08 y defensas/evaluación en F9-09–F9-11. La prueba manual de credenciales no declara completo el RAG ni habilita todavía chat en Swagger.
+Esta guía conserva la configuración de proveedores de F9-01. La Fase 9 completa ya incorpora carga/indexación, chat público, fuentes, catálogo, logs y defensas. Para usar sus endpoints y preparar conocimiento consulta [IA_RAG.md](IA_RAG.md); el análisis para la aplicación web está en [ANALISIS_FRONTEND.md](ANALISIS_FRONTEND.md).
 
 ## 1. Crear las dos claves con cuota gratuita
 
@@ -138,11 +138,11 @@ Las claves van exclusivamente a sus respectivos hosts fijos: Bearer a https://ol
 
 Resultado final de la corrección F9-01: **484 pruebas Release aprobadas, 0 fallidas y 0 omitidas**, build sin warnings y formato limpio. El script manual se verificó con HTTP simulado en Windows PowerShell 5.1 y PowerShell 7, sin usar claves reales.
 
-Verificación local autorizada del 13/10/2026: una solicitud real Gemini produjo 1536 dimensiones; una conversación real con gpt-oss:120b terminó con stop (371 tokens de entrada y 63 de salida), usando contexto explícitamente de demostración. La respuesta no constituye una cita RAG validada: F9-05/F9-06 siguen pendientes. Docker saludable, Flyway validate correcto, RabbitMQ autenticado con acceso limitado y API /health/live, /health/ready y Swagger HTTP 200. Start-Local.ps1 se verificó con valores simulados en Windows PowerShell 5.1: propagación, prioridad, restauración del entorno y rechazo de variables ajenas. Ninguna clave real se incorpora a la evidencia ni a Git.
+Verificación local autorizada del 13/10/2026: una solicitud real Gemini produjo 1536 dimensiones; una conversación real con gpt-oss:120b terminó con stop (371 tokens de entrada y 63 de salida), usando contexto explícitamente de demostración. La respuesta no constituye una cita RAG validada: F9-05/F9-06 aún estaban pendientes en esa verificación histórica. Docker saludable, Flyway validate correcto, RabbitMQ autenticado con acceso limitado y API /health/live, /health/ready y Swagger HTTP 200. Start-Local.ps1 se verificó con valores simulados en Windows PowerShell 5.1: propagación, prioridad, restauración del entorno y rechazo de variables ajenas. Ninguna clave real se incorpora a la evidencia ni a Git.
 
 Incidencias de verificación: la primera ejecución no pudo iniciar contenedores porque Docker Desktop estaba apagado; se inició el motor y se repitió la suite. Una ejecución posterior presentó timeout en CompraResilienciaTests.CorteRealDelBrokerAntesODespuesDelCommitReentregaSinDuplicarVenta (despuesCommit=true). Las cinco pruebas de esa clase pasaron aisladas y la suite final completa pasó sin cambios en código de compras ni en esas pruebas. No se determinó la causa del timeout; vigilar su repetición en CI. Las dos solicitudes reales posteriores están registradas en el párrafo anterior; no permiten comprobar la cuota o facturación restante de las cuentas.
 
-F9-02 añade la carga y gestión administrativa de documentos sin consumo cloud. La guía de arranque, autenticación, formulario Swagger, versiones y desactivación está en [IA_DOCUMENTOS.md](IA_DOCUMENTOS.md). La indexación y el chat público siguen pendientes.
+F9-02 añade la carga y gestión administrativa de documentos sin consumo cloud. La guía de arranque, autenticación, formulario Swagger, versiones y desactivación está en [IA_DOCUMENTOS.md](IA_DOCUMENTOS.md). La indexación y el chat público se completaron posteriormente en F9-04–F9-11; usa [IA_RAG.md](IA_RAG.md) para el flujo vigente.
 
 Las pruebas usan HTTP simulado y PostgreSQL temporal: **cero llamadas reales** a Ollama o Gemini, sin requerir claves reales ni descargar modelos. Incluyen transporte, claves separadas, dimensiones, finalidad de recuperación, lotes con errores, cuotas, cancelación, configuración .env y pgvector real.
 
