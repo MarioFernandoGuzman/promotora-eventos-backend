@@ -26,6 +26,7 @@ public static class AIRegistration
         services.AddSingleton(new RagOptions());
         services.AddSingleton<RespuestaFundamentada>();
         services.AddScoped<RecuperarContexto>();
+        services.AddScoped<IInformacionPublicaPort, EfInformacionPublicaPort>();
         services.AddScoped<IValidator<ConsultarAgenteCommand>, ConsultarAgenteValidator>();
         services.AddCommandHandler<ConsultarAgenteCommand, ConsultaIaDto, ConsultarAgenteHandler>();
         services.AddSingleton<DocumentoChunker>();

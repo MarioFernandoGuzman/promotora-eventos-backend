@@ -261,7 +261,8 @@ Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release a
   - topK 3/umbral 0.65, contexto acotado y filtro del modelo en metadata. Citas devueltas con documento, página, chunk, ID y extracto público. Generación extractiva: el modelo selecciona citas literales y el servidor rechaza fuentes desconocidas o texto inventado; no publica prosa libre sin respaldo. Pruebas focalizadas de citas y pgvector aprobadas, compilación limpia.
 - [x] **F9-06** Agente público `POST /ia/consultas`: prompt del sistema, respuesta "no lo sé" sin contexto, solo datos públicos.
   - API pública acotada (1000 caracteres, 8 KiB HTTP, 5 solicitudes/minuto/IP), sesión UUID para agrupar consultas sin recuperar historial privado. Citas extractivas verificadas y SIN_CONTEXTO sin llamada al LLM cuando faltan fuentes. IA deshabilitada 422; proveedor/cuota 422/429. Prueba focalizada de respuesta con/sin contexto aprobada; build limpio.
-- [ ] **F9-07** Consulta de datos estructurados públicos (eventos en venta, precios, recintos).
+- [x] **F9-07** Consulta de datos estructurados públicos (eventos en venta, precios, recintos).
+  - Puerto acotado de lectura sin usuarios/compras/finanzas. Hasta cinco eventos EN_VENTA futuros con ventana de venta vigente y recinto/categoría activos; precios de entradas/localidades activas, sin prometer cupo. Fuente enlazada al detalle público de catálogo. Prueba focalizada de visibilidad aprobada y build limpio.
 - [ ] **F9-08** `logs_agente_ia`: consulta, respuesta, fuentes, tiempos, modelo, tokens, estado.
 - [ ] **F9-09** Defensas: rate limit, longitud máxima, tratamiento de contenido no confiable, pruebas de prompt injection.
 - [ ] **F9-10** Documentos de negocio para ingestar (reglamento, reembolsos, FAQ, guía de carreras).
