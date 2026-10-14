@@ -68,7 +68,7 @@ public sealed partial class CatalogApiTests
         }
         Assert.Equal(40, (await db.TiposEntrada.AsNoTracking().SingleAsync(x => x.Id == tipo.Id, ct)).CupoDisponible);
         var swagger = await publico.GetFromJsonAsync<JsonElement>("/swagger/v1/swagger.json", ct);
-        Assert.Equal(73, swagger.GetProperty("paths").EnumerateObject().Sum(path => path.Value.EnumerateObject().Count(op => op.Name is "get" or "post" or "put" or "delete" or "patch")));
+        Assert.Equal(78, swagger.GetProperty("paths").EnumerateObject().Sum(path => path.Value.EnumerateObject().Count(op => op.Name is "get" or "post" or "put" or "delete" or "patch")));
     }
 
     [Fact]

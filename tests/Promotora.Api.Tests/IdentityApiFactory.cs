@@ -48,6 +48,7 @@ public sealed class IdentityApiFactory(string connection, string? adminEmail = n
             services.AddReembolsos();
             services.AddIdentitySessions(Key, "promotora", "promotora-api", new SesionOptions());
             services.AddIdentityManagement();
+            Promotora.Infrastructure.AI.DocumentosRegistration.AddDocumentosRag(services);
             services.AddVenues();
             services.AddCatalog();
             services.AddTicketing(new CompraOptions());

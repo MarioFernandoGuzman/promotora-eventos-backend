@@ -655,6 +655,8 @@ Documentos del negocio ingestados (reglamentos, políticas de reembolso, FAQ, gu
 Columnas: `titulo`, `tipo_documento`, `contenido` (texto extraído), `ruta_archivo`, `version`, `fecha_carga` (TIMESTAMPTZ), `estado` ➕* ∈ `PENDIENTE`, `INDEXADO`, `ERROR`, `INACTIVO`, `subido_por` ➕* (FK `usuarios`).
 Solo los `INDEXADO` participan en la recuperación.
 
+Convención F9-02: el texto se conserva en `contenido`, sin almacenar el binario original. `tipo_documento` identifica el formato extraído (PDF/DOCX/TXT/MD); `ruta_archivo` es una referencia lógica privada `db:documentos-rag/<UUID>` compartida por las versiones de una serie, no una ruta recibida del cliente ni un archivo público. Una nueva versión crea otra fila PENDIENTE bajo bloqueo de la primera fila de la serie, sin sobrescribir texto o estado previos. La desactivación administrativa condicional permite PENDIENTE/INDEXADO/ERROR → INACTIVO. Detalles y límites: [IA_DOCUMENTOS.md](IA_DOCUMENTOS.md).
+
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
 | `id` | `integer` | NOT NULL | `GENERATED ALWAYS AS IDENTITY` | `PK (documentos_rag_pkey)` |
@@ -843,7 +845,7 @@ pagos:     PENDIENTE → APROBADO → REEMBOLSADO
                   └──► RECHAZADO
 
 resenas:   PENDIENTE → APROBADA | RECHAZADA
-documentos_rag: PENDIENTE → INDEXADO | ERROR      INDEXADO → INACTIVO
+documentos_rag: PENDIENTE → INDEXADO | ERROR      PENDIENTE/INDEXADO/ERROR → INACTIVO
 ```
 Toda transición de estado usa UPDATE condicional con el estado esperado. Solo quien gana (1 fila afectada) devuelve el cupo, en la misma transacción. Al pasar a FALLIDA, EXPIRADA o CANCELADA se devuelve una sola vez. La expiración y la cancelación por el usuario solo proceden desde PENDIENTE; cancelar en PROCESANDO responde 409. En reembolsos se devuelve únicamente el cupo de boletos que pasaron de VALIDO a ANULADO.
 
