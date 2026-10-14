@@ -19,7 +19,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-02 | Arquitectura | ✅ | **Clean Architecture** (Domain · Application · Infrastructure · WebApi · Worker) |
 | D-03 | Base de datos | ✅ | PostgreSQL 16 + pgvector |
 | D-04 | Mensajería | ✅ | **RabbitMQ** (no Kafka) |
-| D-05 | LLM y embeddings | ✅ | **Ollama Cloud** `gpt-oss:120b` para chat; Ollama local `qwen3-embedding:4b` para embeddings de 1536 dimensiones. `.env` ignorado con OLLAMA_API_KEY, gestionada por el usuario; C#/HttpClient y pruebas sin consumo cloud |
+| D-05 | LLM y embeddings | ✅ | **Ollama Cloud** `gpt-oss:120b` para chat; Gemini API `gemini-embedding-2` para embeddings de 1536 dimensiones en nivel gratuito, sin modelos locales. `.env` ignorado con OLLAMA_API_KEY, gestionada por el usuario; C#/HttpClient y pruebas sin consumo cloud |
 | D-06 | Migraciones | ✅ | SQL con Flyway; EF Core no genera migraciones |
 | D-07 | ¿Refresh tokens además del JWT? | ✅ | Sí; tabla `refresh_tokens`, rotación y revocación de familia ante reutilización |
 | D-08 | ¿Asientos numerados? | ✅ | No: solo localidades con cupo |
@@ -248,7 +248,7 @@ Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas
 Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release aprobadas (34 casos nuevos), build sin warnings y formato limpio. Revisión del diff y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). CI remoto se verifica al publicar el PR. La pausa antes de Fase 9 queda resuelta por la elección de Ollama según D-05.
 
 ### Fase 9 — Agente de IA y RAG (Ollama)
-- [x] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores Ollama Cloud (chat), Ollama local (embeddings) + pgvector. Conservar vector(1536), sin rellenar vectores artificialmente. Configuración `.env` local solo en desarrollo; límites de entrada/salida y pruebas HTTP simuladas, sin llamadas reales.
+- [x] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores Ollama Cloud (chat), Gemini API Free Tier (embeddings) + pgvector. Conservar vector(1536), sin rellenar vectores artificialmente. Configuración `.env` local solo en desarrollo; límites de entrada/salida y pruebas HTTP simuladas, sin llamadas reales.
   - D-05 actualizada en commit de documentación previo. Adaptadores C#/HttpClient, prompt fijo de José con datos delimitados, límites de tamaño/tiempo y rechazo de salida incompleta; clave cloud solo a ollama.com, sin redirecciones ni reintentos automáticos. Embeddings locales en lotes de hasta 16 y búsqueda por coseno solo sobre INDEXADO. Activación opt-in, .env acotado a OLLAMA_API_KEY en Development, configuración externa tiene prioridad. 473 pruebas Release aprobadas, 0 fallidas/omitidas (19 casos nuevos); build sin warnings y format limpio. Microsoft.Extensions.Http 10.0.10, MIT, para gestión de conexiones; sin migraciones ni endpoints nuevos. Guía: [IA_OLLAMA.md](IA_OLLAMA.md). F9-02–F9-11 pendientes; no se declara completa la defensa contra prompt injection ni habilitado el chat público.
 - [ ] **F9-02** Ingesta: `POST /ia/documentos` (PDF/DOCX/TXT/MD) con extracción de texto; CRUD y versionado de `documentos_rag`.
 - [ ] **F9-03** Chunking con solapamiento y guardado de página/orden.
