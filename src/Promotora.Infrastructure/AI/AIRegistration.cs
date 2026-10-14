@@ -5,6 +5,7 @@ using Promotora.Application.AI.Documentos;
 using Promotora.Infrastructure.Shared;
 using Promotora.Application.AI.Rag;
 using Promotora.Infrastructure.Shared.Persistence;
+using Promotora.Application.AI.Consultas;
 using Promotora.Infrastructure.AI.Persistence;
 
 namespace Promotora.Infrastructure.AI;
@@ -25,6 +26,8 @@ public static class AIRegistration
         services.AddSingleton(new RagOptions());
         services.AddSingleton<RespuestaFundamentada>();
         services.AddScoped<RecuperarContexto>();
+        services.AddScoped<IValidator<ConsultarAgenteCommand>, ConsultarAgenteValidator>();
+        services.AddCommandHandler<ConsultarAgenteCommand, ConsultaIaDto, ConsultarAgenteHandler>();
         services.AddSingleton<DocumentoChunker>();
         services.AddScoped<IIndexacionRepository, EfIndexacionRepository>();
         services.AddScoped<IValidator<IndexarDocumentoCommand>, IndexarDocumentoValidator>();

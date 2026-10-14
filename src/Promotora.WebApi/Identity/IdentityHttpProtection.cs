@@ -10,6 +10,7 @@ public static class IdentityHttpProtection
     public const string Registro = "identity-registro";
     public const string Compra = "ticketing-compra";
     public const string Cors = "frontend";
+    public const string AgenteIa = "agente-ia";
 
     public static IServiceCollection AddIdentityHttpProtection(this IServiceCollection services, IConfiguration configuration)
     {
@@ -27,6 +28,7 @@ public static class IdentityHttpProtection
             options.AddPolicy(Login, context => Partition(context, loginLimit));
             options.AddPolicy(Registro, context => Partition(context, registroLimit));
             options.AddPolicy(Compra, context => Partition(context, compraLimit));
+            options.AddPolicy(AgenteIa, context => Partition(context, 5));
             options.OnRejected = async (context, ct) =>
             {
                 double seconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retry) ? Math.Ceiling(retry.TotalSeconds) : 60;
