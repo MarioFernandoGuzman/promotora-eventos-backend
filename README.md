@@ -6,7 +6,7 @@ Plataforma para una promotora de eventos (conciertos, partidos, vigilias, cultos
 
 ## Stack
 
-C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgvector · EF Core · Flyway · RabbitMQ · OpenAI (LLM y embeddings) · Docker Compose · GitHub Actions
+C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgvector · EF Core · Flyway · RabbitMQ · Ollama Cloud (chat) + Gemini API (embeddings) · Docker Compose · GitHub Actions
 
 ## Documentación
 
@@ -16,6 +16,10 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 | [`CLAUDE.md`](CLAUDE.md) | Instrucciones específicas para Claude Code |
 | [`docs/BASE_DE_DATOS.md`](docs/BASE_DE_DATOS.md) | Modelo de datos v2 |
 | [`docs/PLAN_IMPLEMENTACION.md`](docs/PLAN_IMPLEMENTACION.md) | Fases, tareas y trazabilidad de requerimientos |
+| [`docs/IA_RAG.md`](docs/IA_RAG.md) | Arranque, carga/indexación, chat con fuentes y límites |
+| [`docs/ANALISIS_FRONTEND.md`](docs/ANALISIS_FRONTEND.md) | Pantallas, roles, contratos, flujos web y pendientes |
+| [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md) | Inventario de 80 operaciones de Swagger |
+| [`docs/VALIDACION_FASE_9.md`](docs/VALIDACION_FASE_9.md) | Cierre IA/RAG, 524 pruebas y evaluación acotada |
 | [`docs/DESARROLLO_LOCAL.md`](docs/DESARROLLO_LOCAL.md) | Arranque seguro de Docker, login PostgreSQL, API/Swagger y pruebas |
 | [`docs/DEPENDENCIAS.md`](docs/DEPENDENCIAS.md) | Versiones, propósito y licencias de NuGets |
 | [`docs/IDENTIDAD_SEGURIDAD.md`](docs/IDENTIDAD_SEGURIDAD.md) | Usuarios, bootstrap, JWT, permisos, auditoría y pruebas en Swagger |
@@ -34,16 +38,21 @@ C# / .NET 10 (Clean Architecture) · ASP.NET Core Web API · PostgreSQL 16 + pgv
 
 ## Arranque rápido
 
-Fases 2, 3 y 4 implementadas: solución por capas, persistencia, identidad/seguridad, recintos/localidades/mapa, catálogo de eventos con tipos de entrada e imágenes. Preparar variables de entorno, login restringido, clave JWT y bootstrap siguiendo [`docs/DESARROLLO_LOCAL.md`](docs/DESARROLLO_LOCAL.md).
+Backend de identidad, catálogo/mapas, compra asíncrona y boletos, finanzas simuladas, reseñas y agente público con RAG implementado hasta Fase 9. Reportes y Power BI se revisarán después. Frontend aún no creado; D-09 pendiente.
 
-```bash
-docker compose up -d --wait
-docker compose run --rm flyway migrate
-dotnet run --project src/Promotora.WebApi
+Con Docker Desktop y el .env privado ya configurado, ejecuta por separado en PowerShell:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Servicio Infra
 ```
 
-Swagger local: `http://localhost:5080/swagger`, con 59 operaciones: 11 de identidad, 11 de recintos/localidades/mapa, 27 de catálogo, 4 de imágenes, 4 de compras y 2 de boletos. El administrador inicial debe cambiar su contraseña antes de gestionar recursos. El catálogo público se consulta sin token en `/api/v1/catalogo/eventos`; la gestión requiere sesión y permisos. Como CLIENTE se puede reservar, consultar compras/boletos propios y cancelar una compra PENDIENTE. Administrador/dueño del recinto puede validar un boleto firmado una sola vez. Guía local/frontend: [BOLETOS_VALIDACION.md](docs/BOLETOS_VALIDACION.md). Los componentes internos de pago/emisión F5-04/F5-05 están implementados; su conexión HTTP espera el registro financiero transaccional de F7. El Worker es un host preparado; el procesamiento asíncrono llega en Fase 6.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Servicio Api
+```
 
+Swagger local: http://localhost:5080/swagger, con 80 operaciones REST. El administrador inicial debe cambiar su contraseña antes de gestionar recursos. Para RAG carga documentos públicos e indexa explícitamente; la carga por sí sola queda PENDIENTE. Sigue [IA_RAG.md](docs/IA_RAG.md).
+
+Las compras asíncronas requieren Worker y sus flags habilitados conscientemente; no hace falta ejecutarlo para catálogo/chat. La pasarela es simulada. Consulta [ANALISIS_FRONTEND.md](docs/ANALISIS_FRONTEND.md) para pantallas, permisos, polling y la configuración necesaria antes de probar ventas.
 ```bash
 dotnet restore
 dotnet build -warnaserror -c Release

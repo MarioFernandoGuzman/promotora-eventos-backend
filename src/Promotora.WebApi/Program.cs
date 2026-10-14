@@ -5,6 +5,7 @@ using Promotora.Application.Identity.Ports;
 using Promotora.Application.Identity.Sessions;
 using Promotora.Application.Ticketing;
 using Promotora.Infrastructure;
+using Promotora.Infrastructure.AI;
 using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Identity;
@@ -23,6 +24,28 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Configuration.GetValue("IA:Habilitada", false))
+{
+    string? clave = builder.Configuration["Ollama:ApiKey"] ?? builder.Configuration["OLLAMA_API_KEY"];
+    string? claveGemini = builder.Configuration["Gemini:ApiKey"] ?? builder.Configuration["GEMINI_API_KEY"];
+    if (builder.Environment.IsDevelopment())
+    {
+        string envPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", ".env"));
+        if (string.IsNullOrWhiteSpace(clave)) clave = Promotora.WebApi.AI.OllamaEnvironmentFile.LeerClave(envPath);
+        if (string.IsNullOrWhiteSpace(claveGemini)) claveGemini = Promotora.WebApi.AI.OllamaEnvironmentFile.LeerClave(envPath, "GEMINI_API_KEY");
+    }
+    builder.Services.AddOllama(new OllamaOptions
+    {
+        ApiKey = clave ?? "",
+        ChatModel = builder.Configuration["Ollama:ChatModel"] ?? "gpt-oss:120b",
+        MaxTokensSalida = builder.Configuration.GetValue("Ollama:MaxTokensSalida", 512),
+        TimeoutSegundos = builder.Configuration.GetValue("Ollama:TimeoutSegundos", 60)
+    }, new GeminiEmbeddingOptions
+    {
+        ApiKey = claveGemini ?? "",
+        TimeoutSegundos = builder.Configuration.GetValue("Gemini:TimeoutSegundos", 60)
+    }, new Promotora.Application.AI.Rag.RagOptions(builder.Configuration.GetValue("Rag:TopK", 3), builder.Configuration.GetValue("Rag:SimilitudMinima", 0.65)));
+}
 builder.Services.AddSerilog(configuration => configuration
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -53,6 +76,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddIdentitySessions(jwtKey, issuer, audience, new SesionOptions(
         builder.Configuration.GetValue("Jwt:AccessMinutes", 15), builder.Configuration.GetValue("Jwt:RefreshDays", 7)));
     builder.Services.AddIdentityManagement();
+    builder.Services.AddDocumentosRag();
     builder.Services.AddIdentityRegistration();
     builder.Services.AddCuentasFinancieras();
     Promotora.Infrastructure.Reviews.ReviewsRegistration.AddReviews(builder.Services);

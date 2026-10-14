@@ -19,7 +19,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-02 | Arquitectura | ✅ | **Clean Architecture** (Domain · Application · Infrastructure · WebApi · Worker) |
 | D-03 | Base de datos | ✅ | PostgreSQL 16 + pgvector |
 | D-04 | Mensajería | ✅ | **RabbitMQ** (no Kafka) |
-| D-05 | LLM y embeddings | ✅ | **OpenAI (ChatGPT)**; embeddings `text-embedding-3-small` → `vector(1536)` |
+| D-05 | LLM y embeddings | ✅ | **Ollama Cloud** `gpt-oss:120b` para chat; Gemini API `gemini-embedding-2` para embeddings de 1536 dimensiones en nivel gratuito, sin modelos locales. `.env` ignorado con OLLAMA_API_KEY y GEMINI_API_KEY, gestionadas por el usuario; C#/HttpClient y pruebas sin consumo cloud |
 | D-06 | Migraciones | ✅ | SQL con Flyway; EF Core no genera migraciones |
 | D-07 | ¿Refresh tokens además del JWT? | ✅ | Sí; tabla `refresh_tokens`, rotación y revocación de familia ante reutilización |
 | D-08 | ¿Asientos numerados? | ✅ | No: solo localidades con cupo |
@@ -31,7 +31,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-14 | Envío de correo | ✅ | MailHog en desarrollo |
 | D-15 | Política monetaria de compra | ✅ | Precios sin IVA; `Finanzas:TasaIva = 0.12`, `Finanzas:ComisionPorcentaje = 0.10` (valor inicial configurable, no dato legal). Comisión sobre subtotal, IVA sobre subtotal + comisión; decimal y redondeo AwayFromZero por componente a 2 decimales; montos congelados y reembolso solo total |
 
-Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OpenAI:ApiKey con user-secrets.
+Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en F11-01. F0-01 está cerrada con este aplazamiento explícito; F0-02 permanece pendiente de confirmación del usuario, quien gestiona OLLAMA_API_KEY en .env local ignorado o configuración externa.
 
 Acuerdo F6-11 aprobado por el usuario: V11 añade `pagos_simulados` (referencia UUID PK, monto NUMERIC(10,2), moneda VARCHAR(3), estado APROBADO/RECHAZADO y fecha TIMESTAMPTZ; todos obligatorios). Diario inmutable sin FK, commit independiente del proveedor simulado. No modifica el ledger ni añade endpoints. API/Worker usan la consulta durable; la recuperación nunca cobra y no devuelve cupo ante error de consulta o respaldo histórico inconsistente.
 
@@ -53,9 +53,9 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | Q4 | Backend REST en tecnología permitida (.NET) | F2-01, F2-05 | ✅ |
 | Q5 | GitHub: ramas, PRs, historial legible | F0-04, F2-07 | ✅ |
 | Q6 | RabbitMQ en un flujo de negocio real y recuperación de compras atascadas | F6-01 … F6-11 (incluye recuperación y prueba de carrera) | ✅ |
-| Q7 | Agente de IA con información pública | F9-06, F9-07 | ⬜ |
-| Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ⬜ |
-| Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ⬜ |
+| Q7 | Agente de IA con información pública | F9-06, F9-07 | ✅ |
+| Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ✅ |
+| Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ✅ |
 | Q10 | ≥ 15 reportes con filtros y totales, exportables a Excel y PDF | F10-01 … F10-05 | ⬜ |
 | Q11 | Integración con Power BI | F1-08, F10-06 | ⬜ |
 | Q12 | Frontend funcional e integrado | F11-* | ⬜ |
@@ -68,7 +68,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 
 ### Fase 0 — Decisiones y arranque
 - [x] **F0-01** Cerrar D-07, D-08, D-11 y D-14; aplazar explícitamente D-09 hasta F11-01.
-- [ ] **F0-02** Crear cuenta OpenAI y API key; guardarla fuera del repo (user-secrets).
+- [ ] **F0-02** Crear cuentas/claves Ollama Cloud y Gemini API Free Tier; guardarlas en `.env` local ignorado o configuración externa, sin facturación ni compra de créditos. Verificar acceso gratuito de la cuenta al modelo de chat. Pendiente de confirmación del usuario; sustituye la selección histórica de OpenAI según D-05.
 - [x] **F0-03** Crear repositorio GitHub, `.gitignore` (.NET + `.env`), licencia y README inicial.
 - [x] **F0-04** Configurar protección de `main`, rama `develop`, plantilla de PR y convención de commits.
 - [x] **F0-05** Commitear `AGENTS.md`, `CLAUDE.md`, `docs/BASE_DE_DATOS.md` y este plan.
@@ -245,22 +245,36 @@ Salida Fase 7 cerrada localmente en el alcance simulado: F7-01–F7-08 completas
 
 **Salida:** reseñas moderadas y calificación por artista/equipo visible.
 
-Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release aprobadas (34 casos nuevos), build sin warnings y formato limpio. Revisión del diff y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). CI remoto se verifica al publicar el PR. Detener antes de Fase 9 por indicación expresa del usuario; espera definir qué utilizará para IA.
+Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release aprobadas (34 casos nuevos), build sin warnings y formato limpio. Revisión del diff y AGENTS.md §§5/12 sin incumplimientos detectados; evidencia y límites en [VALIDACION_FASE_8.md](VALIDACION_FASE_8.md). CI remoto se verifica al publicar el PR. La pausa antes de Fase 9 queda resuelta por la elección de Ollama según D-05.
 
-### Fase 9 — Agente de IA y RAG (OpenAI)
-- [ ] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores OpenAI + pgvector.
-- [ ] **F9-02** Ingesta: `POST /ia/documentos` (PDF/DOCX/TXT/MD) con extracción de texto; CRUD y versionado de `documentos_rag`.
-- [ ] **F9-03** Chunking con solapamiento y guardado de página/orden.
-- [ ] **F9-04** Embeddings en lote → `chunks_rag`; estados `PENDIENTE → INDEXADO/ERROR`; reindexación.
-- [ ] **F9-05** Recuperación top-k con umbral y filtros; respuesta con **citas** (documento, página, chunk).
-- [ ] **F9-06** Agente público `POST /ia/consultas`: prompt del sistema, respuesta "no lo sé" sin contexto, solo datos públicos.
-- [ ] **F9-07** Consulta de datos estructurados públicos (eventos en venta, precios, recintos).
-- [ ] **F9-08** `logs_agente_ia`: consulta, respuesta, fuentes, tiempos, modelo, tokens, estado.
-- [ ] **F9-09** Defensas: rate limit, longitud máxima, tratamiento de contenido no confiable, pruebas de prompt injection.
-- [ ] **F9-10** Documentos de negocio para ingestar (reglamento, reembolsos, FAQ, guía de carreras).
-- [ ] **F9-11** Pruebas con LLM *fake* (deterministas) y una evaluación manual con preguntas de ejemplo.
+### Fase 9 — Agente de IA y RAG (Ollama)
+- [x] **F9-01** Puertos `ILlmPort`, `IEmbeddingPort`, `IVectorSearchPort` y adaptadores Ollama Cloud (chat), Gemini API Free Tier (embeddings) + pgvector. Conservar vector(1536), sin rellenar vectores artificialmente. Configuración `.env` local solo en desarrollo; límites de entrada/salida y pruebas HTTP simuladas, sin llamadas reales.
+  - Configuración local adicional autorizada el 13/10/2026: .env privado con credenciales existentes y claves entregadas por el usuario; Start-Local.ps1 carga la configuración completa para API/Worker y Compose admite RABBITMQ_USER. Prueba real acotada: Gemini 1536 dimensiones y una conversación Ollama (371 entrada/63 salida), sin citación RAG todavía. Docker/Flyway, autenticación RabbitMQ y salud/Swagger verificados; acceso del broker limitado a recursos de la aplicación. Los secretos nunca se versionan. En ese cierre seguían pendientes F9-02 y siguientes.
+  - D-05 actualizada en commit de documentación previo. Adaptadores C#/HttpClient, prompt fijo de José con datos delimitados, límites de tamaño/tiempo y rechazo de salida incompleta; claves separadas a hosts HTTPS fijos de Ollama/Google, sin redirecciones ni reintentos automáticos. Embeddings cloud en lotes de hasta 16, con una solicitud estándar por texto y búsqueda por coseno solo sobre INDEXADO. Activación opt-in, .env acotado a OLLAMA_API_KEY y GEMINI_API_KEY en Development, configuración externa tiene prioridad. Verificación cloud final: 484 pruebas Release aprobadas, 0 fallidas/omitidas (30 casos nuevos netos desde Fase 8); build sin warnings y format limpio. Microsoft.Extensions.Http 10.0.10, MIT, para gestión de conexiones; sin migraciones ni endpoints nuevos. Guía: [IA_OLLAMA.md](IA_OLLAMA.md). Alcance de ese cierre limitado a F9-01; no se declara completa la defensa contra prompt injection ni habilitado el chat público.
+- [x] **F9-02** Ingesta: `POST /ia/documentos` (PDF/DOCX/TXT/MD) con extracción de texto; CRUD y versionado de `documentos_rag`.
+  - Cinco operaciones administrativas: carga, listado paginado, detalle, nueva versión y desactivación. Texto en PostgreSQL, referencia lógica privada de serie en ruta_archivo; bloqueo por serie, estados condicionales y auditoría transaccional. Sin cambios de esquema ni llamadas cloud; documentos PENDIENTE hasta F9-04. PdfPig 0.1.16 (Apache-2.0) y DocumentFormat.OpenXml 3.5.1 (MIT), solo Infrastructure. Build sin warnings y format limpio; 507 casos verificados por ensamblados (357 en los otros cuatro + 150 de API), con 23 nuevos. El primer pase global detectó el inventario Swagger antiguo de 73; actualizado a 78 y repetido todo API en verde. Guía, contratos y límites: [IA_DOCUMENTOS.md](IA_DOCUMENTOS.md). En aquel cierre F9-02 seguían pendientes F9-03–F9-11; ver el cierre F9-11 para el estado vigente.
+- [x] **F9-03** Chunking con solapamiento y preparación de página/orden; su persistencia ocurre en F9-04 junto con el embedding obligatorio.
+  - Fragmentación Unicode, ~3200 unidades por fragmento (~800 tokens aproximados), solapamiento de un octavo (~100 tokens), máximo 5500 bytes UTF-8 y 2000 fragmentos. Sin tokenizer exacto del proveedor. PDF conserva página física, otros formatos página null. Tres pruebas focalizadas aprobadas; build Application sin warnings. No se insertan vectores ficticios.
+- [x] **F9-04** Embeddings en lote → `chunks_rag`; estados `PENDIENTE → INDEXADO/ERROR`; reindexación.
+  - Ruta aprobada POST /api/v1/ia/documentos/{id}/reindexar, ADMINISTRADOR habilitado. Indexación explícita para controlar consumo: máximo 32 fragmentos, lotes de 16. Bloqueo PostgreSQL entre instancias, cloud fuera de transacciones, publicación y auditoría atómicas. Nuevas versiones publicadas retiran las anteriores INDEXADO; error conserva un índice ya publicado. Modelo en metadata; control de versiones/estado al publicar. Prueba focalizada de PostgreSQL aprobada (bloqueo, rollback y reemplazo), build sin warnings.
+- [x] **F9-05** Recuperación top-k con umbral y filtros; respuesta con **citas** (documento, página, chunk).
+  - topK 3/umbral 0.65, contexto acotado y filtro del modelo en metadata. Citas devueltas con documento, página, chunk, ID y extracto público. Generación extractiva: el modelo selecciona citas literales y el servidor rechaza fuentes desconocidas o texto inventado; no publica prosa libre sin respaldo. Pruebas focalizadas de citas y pgvector aprobadas, compilación limpia.
+- [x] **F9-06** Agente público `POST /ia/consultas`: prompt del sistema, respuesta "no lo sé" sin contexto, solo datos públicos.
+  - API pública acotada (1000 caracteres, 8 KiB HTTP, 5 solicitudes/minuto/IP), sesión UUID para agrupar consultas sin recuperar historial privado. Citas extractivas verificadas y SIN_CONTEXTO sin llamada al LLM cuando faltan fuentes. IA deshabilitada 422; proveedor/cuota 422/429. Prueba focalizada de respuesta con/sin contexto aprobada; build limpio.
+- [x] **F9-07** Consulta de datos estructurados públicos (eventos en venta, precios, recintos).
+  - Puerto acotado de lectura sin usuarios/compras/finanzas. Hasta cinco eventos EN_VENTA futuros con ventana de venta vigente y recinto/categoría activos; precios de entradas/localidades activas, sin prometer cupo. Fuente enlazada al detalle público de catálogo. Prueba focalizada de visibilidad aprobada y build limpio.
+- [x] **F9-08** `logs_agente_ia`: consulta, respuesta, fuentes, tiempos, modelo, tokens, estado.
+  - Decorador registra consultas procesadas, errores y cancelación (mejor esfuerzo de 3 segundos); fuentes camelCase, duración monotónica/fecha UTC. Sin identidad ni consulta a usuarios en este endpoint público. Credenciales aparentes y consultas rechazadas se omiten; respuestas solo se entregan tras guardar su log. Rechazos HTTP previos al caso de uso (validación/rate limit) quedan en logs HTTP sin cuerpo. Prueba focalizada de persistencia/citas e inmutabilidad aprobada.
+- [x] **F9-09** Defensas: rate limit, longitud máxima, tratamiento de contenido no confiable, pruebas de prompt injection.
+  - Rechazo previo a proveedores de consultas privadas/ajenas, inyecciones y credenciales aparentes. Documentos inseguros no se envían a embeddings; contexto y citas se filtran. Rate limit configurable 1–60/minuto/IP (default 5), concurrencia máxima 2 por proceso, límites HTTP/texto. Sin herramientas ni historial privado. Siete casos focalizados aprobados; defensa por capas, no garantía de clasificación perfecta. CORS admite PATCH para moderación desde frontend.
+- [x] **F9-10** Documentos de negocio para ingestar (reglamento, reembolsos, FAQ, guía de carreras).
+  - Cuatro documentos públicos en docs/rag y guía de carga explícita. Describen reglas implementadas y distinguen simulación de pagos; no inventan condiciones comerciales, horarios ni requisitos de carreras. Sin datos personales, credenciales o ingesta automática. Revisión documental contra reglas de negocio; no aplica nueva ejecución de pruebas.
+- [x] **F9-11** Pruebas con LLM *fake* (deterministas) y una evaluación manual con preguntas de ejemplo.
+  - Dos pruebas integrales API/BD con proveedores fake aprobadas; una suite completa final de 524 casos, 0 fallos/omitidos (2m46s), build sin warnings y formato limpio. Evaluación real acotada: dos embeddings (1536 dimensiones, coseno 0.8122) y una respuesta con cita literal válida (514 entrada/100 salida), sin reintentos. No se cambiaron credenciales del administrador local; requiere cambio inicial e ingesta explícita. Evidencia, revisión de criterios/AGENTS y límites en [VALIDACION_FASE_9.md](VALIDACION_FASE_9.md); guía vigente [IA_RAG.md](IA_RAG.md).
 
 **Salida:** el agente responde con fuentes citadas, se niega a lo que no sabe y deja trazas.
+
+Fase 9 cerrada localmente. A petición del usuario, se detiene implementación antes de reportes/Power BI; Fase 10 y D-09/Fase 11 siguen pendientes. El análisis de endpoints, vistas y flujos web solicitado se entrega en [ANALISIS_FRONTEND.md](ANALISIS_FRONTEND.md), con inventario de 80 operaciones reales en [ENDPOINTS.md](ENDPOINTS.md); no marca tareas de frontend como implementadas. CI remoto se verifica al publicar el PR.
 
 ### Fase 10 — Reportería y BI
 - [ ] **F10-01** Infraestructura de reportes: contrato común (filtros, agrupación, totales, paginación) y `GET /reportes/{codigo}`.
@@ -347,7 +361,7 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 |---|---|
 | Sobreventa por concurrencia | `UPDATE` atómico + prueba de concurrencia en CI (F5-09) |
 | Mensajes duplicados o perdidos | Outbox + `mensajes_procesados` + ACK manual + DLQ |
-| Costo/latencia de OpenAI | Embeddings en lote, `top-k` acotado, límites de tokens y rate limit; LLM *fake* en pruebas |
+| Cuotas/latencia de Ollama Cloud y Gemini API | Proyectos gratuitos sin facturación, límites de contexto/salida, lotes y rate limit; HTTP/LLM fake en pruebas sin consumo real. Sin modelos locales, Batch API diferida, reintentos automáticos ni fallback pagado. El backend no puede comprobar el nivel de facturación de la clave; 429 controlado y cuota verificable en el panel del proveedor |
 | Cambio de modelo de embeddings | La dimensión del vector queda fijada; reindexar si cambia |
 | Alcance excesivo | Asientos numerados fuera del alcance (D-08); frontend mínimo viable primero |
 | Pasarela real no disponible | Adaptador simulado detrás de puerto (D-10) |

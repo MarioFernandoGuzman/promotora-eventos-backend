@@ -621,7 +621,7 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 `calificacion` 1–5, `comentario`, `estado` ∈ `PENDIENTE`, `APROBADA`, `RECHAZADA`. UNIQUE (`evento_id`, `cliente_id`).
 Reglas de aplicación: solo clientes con boleto `USADO` del evento; moderación por ADMINISTRADOR; el promedio por presentador sale de `resenas APROBADA → evento_presentadores`.
 
-Contrato Fase 8 aprobado: comentario opcional máximo 510 caracteres, calificación 1–5. Crear nace PENDIENTE; autor puede editar para volver a PENDIENTE y retirar usando RECHAZADA sin DELETE, incluso editar rechazada/retirada para revisión. Moderador solo ADMINISTRADOR, desde PENDIENTE. Listados paginados y agregados públicos solo sobre APROBADA. Rutas y prueba local en [RESENAS.md](RESENAS.md). No se añade estado RETIRADA ni columnas. Detener Fase 9 hasta la indicación del usuario sobre IA.
+Contrato Fase 8 aprobado: comentario opcional máximo 510 caracteres, calificación 1–5. Crear nace PENDIENTE; autor puede editar para volver a PENDIENTE y retirar usando RECHAZADA sin DELETE, incluso editar rechazada/retirada para revisión. Moderador solo ADMINISTRADOR, desde PENDIENTE. Listados paginados y agregados públicos solo sobre APROBADA. Rutas y prueba local en [RESENAS.md](RESENAS.md). No se añade estado RETIRADA ni columnas. Elección de IA resuelta en D-05: Ollama Cloud para chat y Gemini API en nivel gratuito para embeddings, sin descargas.
 
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
@@ -655,6 +655,10 @@ Documentos del negocio ingestados (reglamentos, políticas de reembolso, FAQ, gu
 Columnas: `titulo`, `tipo_documento`, `contenido` (texto extraído), `ruta_archivo`, `version`, `fecha_carga` (TIMESTAMPTZ), `estado` ➕* ∈ `PENDIENTE`, `INDEXADO`, `ERROR`, `INACTIVO`, `subido_por` ➕* (FK `usuarios`).
 Solo los `INDEXADO` participan en la recuperación.
 
+Fase 9: indexación explícita en POST /api/v1/ia/documentos/{id}/reindexar. Los chunks conservan modelo en metadata.modelo, orden y página; el chat filtra por modelo vigente. ERROR puede reintentarse hacia INDEXADO; reindexar INDEXADO sustituye sus chunks en una única transacción manteniendo INDEXADO, y un fallo conserva el índice anterior. La publicación de una nueva versión retira las anteriores INDEXADO de su referencia lógica. No se altera el esquema; ver [IA_RAG.md](IA_RAG.md).
+
+Convención F9-02: el texto se conserva en `contenido`, sin almacenar el binario original. `tipo_documento` identifica el formato extraído (PDF/DOCX/TXT/MD); `ruta_archivo` es una referencia lógica privada `db:documentos-rag/<UUID>` compartida por las versiones de una serie, no una ruta recibida del cliente ni un archivo público. Una nueva versión crea otra fila PENDIENTE bajo bloqueo de la primera fila de la serie, sin sobrescribir texto o estado previos. La desactivación administrativa condicional permite PENDIENTE/INDEXADO/ERROR → INACTIVO. Detalles y límites: [IA_DOCUMENTOS.md](IA_DOCUMENTOS.md).
+
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
 | `id` | `integer` | NOT NULL | `GENERATED ALWAYS AS IDENTITY` | `PK (documentos_rag_pkey)` |
@@ -674,7 +678,7 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 - `documentos_rag_pkey`: `PRIMARY KEY (id)`.
 
 #### `chunks_rag` ➕
-Fragmentos de cada documento con su vector. embedding tiene dimensión 1536, correspondiente a text-embedding-3-small; cambiar el modelo obliga a reindexar. orden y pagina permiten citar el fragmento; metadata puede incluir sección e idioma.
+Fragmentos de cada documento con su vector. embedding conserva dimensión 1536; D-05 selecciona gemini-embedding-2 cloud con outputDimensionality=1536. El modelo histórico era text-embedding-3-small; cambiar modelo obliga a reindexar aunque conserve dimensión, nunca mezclar vectores de modelos distintos. orden y pagina permiten citar el fragmento; metadata puede incluir sección e idioma.
 
 Índice: `USING hnsw (embedding vector_cosine_ops)`.
 
@@ -843,7 +847,7 @@ pagos:     PENDIENTE → APROBADO → REEMBOLSADO
                   └──► RECHAZADO
 
 resenas:   PENDIENTE → APROBADA | RECHAZADA
-documentos_rag: PENDIENTE → INDEXADO | ERROR      INDEXADO → INACTIVO
+documentos_rag: PENDIENTE → INDEXADO | ERROR      PENDIENTE/INDEXADO/ERROR → INACTIVO
 ```
 Toda transición de estado usa UPDATE condicional con el estado esperado. Solo quien gana (1 fila afectada) devuelve el cupo, en la misma transacción. Al pasar a FALLIDA, EXPIRADA o CANCELADA se devuelve una sola vez. La expiración y la cancelación por el usuario solo proceden desde PENDIENTE; cancelar en PROCESANDO responde 409. En reembolsos se devuelve únicamente el cupo de boletos que pasaron de VALIDO a ANULADO.
 
