@@ -6,6 +6,7 @@ using Promotora.Application.Identity.Ports;
 using Promotora.Application.Shared.Handlers;
 using Promotora.Application.Shared.Ports;
 using Promotora.Domain.Shared;
+using Promotora.Application.AI.Consultas;
 
 namespace Promotora.Application.AI.Documentos;
 
@@ -40,6 +41,8 @@ public sealed class IndexarDocumentoHandler(IIndexacionRepository repositorio, I
         if (preparado.IsFailure) return Result<DocumentoDto>.Failure(preparado.Errors);
         await using var bloqueo = await repositorio.IntentarBloquearAsync(request.Id, ct);
         if (bloqueo is null) return Result<DocumentoDto>.Failure(DocumentoLimites.Conflicto);
+        if (!SeguridadAgente.ContenidoSeguro(preparado.Value.Contenido))
+            return await ErrorAsync(new Error("ia.documento_inseguro", "El documento contiene instrucciones o credenciales aparentes; revisa su contenido público.", ErrorType.Validation), ct);
         IReadOnlyList<FragmentoDocumento> fragmentos;
         try { fragmentos = chunker.Dividir(preparado.Value.Contenido, preparado.Value.Documento.TipoDocumento, ct); }
         catch (ArgumentException) { return await ErrorAsync(DocumentoLimites.Invalido, ct); }

@@ -19,7 +19,8 @@ public static class IdentityHttpProtection
             int loginLimit = configuration.GetValue("RateLimiting:LoginPermitLimit", 5);
             int registroLimit = configuration.GetValue("RateLimiting:RegistroPermitLimit", 10);
             int compraLimit = configuration.GetValue("RateLimiting:CompraPermitLimit", 20);
-            if (loginLimit is < 1 or > 1000 || registroLimit is < 1 or > 1000 || compraLimit is < 1 or > 1000)
+            int iaLimit = configuration.GetValue("RateLimiting:IaPermitLimit", 5);
+            if (loginLimit is < 1 or > 1000 || registroLimit is < 1 or > 1000 || compraLimit is < 1 or > 1000 || iaLimit is < 1 or > 60)
             {
                 throw new InvalidOperationException("Los límites HTTP deben estar entre 1 y 1000.");
             }
@@ -28,7 +29,7 @@ public static class IdentityHttpProtection
             options.AddPolicy(Login, context => Partition(context, loginLimit));
             options.AddPolicy(Registro, context => Partition(context, registroLimit));
             options.AddPolicy(Compra, context => Partition(context, compraLimit));
-            options.AddPolicy(AgenteIa, context => Partition(context, 5));
+            options.AddPolicy(AgenteIa, context => Partition(context, iaLimit));
             options.OnRejected = async (context, ct) =>
             {
                 double seconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retry) ? Math.Ceiling(retry.TotalSeconds) : 60;
@@ -56,7 +57,7 @@ public static class IdentityHttpProtection
             }
 
             options.AddPolicy(Cors, policy => policy.WithOrigins(origins)
-                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS").AllowAnyHeader().SetPreflightMaxAge(TimeSpan.FromMinutes(10)));
+                .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS").AllowAnyHeader().SetPreflightMaxAge(TimeSpan.FromMinutes(10)));
         });
         return services;
     }

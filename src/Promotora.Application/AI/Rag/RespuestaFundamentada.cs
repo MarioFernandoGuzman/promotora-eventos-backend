@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Promotora.Application.AI.Ports;
 using Promotora.Domain.Shared;
+using Promotora.Application.AI.Consultas;
 
 namespace Promotora.Application.AI.Rag;
 
@@ -24,6 +25,7 @@ public sealed class RespuestaFundamentada
         var seleccion = new List<FuenteContexto>();
         foreach (var fuente in fuentes.DistinctBy(f => f.Id))
         {
+            if (!SeguridadAgente.ContenidoSeguro(fuente.Contenido) || !SeguridadAgente.ContenidoSeguro(fuente.Documento)) continue;
             var candidata = fuente with { Documento = fuente.Documento[..Math.Min(200, fuente.Documento.Length)] };
             if (JsonSerializer.Serialize(seleccion.Append(candidata)).Length > PoliticaAsistente.MaxContextoCaracteres) continue;
             seleccion.Add(candidata);
@@ -46,7 +48,7 @@ public sealed class RespuestaFundamentada
                 string? id = item.GetProperty("fuente").GetString(), texto = item.GetProperty("texto").GetString();
                 var fuente = contexto.Fuentes.SingleOrDefault(f => f.Id == id);
                 if (fuente is null || string.IsNullOrWhiteSpace(texto) || texto.Length is < 8 or > 900
-                    || !fuente.Contenido.Contains(texto, StringComparison.Ordinal) || ContenidoPeligroso(texto)) return Fallo();
+                    || !fuente.Contenido.Contains(texto, StringComparison.Ordinal) || !SeguridadAgente.ContenidoSeguro(texto) || ContenidoPeligroso(texto)) return Fallo();
                 citas.Add(new(fuente.Id, fuente.Documento, fuente.Pagina, fuente.ChunkId, fuente.DocumentoId, fuente.Url, texto));
             }
             string saludo = presentarse ? "Hola, soy José, asistente de información pública de la promotora.\n\n" : "";

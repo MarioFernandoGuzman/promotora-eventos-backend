@@ -265,7 +265,8 @@ Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release a
   - Puerto acotado de lectura sin usuarios/compras/finanzas. Hasta cinco eventos EN_VENTA futuros con ventana de venta vigente y recinto/categoría activos; precios de entradas/localidades activas, sin prometer cupo. Fuente enlazada al detalle público de catálogo. Prueba focalizada de visibilidad aprobada y build limpio.
 - [x] **F9-08** `logs_agente_ia`: consulta, respuesta, fuentes, tiempos, modelo, tokens, estado.
   - Decorador registra consultas procesadas, errores y cancelación (mejor esfuerzo de 3 segundos); fuentes camelCase, duración monotónica/fecha UTC. Sin identidad ni consulta a usuarios en este endpoint público. Credenciales aparentes y consultas rechazadas se omiten; respuestas solo se entregan tras guardar su log. Rechazos HTTP previos al caso de uso (validación/rate limit) quedan en logs HTTP sin cuerpo. Prueba focalizada de persistencia/citas e inmutabilidad aprobada.
-- [ ] **F9-09** Defensas: rate limit, longitud máxima, tratamiento de contenido no confiable, pruebas de prompt injection.
+- [x] **F9-09** Defensas: rate limit, longitud máxima, tratamiento de contenido no confiable, pruebas de prompt injection.
+  - Rechazo previo a proveedores de consultas privadas/ajenas, inyecciones y credenciales aparentes. Documentos inseguros no se envían a embeddings; contexto y citas se filtran. Rate limit configurable 1–60/minuto/IP (default 5), concurrencia máxima 2 por proceso, límites HTTP/texto. Sin herramientas ni historial privado. Siete casos focalizados aprobados; defensa por capas, no garantía de clasificación perfecta. CORS admite PATCH para moderación desde frontend.
 - [ ] **F9-10** Documentos de negocio para ingestar (reglamento, reembolsos, FAQ, guía de carreras).
 - [ ] **F9-11** Pruebas con LLM *fake* (deterministas) y una evaluación manual con preguntas de ejemplo.
 

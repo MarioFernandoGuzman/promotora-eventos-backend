@@ -16,7 +16,7 @@ public interface IConsultaIaLogPort
 public static class ConsultaPrivacidad
 {
     public static bool ContieneCredenciales(string texto) => Regex.IsMatch(texto,
-        @"(?i)(contrase[nñ]a|password|api[_\s-]?key|bearer|jwt|refresh.?token|clave\s*[:=]|\b[a-z0-9_./+=-]{24,}\b)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+        @"(?i)(contrase[nñ]a|password|api[_\s-]?key|bearer|jwt|refresh.?token|clave\s*[:=]|\b(?=[a-z0-9_+=/-]{32,}\b)(?=[a-z0-9_+=/-]*[a-z])(?=[a-z0-9_+=/-]*[0-9])[a-z0-9_+=/-]{32,}\b)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     public static string Redactar(string texto) => ContieneCredenciales(texto) ? "[Contenido omitido por seguridad]" : texto;
 }
 // Decorador del mismo caso de uso, no invoca casos de uso de otros módulos.

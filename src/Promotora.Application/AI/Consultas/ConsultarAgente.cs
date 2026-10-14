@@ -25,9 +25,18 @@ public sealed class ConsultarAgenteValidator : AbstractValidator<ConsultarAgente
 public sealed class ConsultarAgenteHandler(RecuperarContexto recuperar, RespuestaFundamentada fundamento, ILlmPort llm,
     IEnumerable<IInformacionPublicaPort> datosPublicos) : ICommandHandler<ConsultarAgenteCommand, ConsultaIaDto>
 {
+    private static readonly SemaphoreSlim Capacidad = new(2, 2);
     public async Task<Result<ConsultaIaDto>> HandleAsync(ConsultarAgenteCommand request, CancellationToken ct)
     {
+        if (!await Capacidad.WaitAsync(0, ct)) return Result<ConsultaIaDto>.Failure(new Error("ia.ocupada", "El agente está ocupado; vuelve a intentarlo más tarde.", ErrorType.RateLimit));
+        try { return await ResponderAsync(request, ct); }
+        finally { Capacidad.Release(); }
+    }
+    private async Task<Result<ConsultaIaDto>> ResponderAsync(ConsultarAgenteCommand request, CancellationToken ct)
+    {
         Guid session = request.SessionId ?? Guid.NewGuid();
+        if (SeguridadAgente.Rechazo(request.Pregunta) is string rechazo)
+            return Result<ConsultaIaDto>.Success(new(session, "Hola, soy José. " + rechazo, [], "RECHAZADA"));
         var recuperado = await recuperar.BuscarAsync(request.Pregunta, ct);
         if (recuperado.IsFailure) return Result<ConsultaIaDto>.Failure(recuperado.Errors);
         var fuentes = recuperado.Value.ToList();
