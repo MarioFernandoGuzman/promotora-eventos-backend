@@ -7,7 +7,7 @@ using Promotora.Infrastructure.Shared.Persistence;
 
 namespace Promotora.Infrastructure.AI.Persistence;
 
-public sealed class EfVectorSearchAdapter(PromotoraDbContext db) : IVectorSearchPort
+public sealed class EfVectorSearchAdapter(PromotoraDbContext db, string? modelo = null) : IVectorSearchPort
 {
     public async Task<IReadOnlyList<FragmentoRecuperado>> BuscarAsync(float[] embedding, int limite, double similitudMinima, CancellationToken ct)
     {
@@ -19,6 +19,7 @@ public sealed class EfVectorSearchAdapter(PromotoraDbContext db) : IVectorSearch
         var filas = await (from chunk in db.ChunksRag.AsNoTracking()
                            join documento in db.DocumentosRag.AsNoTracking() on chunk.DocumentoId equals documento.Id
                            where documento.Estado == "INDEXADO"
+                           where modelo == null || (chunk.Metadata != null && chunk.Metadata.RootElement.GetProperty("modelo").GetString() == modelo)
                            let distancia = chunk.Embedding.CosineDistance(vector)
                            where distancia <= 1 - similitudMinima
                            orderby distancia, chunk.Id
