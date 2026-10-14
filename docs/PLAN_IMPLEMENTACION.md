@@ -267,7 +267,8 @@ Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release a
   - Decorador registra consultas procesadas, errores y cancelación (mejor esfuerzo de 3 segundos); fuentes camelCase, duración monotónica/fecha UTC. Sin identidad ni consulta a usuarios en este endpoint público. Credenciales aparentes y consultas rechazadas se omiten; respuestas solo se entregan tras guardar su log. Rechazos HTTP previos al caso de uso (validación/rate limit) quedan en logs HTTP sin cuerpo. Prueba focalizada de persistencia/citas e inmutabilidad aprobada.
 - [x] **F9-09** Defensas: rate limit, longitud máxima, tratamiento de contenido no confiable, pruebas de prompt injection.
   - Rechazo previo a proveedores de consultas privadas/ajenas, inyecciones y credenciales aparentes. Documentos inseguros no se envían a embeddings; contexto y citas se filtran. Rate limit configurable 1–60/minuto/IP (default 5), concurrencia máxima 2 por proceso, límites HTTP/texto. Sin herramientas ni historial privado. Siete casos focalizados aprobados; defensa por capas, no garantía de clasificación perfecta. CORS admite PATCH para moderación desde frontend.
-- [ ] **F9-10** Documentos de negocio para ingestar (reglamento, reembolsos, FAQ, guía de carreras).
+- [x] **F9-10** Documentos de negocio para ingestar (reglamento, reembolsos, FAQ, guía de carreras).
+  - Cuatro documentos públicos en docs/rag y guía de carga explícita. Describen reglas implementadas y distinguen simulación de pagos; no inventan condiciones comerciales, horarios ni requisitos de carreras. Sin datos personales, credenciales o ingesta automática. Revisión documental contra reglas de negocio; no aplica nueva ejecución de pruebas.
 - [ ] **F9-11** Pruebas con LLM *fake* (deterministas) y una evaluación manual con preguntas de ejemplo.
 
 **Salida:** el agente responde con fuentes citadas, se niega a lo que no sabe y deja trazas.
