@@ -1,119 +1,125 @@
-# IA con Ollama — configuración y alcance
+# IA cloud — Ollama + Gemini, sin instalar modelos
 
-## Estado por tarea
+## Estado y arquitectura
 
-F9-01 implementa puertos, chat Ollama Cloud, embeddings Ollama local y recuperación pgvector sobre el esquema existente. No agrega endpoints todavía. La ingesta se incorpora desde F9-02 y el chat público con citas desde F9-05/F9-06; no se puede probar una conversación en Swagger hasta completar esas tareas. Activar la configuración por sí sola no consume tokens ni descarga modelos.
+F9-01 implementa ILlmPort (Ollama Cloud gpt-oss:120b), IEmbeddingPort (Gemini API gemini-embedding-2) e IVectorSearchPort (PostgreSQL/pgvector). Backend C#/.NET y HttpClient en Infrastructure; Application solo conoce puertos y DTOs. No hay modelo, SDK Python ni servidor Ollama local que instalar.
 
-Backend exclusivamente C#/.NET. Application define ILlmPort, IEmbeddingPort e IVectorSearchPort; Infrastructure usa HttpClient y EF/pgvector. WebApi registra los adaptadores cuando IA:Habilitada=true. Worker no necesita la clave en este bloque. No se ejecuta Python ni se agrega SDK Python.
+El esquema conserva vector(1536), sin migraciones. El modelo de embeddings debe ser el mismo para indexar y consultar: cambiarlo requiere reindexar aunque conserve la dimensión. No se mezclan vectores de diferentes proveedores. El adaptador pide 1536 dimensiones y rechaza dimensión distinta, vectores cero y componentes no finitos.
 
-## 1. Preparar los embeddings locales
+F9-01 no agrega endpoints: ingesta en F9-02–F9-04, respuestas con citas en F9-05/F9-06, datos públicos en F9-07, logs en F9-08 y defensas/evaluación en F9-09–F9-11. La prueba manual de credenciales no declara completo el RAG ni habilita todavía chat en Swagger.
 
-Instala [Ollama para Windows](https://ollama.com/download/windows) y abre la aplicación. Si acabas de instalarlo, abre una nueva ventana de PowerShell para disponer de su comando. El servidor local debe estar disponible en http://localhost:11434.
+## 1. Crear las dos claves con cuota gratuita
 
-Descarga el modelo de embeddings (aproximadamente 2,5 GB; requiere RAM y procesamiento locales):
+- Chat: [Ollama API keys](https://ollama.com/settings/keys). Usa el plan gratuito de tu cuenta y revisa su cuota en el panel; no contrates un plan de pago para esta prueba.
+- Embeddings: [Google AI Studio — API keys](https://aistudio.google.com/api-keys). Crea un proyecto/clave del **Free Tier**, sin vincular una cuenta de facturación ni activar el nivel de pago. Comprueba que el modelo gemini-embedding-2 tiene cuota disponible en ese proyecto. Si tu cuenta/región no dispone de cuota, avisa; no habilites facturación como solución.
 
-```powershell
-ollama pull qwen3-embedding:4b
-```
+Google lista el endpoint estándar de Gemini Embedding 2 como gratuito dentro del Free Tier. La cuota es limitada y puede variar por proyecto; consulta [precios](https://ai.google.dev/gemini-api/docs/pricing) y [límites](https://ai.google.dev/gemini-api/docs/rate-limits). No es uso ilimitado. Google indica que los datos del nivel gratuito pueden usarse para mejorar sus productos: enviar únicamente documentos públicos de la promotora, nunca usuarios, compras o finanzas.
 
-Comprueba que aparece instalado:
+El backend no puede verificar si una clave pertenece a un proyecto gratuito o con facturación. Debes mantener ambos servicios en sus niveles gratuitos. No existen reintentos automáticos, escalamiento de plan, fallback a modelos pagados ni llamadas al arrancar. Un 429 produce un error controlado.
 
-```powershell
-ollama list
-```
+La [tarifa actual de Ollama](https://ollama.com/pricing) describe créditos iniciales para un conjunto de modelos starter; no garantiza que gpt-oss:120b esté incluido en todas las cuentas gratuitas. Antes de probar chat verifica su acceso con créditos incluidos. Si exige comprar créditos, detén esa prueba y avisa para acordar un modelo de chat con Free Tier, sin cambiar el RAG ni activar pagos. La prueba de embeddings de esta guía no llama a Ollama.
 
-No descargues gpt-oss:120b para este proyecto: las respuestas se generan en Ollama Cloud. Solo los embeddings se ejecutan en tu equipo. El adaptador solicita 1536 dimensiones y rechaza respuestas de dimensión distinta, valores no finitos o vectores cero; nunca rellena vectores artificialmente. Modelo y dimensión deben ser los mismos para indexar y consultar. Si cambias modelo, debes reindexar aunque la dimensión sea igual.
+## 2. Guardar ambas claves en .env
 
-## 2. Guardar la clave local
-
-Crea una clave en [Ollama — API keys](https://ollama.com/settings/keys). No la compartas en el chat ni la incluyas en frontend, capturas o commits.
-
-Entra al repositorio:
+Entra al proyecto:
 
 ```powershell
 cd C:\Users\mario\OneDrive\Desktop\backendcomercial
 ```
 
-Abre el `.env` de la raíz (si ya contiene contraseñas de Docker, conserva esas líneas):
+Abre el archivo existente, conservando las contraseñas de Docker:
 
 ```powershell
 notepad .env
 ```
 
-Añade esta línea reemplazando el marcador por tu clave real y guarda el archivo como `.env`, sin extensión `.txt`:
+Agrega estas dos líneas reemplazando los marcadores solo en tu equipo. Guarda como .env, no .env.txt. No compartas las claves en chat, capturas ni frontend.
 
 ```dotenv
-OLLAMA_API_KEY=REEMPLAZAR_SOLO_EN_TU_EQUIPO
+OLLAMA_API_KEY=REEMPLAZAR_CON_TU_CLAVE_OLLAMA
+GEMINI_API_KEY=REEMPLAZAR_CON_TU_CLAVE_GEMINI
 ```
 
-Comprueba que Git lo ignora, sin mostrar su contenido:
+Verifica que Git lo ignora sin mostrar su contenido:
 
 ```powershell
 git check-ignore .env
 ```
 
-Debe responder `.env`. El agente no crea, lee mediante herramientas ni escribe tu clave real. La API carga únicamente OLLAMA_API_KEY del archivo, solo en Development y con IA habilitada. No expande variables, no ejecuta contenido y rechaza clave vacía/duplicada. Otras líneas se ignoran; esto no es un cargador dotenv general para toda la configuración .NET.
+Debe responder .env. La API solo lee los nombres permitidos OLLAMA_API_KEY y GEMINI_API_KEY; no expande variables ni ejecuta contenido. Rechaza claves vacías o duplicadas. El agente nunca crea ni inspecciona tu .env real mediante herramientas.
 
-Prioridad de la clave: configuración externa Ollama:ApiKey (incluye user-secrets o Ollama__ApiKey), luego OLLAMA_API_KEY del proceso y finalmente `.env` de la raíz del repositorio. El `.env` no se carga en producción; usa variables de entorno allí. La ejecución estándar mantiene src/Promotora.WebApi como content root; el archivo se busca dos niveles arriba, sin búsqueda por directorios arbitrarios.
+En Development, la configuración externa Ollama:ApiKey/Gemini:ApiKey tiene prioridad sobre OLLAMA_API_KEY/GEMINI_API_KEY del proceso y luego sobre .env de la raíz. Configuración externa incluye user-secrets o variables Ollama__ApiKey/Gemini__ApiKey. En producción no se carga .env: se usan variables externas. Las demás líneas del archivo no configuran automáticamente toda la aplicación .NET.
 
-## 3. Habilitar y arrancar
+## 3. Prueba mínima de embeddings (opcional y real)
 
-Configura la activación (sin guardar secretos en archivos versionados):
+Primero comprueba que la clave está en un proyecto Free Tier sin facturación. Ejecuta:
 
 ```powershell
-dotnet user-secrets set "IA:Habilitada" "true" --project src/Promotora.WebApi
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-EmbeddingsCloud.ps1
 ```
 
-Configura el modelo de chat:
+El script se verifica con HTTP simulado en Windows PowerShell 5.1 y PowerShell 7. El parámetro ExecutionPolicy se aplica únicamente a esa ejecución del script local revisado; no cambia la política persistente del equipo. Lee GEMINI_API_KEY sin imprimirla, envía un texto público de ejemplo con **una sola solicitud** a embedContent y comprueba 1536 valores válidos. No ejecuta chat, no publica documentos ni escribe BD. No se ejecuta en CI y sí consume una pequeña parte de la cuota de tu cuenta. No se debe repetir en bucle. Salida esperada:
 
-```powershell
-dotnet user-secrets set "Ollama:ChatModel" "gpt-oss:120b" --project src/Promotora.WebApi
+```text
+Gemini OK: 1536 dimensiones válidas. Se realizó una solicitud; no se probaron chat ni RAG completo.
 ```
 
-Configura el modelo de embeddings:
+Si falla, verifica modelo/clave/región/cuota en AI Studio. La salida no muestra cuerpo del proveedor ni credenciales. No uses Batch API de procesamiento diferido: no tiene Free Tier. El backend procesa lotes de hasta 16 textos mediante solicitudes estándar secuenciales, una por texto, con orden estable; no agrega varios textos en un mismo Content para evitar un único vector agregado.
+
+## 4. Habilitar y arrancar la API
 
 ```powershell
-dotnet user-secrets set "Ollama:EmbeddingModel" "qwen3-embedding:4b" --project src/Promotora.WebApi
-```
-
-Configura su dirección local:
-
-```powershell
-dotnet user-secrets set "Ollama:EmbeddingUrl" "http://localhost:11434/" --project src/Promotora.WebApi
-```
-
-Mantén la conexión PostgreSQL, JWT, bootstrap y claves de boletos configurados en las fases anteriores. Arranca la API:
-
-```powershell
-dotnet run --project src/Promotora.WebApi
-```
-
-Usa la URL de Swagger que corresponda a tu perfil de lanzamiento. F9-01 permite validar configuración/arranque; aún no expone chat ni ingesta. El arranque no llama a Ollama para comprobar la clave: una clave incorrecta solo se descubre al realizar una solicitud real más adelante.
-
-## 4. Consumo y reglas de José
-
-La cuota de Ollama Cloud depende de tu cuenta; no se promete uso gratuito ilimitado. Consulta [uso y planes](https://docs.ollama.com/cloud). En este bloque las pruebas automáticas hacen **cero llamadas reales**: usan un HttpMessageHandler simulado y PostgreSQL temporal para pgvector. No requieren clave real ni el modelo instalado.
-
-Configuración inicial: pregunta hasta 1000 caracteres, contexto público hasta 6000, salida solicitada hasta 512 tokens (Ollama:MaxTokensSalida, rango 64–1024), think=low para gpt-oss, timeout total de 60 segundos (Ollama:TimeoutSegundos, rango 5–120), sin historial creciente y sin reintentos automáticos. Los caracteres limitan tamaño de entrada, no constituyen un contador exacto de tokens. El razonamiento del modelo también puede consumir presupuesto; no se muestra al usuario. Una respuesta truncada no se acepta como respuesta completa. Un 429 devuelve un error controlado sin insistir y consumir más cuota.
-
-José se presenta brevemente cuando el caso de uso lo solicite, responde con respeto en español y solo sobre información pública de la organización, eventos, precios, recintos y políticas documentadas. La pregunta y los documentos se envían como datos separados del system prompt fijo. No dispone de herramientas de escritura ni acceso a compras, usuarios o finanzas. Ante preguntas fuera de alcance explica su función; sin contexto suficiente reconoce que no sabe. El prompt es una defensa parcial: la recuperación, validación de citas, controles HTTP y pruebas de inyección se completan en F9-05–F9-09.
-
-No se guardan cabeceras, claves ni cuerpos del proveedor en logs de infraestructura. Se bloquean redirecciones HTTP para no reenviar credenciales. La clave cloud solo se adjunta a https://ollama.com/api/chat; el cliente local de embeddings no recibe Authorization. Las consultas/respuestas del agente se registrarán en la tabla prevista al implementar F9-08.
-
-## Pruebas y dependencia
-
-Evidencia F9-01: 473 pruebas Release aprobadas, 0 fallidas y 0 omitidas; 19 casos nuevos. Build sin warnings y formato limpio. Se prueban cabeceras/destinos, delimitación y límites del request, errores sin filtrar cuerpos ni repetir llamadas, respuestas truncadas, cancelación, lote/dimensión de embeddings, configuración .env y búsqueda real por coseno con filtros/umbral/limitación/citas. No se verificó una respuesta real de Ollama ni la capacidad del hardware local: las pruebas no consumen cuota y no requieren instalación del modelo.
-
-```powershell
-dotnet build -c Release -warnaserror
+ dotnet user-secrets set "IA:Habilitada" "true" --project src/Promotora.WebApi
 ```
 
 ```powershell
-dotnet test --no-build -c Release --report-trx
+ dotnet user-secrets set "Ollama:ChatModel" "gpt-oss:120b" --project src/Promotora.WebApi
+```
+
+Conserva conexión PostgreSQL, JWT, bootstrap y claves de boletos de las fases anteriores. Ollama:EmbeddingUrl y Ollama:EmbeddingModel ya no se usan; puedes eliminar esas configuraciones antiguas si las añadiste:
+
+```powershell
+ dotnet user-secrets remove "Ollama:EmbeddingUrl" --project src/Promotora.WebApi
 ```
 
 ```powershell
-dotnet format --verify-no-changes --no-restore
+ dotnet user-secrets remove "Ollama:EmbeddingModel" --project src/Promotora.WebApi
 ```
 
-Microsoft.Extensions.Http 10.0.10 proporciona IHttpClientFactory y administración de conexiones; licencia MIT, [paquete oficial](https://www.nuget.org/packages/Microsoft.Extensions.Http/10.0.10). No se agrega un SDK de Ollama ni se cambian migraciones. Documentación del proveedor: [chat](https://docs.ollama.com/api/chat), [embeddings](https://docs.ollama.com/api/embed), [modelo local](https://ollama.com/library/qwen3-embedding:4b).
+```powershell
+ dotnet run --project src/Promotora.WebApi
+```
+
+No necesitas instalar Ollama ni ejecutar ollama pull, ollama list o un servicio en localhost:11434. El arranque valida configuración sin llamar a proveedores: claves incorrectas se detectan en una solicitud real. Worker no necesita estas claves en F9-01. Hasta F9-06 no hay conversación disponible en Swagger.
+
+## Límites y alcance de José
+
+Pregunta hasta 1000 caracteres, contexto público hasta 6000, salida solicitada hasta 512 tokens (Ollama:MaxTokensSalida: 64–1024), think=low, timeout total de 60 segundos (Ollama:TimeoutSegundos: 5–120). Sin historial creciente, reintentos ni herramientas de escritura. Los caracteres no constituyen un contador exacto de tokens; el razonamiento interno del modelo también puede consumir presupuesto. Respuestas truncadas no se aceptan como completas.
+
+Embeddings: 1–16 textos por lote, hasta 6000 bytes UTF-8 por texto, finalidad Documento o Consulta, prefijos de recuperación recomendados por Google. El timeout total Gemini:TimeoutSegundos (5–120, default 60) incluye todo el lote. Si falla una solicitud, no se devuelve un lote parcial ni se reintenta automáticamente. El puerto suma usageMetadata.promptTokenCount cuando está presente en todas las respuestas; si falta en alguna, TokensEntrada=null, nunca cero ficticio ni una suma parcial.
+
+José responde respetuosamente en español sobre información pública de la organización, eventos, recintos, precios y políticas documentadas. Se presenta cuando se solicita; sin información suficiente reconoce que no sabe. La pregunta y el contexto son datos separados de las instrucciones fijas. No accede a usuarios, compras o finanzas. Las citas verificadas, controles HTTP, auditoría y pruebas de inyección se completarán en las tareas restantes; el prompt por sí solo no garantiza la seguridad.
+
+Las claves van exclusivamente a sus respectivos hosts fijos: Bearer a https://ollama.com/api/chat y x-goog-api-key a https://generativelanguage.googleapis.com/...:embedContent. Nunca se ponen en URL ni cuerpos, se bloquean redirecciones y no se registran en logs.
+
+## Verificación automática
+
+Resultado final de la corrección F9-01: **484 pruebas Release aprobadas, 0 fallidas y 0 omitidas**, build sin warnings y formato limpio. El script manual se verificó con HTTP simulado en Windows PowerShell 5.1 y PowerShell 7, sin usar claves reales.
+
+Incidencias de verificación: la primera ejecución no pudo iniciar contenedores porque Docker Desktop estaba apagado; se inició el motor y se repitió la suite. Una ejecución posterior presentó timeout en CompraResilienciaTests.CorteRealDelBrokerAntesODespuesDelCommitReentregaSinDuplicarVenta (despuesCommit=true). Las cinco pruebas de esa clase pasaron aisladas y la suite final completa pasó sin cambios en código de compras ni en esas pruebas. No se determinó la causa del timeout; vigilar su repetición en CI. No se ha validado todavía una respuesta real de Gemini/Ollama con la cuenta del usuario ni su cuota disponible.
+
+Las pruebas usan HTTP simulado y PostgreSQL temporal: **cero llamadas reales** a Ollama o Gemini, sin requerir claves reales ni descargar modelos. Incluyen transporte, claves separadas, dimensiones, finalidad de recuperación, lotes con errores, cuotas, cancelación, configuración .env y pgvector real.
+
+```powershell
+ dotnet build -c Release -warnaserror
+```
+
+```powershell
+ dotnet test --no-build -c Release --report-trx
+```
+
+```powershell
+ dotnet format --verify-no-changes --no-restore
+```
+
+No se agregan paquetes en la corrección cloud. Microsoft.Extensions.Http 10.0.10 (MIT) ya se añadió en F9-01 para administrar conexiones. Referencias: [Ollama Cloud](https://docs.ollama.com/cloud), [Gemini embeddings](https://ai.google.dev/gemini-api/docs/embeddings), [Gemini Embedding 2](https://ai.google.dev/gemini-api/docs/models/gemini-embedding-2).

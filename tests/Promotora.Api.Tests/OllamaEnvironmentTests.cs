@@ -4,6 +4,20 @@ namespace Promotora.Api.Tests;
 
 public sealed class OllamaEnvironmentTests
 {
+    [Fact]
+    public async Task DosClavesSeparadasSinMezclarNiPermitirOtrosNombres()
+    {
+        string path = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(path, "OLLAMA_API_KEY=ollama-simulada\nGEMINI_API_KEY='gemini-simulada'\nOTRA_VARIABLE=ignorar", TestContext.Current.CancellationToken);
+            Assert.Equal("ollama-simulada", OllamaEnvironmentFile.LeerClave(path));
+            Assert.Equal("gemini-simulada", OllamaEnvironmentFile.LeerClave(path, "GEMINI_API_KEY"));
+            Assert.Throws<ArgumentException>(() => OllamaEnvironmentFile.LeerClave(path, "OTRA_VARIABLE"));
+        }
+        finally { File.Delete(path); }
+    }
+
     [Theory]
     [InlineData("OLLAMA_API_KEY=valor-simulado", "valor-simulado")]
     [InlineData("# comentario\nOLLAMA_API_KEY='valor-simulado'\nOTRA_VARIABLE=ignorar", "valor-simulado")]

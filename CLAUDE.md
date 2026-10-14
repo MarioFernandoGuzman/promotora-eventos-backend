@@ -31,7 +31,7 @@ git status        # sin secretos, sin bin/ obj/, sin archivos ajenos a la tarea
 - **Cambios mínimos y enfocados.** No refactorices código ajeno a la tarea ni "mejores" migraciones ya aplicadas.
 - **Si un comando de `AGENTS.md` no existe todavía**, dilo y revisa en qué fase se crea; no lo simules.
 - **No ejecutes** comandos destructivos (`DROP`, `git reset --hard`, `git push --force`, `docker compose down -v`) sin confirmación explícita.
-- **Secretos:** nunca pidas ni escribas la API key real de Ollama en archivos versionados; el usuario introduce OLLAMA_API_KEY en .env local ignorado o configuración externa. Ver D-05 y docs/IA_OLLAMA.md.
+- **Secretos:** nunca pidas ni escribas las API keys reales de Ollama y Gemini en archivos versionados; el usuario introduce OLLAMA_API_KEY y GEMINI_API_KEY en .env local ignorado o configuración externa. Ver D-05 y docs/IA_OLLAMA.md.
 - **Explica el porqué** de las decisiones de diseño en el PR; el proyecto se defenderá oralmente y el historial debe ser entendible.
 
 ## Revisión (antes de abrir el PR)

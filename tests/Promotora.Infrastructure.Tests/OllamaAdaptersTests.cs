@@ -59,28 +59,6 @@ public sealed class OllamaAdaptersTests
     {
         using var http = new HttpClient(new Stub(_ => throw new InvalidOperationException("No debe llamar")));
         Assert.True((await new OllamaLlmAdapter(http, Options).ResponderAsync(new(new string('x', 1001), ""), Ct)).IsFailure);
-        Assert.True((await new OllamaEmbeddingAdapter(http, Options).GenerarAsync([], Ct)).IsFailure);
-    }
-
-    [Theory]
-    [InlineData(1536, true)]
-    [InlineData(1024, false)]
-    public async Task EmbeddingsLocalesEnLoteSinClaveYDimensionExacta(int dimension, bool valido)
-    {
-        using var http = new HttpClient(new Stub(async request =>
-        {
-            Assert.Equal("http://localhost:11434/api/embed", request.RequestUri!.ToString());
-            Assert.Null(request.Headers.Authorization);
-            using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(Ct));
-            Assert.Equal(1536, body.RootElement.GetProperty("dimensions").GetInt32());
-            Assert.False(body.RootElement.GetProperty("truncate").GetBoolean());
-            Assert.Equal(2, body.RootElement.GetProperty("input").GetArrayLength());
-            float[] vector = new float[dimension]; vector[0] = 1;
-            return Json(new { model = "qwen3-embedding:4b", embeddings = new[] { vector, vector }, prompt_eval_count = 8 });
-        }));
-        var result = await new OllamaEmbeddingAdapter(http, Options).GenerarAsync(["FAQ", "Reglamento"], Ct);
-        Assert.Equal(valido, result.IsSuccess);
-        if (valido) Assert.Equal(2, result.Value.Vectores.Count);
     }
 
     [Theory]
@@ -105,9 +83,9 @@ public sealed class OllamaAdaptersTests
     }
 
     [Fact]
-    public void ConfiguracionNoPermiteEnviarEmbeddingsAUnServidorRemoto()
+    public void ConfiguracionExigeClaveYLimites()
     {
-        Assert.Throws<InvalidOperationException>(() => (Options with { EmbeddingUrl = new("https://example.com/") }).Validar());
+        Assert.Throws<InvalidOperationException>(() => (Options with { ApiKey = "" }).Validar());
         Assert.Throws<InvalidOperationException>(() => (Options with { MaxTokensSalida = 0 }).Validar());
         Options.Validar();
     }
