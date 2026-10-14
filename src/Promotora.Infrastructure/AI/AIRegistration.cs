@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Promotora.Application.AI.Ports;
+using FluentValidation;
+using Promotora.Application.AI.Documentos;
+using Promotora.Infrastructure.Shared;
 using Promotora.Infrastructure.AI.Persistence;
 
 namespace Promotora.Infrastructure.AI;
@@ -17,6 +20,10 @@ public static class AIRegistration
         services.AddHttpClient<IEmbeddingPort, GeminiEmbeddingAdapter>(http => http.Timeout = TimeSpan.FromSeconds(embeddings.TimeoutSegundos))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
         services.AddScoped<IVectorSearchPort, EfVectorSearchAdapter>();
+        services.AddSingleton<DocumentoChunker>();
+        services.AddScoped<IIndexacionRepository, EfIndexacionRepository>();
+        services.AddScoped<IValidator<IndexarDocumentoCommand>, IndexarDocumentoValidator>();
+        services.AddCommandHandler<IndexarDocumentoCommand, DocumentoDto, IndexarDocumentoHandler>();
         return services;
     }
 }

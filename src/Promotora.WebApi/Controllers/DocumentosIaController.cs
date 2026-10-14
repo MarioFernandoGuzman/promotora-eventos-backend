@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Promotora.Application.AI.Documentos;
+using Promotora.Domain.Shared;
 using Promotora.Application.Shared;
 using Promotora.Application.Shared.Handlers;
 using Promotora.WebApi.Identity;
@@ -58,6 +59,19 @@ public sealed class DocumentosIaController(ICommandHandler<SubirDocumentoCommand
     [EndpointDescription("Body: {\"estadoEsperado\":\"INDEXADO\"}. Acepta PENDIENTE/INDEXADO/ERROR; transición condicional a INACTIVO, audita UPDATE. Estado cambió: 409. Ya INACTIVO: 200 sin nueva auditoría. La búsqueda vectorial excluye inmediatamente INACTIVO.")]
     [ProducesResponseType<DocumentoDto>(200)]
     public async Task<ActionResult<DocumentoDto>> Desactivar(int id, DesactivarDocumentoRequest request, CancellationToken ct) => FromResult(await desactivar.HandleAsync(new(id, request.EstadoEsperado), ct));
+
+    [HttpPost("~/api/v1/ia/documentos/{id:int}/reindexar")]
+    [EndpointSummary("Indexar o reindexar documento público; administrador habilitado")]
+    [EndpointDescription("Sin body. Consume embeddings cloud, máximo 32 fragmentos por documento, lotes de hasta 16. Publicación atómica; al publicar la última versión se retiran las anteriores INDEXADO. Fallar una reindexación conserva el índice publicado. INACTIVO, versión obsoleta o indexación concurrente: 409. IA deshabilitada: 422. Error/cuota del proveedor: 422/429; PENDIENTE pasa a ERROR. Cargar y después llamar esta operación explícitamente.")]
+    [ProducesResponseType<DocumentoDto>(200)]
+    [ProducesResponseType<ProblemDetails>(422)]
+    [ProducesResponseType<ProblemDetails>(429)]
+    public async Task<ActionResult<DocumentoDto>> Reindexar(int id, CancellationToken ct)
+    {
+        var handler = HttpContext.RequestServices.GetService<ICommandHandler<IndexarDocumentoCommand, DocumentoDto>>();
+        return handler is null ? FromResult(Result<DocumentoDto>.Failure(new Error("ia.deshabilitada", "IA no está habilitada.", ErrorType.BusinessRule)))
+            : FromResult(await handler.HandleAsync(new(id), ct));
+    }
 
     private async Task<ActionResult<DocumentoDto>> SubirAsync(DocumentoUploadRequest request, int? anterior, CancellationToken ct)
     {
