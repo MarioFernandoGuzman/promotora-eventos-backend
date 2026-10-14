@@ -68,6 +68,38 @@ Si falla, verifica modelo/clave/región/cuota en AI Studio. La salida no muestra
 
 ## 4. Habilitar y arrancar la API
 
+### Arranque con todas las credenciales en .env
+
+El usuario autorizó expresamente crear su archivo privado local el 13/10/2026. No se versiona ni se muestran sus valores. Incluye credenciales de Docker, conexión restringida PostgreSQL, JWT, bootstrap, firma QR, RabbitMQ, SMTP local y claves de IA. Las credenciales PostgreSQL/JWT/bootstrap existentes se conservan; la firma QR se generó antes de existir boletos en esa base. Los jobs del Worker se habilitan individualmente mediante sus flags; el archivo inicial los conserva deshabilitados para no procesar compras durante una prueba de IA.
+
+Para cargar el archivo en cada arranque sin volver a escribir contraseñas, usa estos comandos desde la raíz, en terminales independientes:
+
+Infraestructura:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Servicio Infra
+```
+
+API:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Servicio Api
+```
+
+Worker:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Servicio Worker
+```
+
+El script no ejecuta el contenido de .env: lee una lista permitida de nombres, admite valores entre comillas simples/dobles, rechaza duplicados y variables ajenas al proyecto. Propaga la configuración al proceso hijo, da prioridad a los valores del archivo sobre user-secrets anteriores en este arranque y restaura el entorno al terminar. Las claves de IA se mapean también a Ollama__ApiKey/Gemini__ApiKey. ExecutionPolicy se aplica solo a ese proceso, sin cambiar la política persistente. No uses este script para producción.
+
+Compose lee .env directamente y permite RABBITMQ_USER (default promotora). En un volumen RabbitMQ existente cambiar esa variable no crea ni modifica usuarios: el usuario local debe tener su contraseña configurada y permisos limitados a los exchanges/colas de la aplicación; no necesita rol administrator ni acceso a todo el vhost.
+
+La carga automática incorporada en WebApi sin este script sigue acotada a las claves de IA. Para usar **toda** la configuración de .env debes arrancar con Start-Local.ps1; dotnet run directo solo ve las variables ya presentes en su terminal y sus proveedores de configuración habituales.
+
+### Alternativa: configuración externa por user-secrets
+
 ```powershell
  dotnet user-secrets set "IA:Habilitada" "true" --project src/Promotora.WebApi
 ```
@@ -105,6 +137,8 @@ Las claves van exclusivamente a sus respectivos hosts fijos: Bearer a https://ol
 ## Verificación automática
 
 Resultado final de la corrección F9-01: **484 pruebas Release aprobadas, 0 fallidas y 0 omitidas**, build sin warnings y formato limpio. El script manual se verificó con HTTP simulado en Windows PowerShell 5.1 y PowerShell 7, sin usar claves reales.
+
+Verificación local autorizada del 13/10/2026: una solicitud real Gemini produjo 1536 dimensiones; una conversación real con gpt-oss:120b terminó con stop (371 tokens de entrada y 63 de salida), usando contexto explícitamente de demostración. La respuesta no constituye una cita RAG validada: F9-05/F9-06 siguen pendientes. Docker saludable, Flyway validate correcto, RabbitMQ autenticado con acceso limitado y API /health/live, /health/ready y Swagger HTTP 200. Start-Local.ps1 se verificó con valores simulados en Windows PowerShell 5.1: propagación, prioridad, restauración del entorno y rechazo de variables ajenas. Ninguna clave real se incorpora a la evidencia ni a Git.
 
 Incidencias de verificación: la primera ejecución no pudo iniciar contenedores porque Docker Desktop estaba apagado; se inició el motor y se repitió la suite. Una ejecución posterior presentó timeout en CompraResilienciaTests.CorteRealDelBrokerAntesODespuesDelCommitReentregaSinDuplicarVenta (despuesCommit=true). Las cinco pruebas de esa clase pasaron aisladas y la suite final completa pasó sin cambios en código de compras ni en esas pruebas. No se determinó la causa del timeout; vigilar su repetición en CI. No se ha validado todavía una respuesta real de Gemini/Ollama con la cuenta del usuario ni su cuota disponible.
 
