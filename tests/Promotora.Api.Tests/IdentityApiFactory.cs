@@ -52,6 +52,7 @@ public sealed class IdentityApiFactory(string connection, string? adminEmail = n
             services.AddVenues();
             services.AddCatalog();
             services.AddTicketing(new CompraOptions());
+            services.AddNumeracion();
             // V10 en una base temporal vacía crea Carrera con ID 5; no es un default de producción.
             services.AddEmisionBoletos(QrKey, 5);
             services.AddImages(ImagesRoot);

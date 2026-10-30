@@ -84,3 +84,18 @@ Inventario generado desde Swagger de la API compilada. Hay 80 operaciones REST; 
 | PUT | `/api/v1/usuarios/{id}/password` | Autenticado |  |
 | POST | `/api/v1/usuarios/administradores` | Autenticado |  |
 | POST | `/api/v1/usuarios/duenos-recinto` | Autenticado |  |
+
+## Ampliación EXT-NUM-03: seis operaciones de distribución
+
+El inventario previo contiene 80 operaciones; estas seis incorporan un total de 86. Rutas relativas a `/api/v1/eventos/{eventoId}/localidades/{localidadId}`:
+
+| Método/ruta | Acceso | Función |
+|---|---|---|
+| PUT /distribucion | Admin/dueño propietario habilitado | Crear/editar borrador, máximo 2000 sillas/500 mesas, 2 MiB |
+| GET /distribucion | Admin/dueño propietario habilitado | Configuración paginada, incluso borrador |
+| POST /distribucion/publicar | Admin/dueño propietario habilitado | Congelar configuración y conciliar cupo |
+| GET /asientos | Público | Disponibilidad paginada, filtro mesaId, solo evento visible/publicada |
+| POST /asientos/bloquear | Admin/dueño propietario habilitado | Lista de IDs; mesa COMPLETA indivisible |
+| POST /asientos/desbloquear | Admin/dueño propietario habilitado | Lista de IDs bloqueados; restaura disponibilidad |
+
+page 1–100000, pageSize 1–100 (default 20). 400 validación, 401 autenticación, 403 rol, 404 ajena/inexistente/no pública, 409 conflicto, 413 tamaño. Compra numerada pendiente de integración EXT-NUM-04–05. El diseño y contrato de cuerpos están en LOCALIDADES_NUMERADAS.md y Swagger.

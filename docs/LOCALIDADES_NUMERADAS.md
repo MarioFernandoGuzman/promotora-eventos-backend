@@ -1,6 +1,6 @@
 # Propuesta: localidades generales, sillas y mesas numeradas
 
-Estado: diseño aprobado para implementación por el usuario el 29/10/2026. EXT-NUM-01 registra el diseño y EXT-NUM-02 implementa el esquema V12, mapeos y validación de selección. EXT-NUM-03 en adelante siguen pendientes. No hay endpoints de numeración habilitados todavía.
+Estado: diseño aprobado para implementación por el usuario el 29/10/2026. EXT-NUM-01 registra el diseño y EXT-NUM-02 implementa el esquema V12, mapeos y validación de selección. EXT-NUM-03 incorpora configuración, publicación, consulta y bloqueo. EXT-NUM-04–05 aún no conectan la compra numerada; no habilitar venta hasta completar su integración.
 
 ## 1. Decisiones confirmadas
 
@@ -118,7 +118,7 @@ Reembolso: solo boletos VALIDO -> ANULADO liberan su asignación CONFIRMADA y si
 
 ## 6. Contratos aprobados para implementación
 
-Todas las rutas siguientes son contratos nuevos aprobados, todavía no implementados. ADMINISTRADOR habilitado o DUENO_RECINTO propietario para configurar, propiedad validada en Application; ajena/inexistente 404. No nuevas capacidades para CLIENTE.
+Todas las rutas siguientes son contratos nuevos aprobados, implementados en EXT-NUM-03. ADMINISTRADOR habilitado o DUENO_RECINTO propietario para configurar, propiedad validada en Application; ajena/inexistente 404. No nuevas capacidades para CLIENTE.
 
 | Método y ruta | Función |
 |---|---|
