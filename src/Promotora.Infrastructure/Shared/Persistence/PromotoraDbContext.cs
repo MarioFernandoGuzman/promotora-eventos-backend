@@ -14,6 +14,10 @@ namespace Promotora.Infrastructure.Shared.Persistence;
 
 public sealed class PromotoraDbContext(DbContextOptions<PromotoraDbContext> options) : DbContext(options)
 {
+    public DbSet<DistribucionEventoRow> DistribucionesEvento => Set<DistribucionEventoRow>();
+    public DbSet<MesaEventoRow> MesasEvento => Set<MesaEventoRow>();
+    public DbSet<AsientoEventoRow> AsientosEvento => Set<AsientoEventoRow>();
+    public DbSet<AsignacionAsientoRow> AsignacionesAsiento => Set<AsignacionAsientoRow>();
     public DbSet<AsistenciaEventoView> VwAsistenciaEvento => Set<AsistenciaEventoView>();
     public DbSet<AuditoriaOperacionesView> VwAuditoriaOperaciones => Set<AuditoriaOperacionesView>();
     public DbSet<CalificacionPresentadorView> VwCalificacionPresentador => Set<CalificacionPresentadorView>();

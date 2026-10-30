@@ -19,14 +19,14 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 
 ## 1. Visión general
 
-27 tablas agrupadas por módulo (coinciden con los módulos de código); F6-11 añade el diario del proveedor simulado aprobado por el usuario:
+31 tablas agrupadas por módulo; V12 incorpora las cuatro tablas de inventario numerado (EXT-NUM-02). F6-11 añadió el diario del proveedor simulado:
 
 | Módulo | Tablas | Propósito |
 |---|---|---|
 | Identity | `usuarios`, `clientes`, `administradores`, `duenos_recinto`, `refresh_tokens` | Cuentas, roles, perfiles y renovación de sesión |
 | Venues | `recintos`, `localidades` | Lugares físicos y sus zonas (mapa) |
 | Catalog | `categorias_evento`, `presentadores`, `eventos`, `evento_presentadores`, `tipos_entrada` | Qué se vende y a qué precio/cupo |
-| Ticketing | `compras`, `detalle_compra`, `boletos` | Venta y emisión de boletos |
+| Ticketing | `compras`, `detalle_compra`, `boletos`, `distribuciones_evento`, `mesas_evento`, `asientos_evento`, `asignaciones_asiento` | Venta y emisión de boletos |
 | Finance | `pagos`, `pagos_simulados`, `cuentas_financieras`, `movimientos_financieros` | Dinero: intentos, diario del proveedor simulado, cuentas y ledger |
 | Reviews | `resenas` | Opiniones de clientes |
 | AI | `documentos_rag`, `chunks_rag`, `logs_agente_ia` | RAG y trazabilidad del agente |
@@ -110,7 +110,7 @@ erDiagram
 
 ## 4. Diccionario de datos
 
-Regenerado en F1-11 desde los catálogos de PostgreSQL 16 tras aplicar V1–V9 con Flyway (26 tablas y 198 columnas), ampliado en F6-11 con V11: **27 tablas y 203 columnas**. Los tipos, claves, nulabilidad, defaults, CHECKs e índices siguientes reflejan las migraciones, que son la fuente de verdad. — indica ausencia de default o clave; los IDs numéricos usan GENERATED ALWAYS AS IDENTITY. Los triggers de integridad se describen en §6; el DDL completo permanece en database/migrations/.
+Regenerado en F1-11 desde los catálogos de PostgreSQL 16 tras aplicar V1–V9 con Flyway (26 tablas y 198 columnas), ampliado en F6-11 con V11: **31 tablas y 235 columnas**, incluidas las 32 columnas nuevas de V12. Los tipos, claves, nulabilidad, defaults, CHECKs e índices siguientes reflejan las migraciones, que son la fuente de verdad. — indica ausencia de default o clave; los IDs numéricos usan GENERATED ALWAYS AS IDENTITY. Los triggers de integridad se describen en §6; el DDL completo permanece en database/migrations/.
 
 ### 4.1 Identity
 
@@ -1005,6 +1005,7 @@ Solo escritura / consulta (no cuentan como CRUD): `detalle_compra` (parte de com
 | `V8__mensajeria.sql` | `notificaciones`, `outbox_mensajes`, `mensajes_procesados` |
 | `V9__indices_triggers_permisos.sql` | Índices, constraint trigger diferido de perfil, triggers de integridad (§6), cuentas cerradas e inmutabilidad de ledger/logs; roles y `REVOKE` |
 | `V10__seed_catalogos.sql` | Solo categorías de evento y cuentas PLATAFORMA e IMPUESTOS (GTQ); nunca usuarios ni credenciales |
+| `V12__localidades_numeradas.sql` | Cuatro tablas de distribución por evento, mesas, sillas y asignaciones; índices, triggers de integridad y permisos |
 | `V11__pasarela_simulada.sql` | Diario inmutable `pagos_simulados`, permisos SELECT/INSERT y trigger; sin FK ni cambios al ledger |
 | `R__bi_vistas.sql` | Vistas `bi.*` (repetible), rol `bi_reader` |
 
@@ -1024,11 +1025,11 @@ El primer SUPERADMIN se crea al arrancar la API, solo si no existe ninguno, leye
 | D-07 | Refresh tokens | Sí: tabla `refresh_tokens` definida en §4.1; esquema original v2 de 26 tablas, 27 tras diario simulado F6-11 |
 
 
-## 14. Extensión aprobada D-08 — inventario numerado (pendiente de migración)
+## 14. Inventario numerado — V12 (EXT-NUM-02)
 
-El esquema implementado conserva **27 tablas y 203 columnas**. El objetivo aprobado incorpora cuatro tablas y pasará a **31 tablas** al aplicar EXT-NUM-02: distribuciones_evento, mesas_evento, asientos_evento y asignaciones_asiento. La especificación de tipos, nulabilidad, claves, defaults, estados, índices y contratos forma parte de este modelo por referencia: [LOCALIDADES_NUMERADAS.md §3](LOCALIDADES_NUMERADAS.md#3-esquema-propuesto). No atribuir estas tablas al diccionario regenerado de V1–V11 ni dar por implementados los endpoints. V12__localidades_numeradas.sql es el nombre previsto si V11 sigue siendo la última versión al implementar; las migraciones anteriores permanecen intactas.
+V12__localidades_numeradas.sql incorpora distribuciones_evento, mesas_evento, asientos_evento y asignaciones_asiento: **31 tablas y 235 columnas**. Validado con PostgreSQL temporal y Flyway; no aplicado todavía al contenedor local. Los endpoints y el ciclo de compra numerada siguen pendientes de EXT-NUM-03–05. Las tablas existentes conservan sus columnas y datos. Las migraciones anteriores permanecen intactas.
 
-Diagrama objetivo adicional (el diagrama de §2 sigue representando el esquema actual):
+Relaciones adicionales implementadas por V12 (complementan §2):
 
 ```mermaid
 erDiagram
@@ -1044,4 +1045,73 @@ erDiagram
   BOLETOS |o--o| ASIGNACIONES_ASIENTO : confirma
 ```
 
-No DELETE sobre estas cuatro tablas; FK históricas RESTRICT, unicidad parcial de asignación vigente por silla y constraint trigger diferido de coherencia. Localidades generales y compras existentes no se convierten. Para numeradas el cupo se deriva de las posiciones; una mesa comparte tipo/precio y modo COMPLETA/POR_SILLA, QR individual. D-15 y reembolso total permanecen vigentes. Detalles en la especificación aprobada; actualizar diccionario real tras la migración.
+No DELETE sobre estas cuatro tablas; FK históricas RESTRICT, unicidad parcial de asignación vigente por silla y constraint trigger diferido de coherencia. Localidades generales y compras existentes no se convierten. Para numeradas el cupo se deriva de las posiciones; una mesa comparte tipo/precio y modo COMPLETA/POR_SILLA, QR individual. D-15 y reembolso total permanecen vigentes. Detalles en la especificación aprobada; El diccionario adicional se detalla a continuación.
+
+
+### 14.1 Diccionario adicional V12
+
+Los cuatro IDs son BIGINT GENERATED ALWAYS AS IDENTITY. FKs ON DELETE RESTRICT. Las definiciones siguientes se corresponden con V12 y los tipos/nulabilidad de sus 32 columnas se contrastan contra PostgreSQL en PersistenceTests. Campos sin default indicado no tienen default. UNIQUE de boleto_id admite múltiples NULL; índice vigente por asiento es parcial. Estados, coherencia histórica y restricciones cruzadas se comprueban al COMMIT.
+
+### distribuciones_evento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| evento_id | INT NOT NULL FK eventos |
+| localidad_id | INT NOT NULL FK localidades |
+| estado | VARCHAR(20) NOT NULL DEFAULT BORRADOR; BORRADOR/PUBLICADA |
+| imagen_plano_url | VARCHAR(255) NULL; referencia congelada al publicar, no carga arbitraria de URL externa |
+| fecha_creacion | TIMESTAMPTZ NOT NULL DEFAULT now() |
+| fecha_publicacion | TIMESTAMPTZ NULL |
+
+UNIQUE(evento_id, localidad_id). Validar localidad del recinto del evento. Estado y fecha coherentes mediante CHECK. PUBLICADA implica inventario completo y listo para vender; no se vende antes. No hay edición estructural después de publicar en esta primera versión, incluso si luego se cancelan todas las reservas. Las localidades existentes sin distribución conservan venta general.
+
+### mesas_evento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| distribucion_id | BIGINT NOT NULL FK distribuciones_evento |
+| etiqueta | VARCHAR(50) NOT NULL; ejemplo Mesa 7 |
+| modalidad | VARCHAR(20) NOT NULL; COMPLETA/POR_SILLA |
+| tipo_entrada_id | INT NOT NULL FK tipos_entrada |
+| x, y | NUMERIC(10,6) NOT NULL; coordenadas normalizadas 0..1 |
+
+UNIQUE(distribucion_id, etiqueta), texto no vacío. Capacidad derivada del número de sillas: no mantener otro contador editable. Mesa completa exige al menos una silla; si se desea retirar una silla por operativa, debe resolverse en BORRADOR antes de publicar.
+
+### asientos_evento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| distribucion_id | BIGINT NOT NULL FK distribuciones_evento |
+| mesa_id | BIGINT NULL FK mesas_evento |
+| tipo_entrada_id | INT NOT NULL FK tipos_entrada |
+| etiqueta | VARCHAR(50) NOT NULL; ejemplo A-04 o M07-S02 |
+| fila | VARCHAR(50) NULL |
+| x, y | NUMERIC(10,6) NOT NULL; coordenadas normalizadas 0..1 |
+| estado | VARCHAR(20) NOT NULL DEFAULT DISPONIBLE; DISPONIBLE/RESERVADO/VENDIDO/BLOQUEADO |
+
+UNIQUE(distribucion_id, etiqueta). Índices por distribución/estado y mesa. CHECK coordenadas y etiqueta no vacía. Si tiene mesa, debe coincidir distribución y tipo de entrada; tipo debe pertenecer al evento/localidad de la distribución. Las relaciones entre tablas requieren FK compuestas o triggers de integridad; no confiar únicamente en C#.
+
+BLOQUEADO es una exclusión operativa, no otra venta. Solo se bloquean sillas disponibles; para mesa COMPLETA se bloquea/desbloquea toda la mesa atómicamente. No se bloquean posiciones reservadas o vendidas. Un cambio operativo no borra posiciones ni altera su etiqueta.
+
+### asignaciones_asiento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| asiento_id | BIGINT NOT NULL FK asientos_evento |
+| detalle_compra_id | INT NOT NULL FK detalle_compra |
+| ordinal_boleto | INT NOT NULL CHECK > 0; posición dentro del detalle |
+| estado | VARCHAR(20) NOT NULL DEFAULT RESERVADA; RESERVADA/CONFIRMADA/LIBERADA |
+| boleto_id | BIGINT NULL FK boletos, UNIQUE cuando no NULL |
+| fecha_reserva | TIMESTAMPTZ NOT NULL DEFAULT now() |
+| fecha_confirmacion | TIMESTAMPTZ NULL |
+| fecha_liberacion | TIMESTAMPTZ NULL |
+
+UNIQUE(detalle_compra_id, ordinal_boleto); ordinal <= cantidad del detalle. Índice UNIQUE parcial por asiento_id WHERE estado IN ('RESERVADA','CONFIRMADA'): como máximo una asignación vigente por silla. La reserva expira con compras.expira_en, no con un segundo plazo propio.
+
+RESERVADA sin boleto ni fecha de confirmación/liberación; CONFIRMADA con boleto y fecha de confirmación; LIBERADA con fecha de liberación, conserva boleto/confirmación si existieron. Boleto debe pertenecer al mismo detalle. Eventos, localidades y tipos deben coincidir en toda la cadena. Un constraint trigger diferido verifica al COMMIT la correspondencia del estado del asiento con su asignación vigente y el estado del boleto. USADO conserva CONFIRMADA/VENDIDO; no hay reutilización después de asistencia.
+
+El historial se conserva al liberar y vender de nuevo: nueva asignación, nunca sobrescribir la anterior. El precio histórico sigue en detalle_compra, y las etiquetas de la distribución publicada quedan inmutables. No se utiliza datos_extra JSONB para sustituir relaciones o unicidad.

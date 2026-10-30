@@ -1,6 +1,6 @@
 # Propuesta: localidades generales, sillas y mesas numeradas
 
-Estado: diseño aprobado para implementación por el usuario el 29/10/2026. No representa esquema ni endpoints implementados. EXT-NUM-01 registra el diseño; EXT-NUM-02 en adelante siguen pendientes.
+Estado: diseño aprobado para implementación por el usuario el 29/10/2026. EXT-NUM-01 registra el diseño y EXT-NUM-02 implementa el esquema V12, mapeos y validación de selección. EXT-NUM-03 en adelante siguen pendientes. No hay endpoints de numeración habilitados todavía.
 
 ## 1. Decisiones confirmadas
 
@@ -25,7 +25,7 @@ Una localidad numerada no admite simultáneamente entradas generales en ese even
 
 ## 3. Esquema propuesto
 
-Cuatro tablas nuevas; 27 actuales pasarían a 31, sujeto a verificar el develop actualizado antes de implementar. IDs nuevos BIGINT GENERATED ALWAYS AS IDENTITY; fechas TIMESTAMPTZ UTC; FK históricas ON DELETE RESTRICT. Ninguna de estas tablas tiene DELETE para el rol de aplicación.
+V12 incorpora cuatro tablas nuevas; 31 tablas y 235 columnas verificadas en PostgreSQL temporal. IDs nuevos BIGINT GENERATED ALWAYS AS IDENTITY; fechas TIMESTAMPTZ UTC; FK históricas ON DELETE RESTRICT. Ninguna de estas tablas tiene DELETE para el rol de aplicación.
 
 ### distribuciones_evento
 

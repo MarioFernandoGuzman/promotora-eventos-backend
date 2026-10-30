@@ -170,7 +170,7 @@ Puertos locales de referencia: Postgres 5432 · RabbitMQ 5672 (UI 15672) · Mail
 
 ### Extensión aprobada de inventario numerado (D-08)
 
-Las posiciones pertenecen a evento/localidad, no comparten ocupación entre eventos. Cada silla tiene una sola asignación vigente; mesa COMPLETA se reserva íntegra, genera un boleto por persona y cuenta personas para el límite de compra. Todas las sillas de una mesa comparten tipo/precio. Reserva, cupo agregado, asignaciones y outbox se confirman juntos; emitir, confirmar posiciones y registrar finanzas también. Liberar exige transición ganadora y asignación propietaria; boletos USADO nunca liberan silla. Publicar congela etiquetas/distribución. Esquema, rutas y compatibilidad aprobados en [LOCALIDADES_NUMERADAS.md](docs/LOCALIDADES_NUMERADAS.md); no están implementados todavía.
+Las posiciones pertenecen a evento/localidad, no comparten ocupación entre eventos. Cada silla tiene una sola asignación vigente; mesa COMPLETA se reserva íntegra, genera un boleto por persona y cuenta personas para el límite de compra. Todas las sillas de una mesa comparten tipo/precio. Reserva, cupo agregado, asignaciones y outbox se confirman juntos; emitir, confirmar posiciones y registrar finanzas también. Liberar exige transición ganadora y asignación propietaria; boletos USADO nunca liberan silla. Publicar congela etiquetas/distribución. Esquema, rutas y compatibilidad aprobados en [LOCALIDADES_NUMERADAS.md](docs/LOCALIDADES_NUMERADAS.md); el esquema V12 está implementado y los endpoints/ciclo numerado siguen pendientes.
 
 ## 6. Mensajería (RabbitMQ)
 
@@ -215,7 +215,7 @@ La pasarela de pago es un **puerto**; el adaptador de API/Worker es `PasarelaSim
 ## 8. Seguridad, auditoría y logs
 
 - JWT de acceso de vida corta + refresh tokens (D-07 confirmada). Policies: `Cliente`, `Administrador`, `DuenoRecinto`.
-- `refresh_tokens` se crea en V1__identidad.sql (26 tablas originales; 27 con pagos_simulados aprobado en F6-11); definición completa en BASE_DE_DATOS.md §4.1. Solo guardar token_hash SHA-256, nunca el token en claro. Cada refresh rota el token; reutilizar uno revocado revoca toda la familia y se audita.
+- `refresh_tokens` se crea en V1__identidad.sql (26 tablas originales; 27 con pagos_simulados aprobado en F6-11; 31 tras V12/EXT-NUM-02); definición completa en BASE_DE_DATOS.md §4.1. Solo guardar token_hash SHA-256, nunca el token en claro. Cada refresh rota el token; reutilizar uno revocado revoca toda la familia y se audita.
 - El primer SUPERADMIN se crea al arrancar la API si no existe ninguno, con `Bootstrap:AdminEmail` y `Bootstrap:AdminPassword` desde user-secrets o variables de entorno; `usuarios.debe_cambiar_password = true` (columna NOT NULL DEFAULT false). Nunca usuarios ni credenciales en migraciones. V10__seed_catalogos.sql solo siembra categorías y cuentas PLATAFORMA/IMPUESTOS.
 - Endpoints públicos: catálogo de eventos, detalle, mapa de recinto, agente de IA (con rate limit). Todo lo demás requiere autenticación.
 - Rate limiting nativo (`AddRateLimiter`) en login, registro, compra y agente IA. CORS restringido al frontend.
