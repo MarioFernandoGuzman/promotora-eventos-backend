@@ -22,7 +22,7 @@ Referencias: [`AGENTS.md`](../AGENTS.md) · [`CLAUDE.md`](../CLAUDE.md) · [`doc
 | D-05 | LLM y embeddings | ✅ | **Ollama Cloud** `gpt-oss:120b` para chat; Gemini API `gemini-embedding-2` para embeddings de 1536 dimensiones en nivel gratuito, sin modelos locales. `.env` ignorado con OLLAMA_API_KEY y GEMINI_API_KEY, gestionadas por el usuario; C#/HttpClient y pruebas sin consumo cloud |
 | D-06 | Migraciones | ✅ | SQL con Flyway; EF Core no genera migraciones |
 | D-07 | ¿Refresh tokens además del JWT? | ✅ | Sí; tabla `refresh_tokens`, rotación y revocación de familia ante reutilización |
-| D-08 | ¿Asientos numerados? | ✅ | No: solo localidades con cupo |
+| D-08 | ¿Asientos numerados? | ✅ | Venta mixta general/numerada por evento; mesas completas o por silla, QR individual y precio por silla. Diseño EXT-NUM aprobado; implementación pendiente |
 | D-09 | Tecnología del frontend | ⬜ pendiente hasta Fase 11 | Opciones: Blazor (todo en .NET), React o Angular |
 | D-10 | Pasarela de pago | ✅ | Adaptador simulado detrás de `IPaymentGateway` |
 | D-11 | Quién asume IVA y comisión | ✅ | Comisión como cargo al cliente; IVA aparte, tasa configurable y cálculo en Domain; cuenta IMPUESTOS (BASE_DE_DATOS.md §4.5) |
@@ -35,7 +35,7 @@ Las decisiones D-07, D-08, D-11 y D-14 están confirmadas. D-09 se resolverá en
 
 Acuerdo F6-11 aprobado por el usuario: V11 añade `pagos_simulados` (referencia UUID PK, monto NUMERIC(10,2), moneda VARCHAR(3), estado APROBADO/RECHAZADO y fecha TIMESTAMPTZ; todos obligatorios). Diario inmutable sin FK, commit independiente del proveedor simulado. No modifica el ledger ni añade endpoints. API/Worker usan la consulta durable; la recuperación nunca cobra y no devuelve cupo ante error de consulta o respaldo histórico inconsistente.
 
-El modelo objetivo tiene **27 tablas**, incluidas `refresh_tokens` y `pagos_simulados` (26 originales más V11 aprobada en F6-11). Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9, ampliado con V11.
+El modelo implementado tiene **27 tablas**, incluidas `refresh_tokens` y `pagos_simulados` (26 originales más V11 aprobada en F6-11). Las migraciones son la fuente de verdad del esquema implementado. Para tipos, claves o nulabilidad omitidos de tablas existentes se usa [`referencia/schema_v1.sql`](referencia/schema_v1.sql) con las correcciones v2; nunca se ejecuta ese script ni se mueve a migraciones. Para tablas nuevas se sigue BASE_DE_DATOS.md y se registra cada suposición en el encabezado de la migración. F1-11 regeneró el diccionario completo desde V1–V9, ampliado con V11.
 
 Entrega de Fase 1: PR-B (F1-02/F1-03) en `feature/f1-identidad-recintos-catalogo`; PR-C (F1-04 a F1-06) en `feature/f1-ventas-finanzas-ia-mensajeria`; PR-D (F1-07 a F1-10 y F1-11, ejecutada después de F1-07) en `feature/f1-integridad-bi-seed`. Cada rama parte de develop actualizado después de que el usuario mergee el PR anterior. Solo commits locales en español, con `Refs: <ID>` en el cuerpo, mostrando git status y mensaje antes de cada commit; sin push ni merge del agente y sin modificar main/develop.
 
@@ -276,6 +276,20 @@ Salida Fase 8 cerrada localmente: F8-01–F8-05 completas, 454 pruebas Release a
 
 Fase 9 cerrada localmente. A petición del usuario, se detiene implementación antes de reportes/Power BI; Fase 10 y D-09/Fase 11 siguen pendientes. El análisis de endpoints, vistas y flujos web solicitado se entrega en [ANALISIS_FRONTEND.md](ANALISIS_FRONTEND.md), con inventario de 80 operaciones reales en [ENDPOINTS.md](ENDPOINTS.md); no marca tareas de frontend como implementadas. CI remoto se verifica al publicar el PR.
 
+### Extensión D-08 — localidades numeradas (antes de Fase 10)
+
+Ampliación aprobada por el usuario el 29/10/2026; excepción al orden original y a la pausa posterior a F9 únicamente para EXT-NUM. Reportes/Power BI no se adelantan. Diseño vinculante y contratos: [LOCALIDADES_NUMERADAS.md](LOCALIDADES_NUMERADAS.md). Esquema actual: 27 tablas; objetivo: 31. Rutas y migración nuevas se registran aquí antes de programar. Las casillas históricas de F1–F9 no se reabren.
+
+- [x] **EXT-NUM-01** Registrar D-08, esquema, restricciones, contratos API, alcance y tareas en AGENTS, BASE_DE_DATOS y este plan; documentación sin cambio funcional.
+- [ ] **EXT-NUM-02** Nueva migración de cuatro tablas, permisos, índices/FKs/triggers de integridad; mapeos EF y dominio; compatibilidad con generales. Regenerar diccionario real y conteos tras migrar.
+- [ ] **EXT-NUM-03** Configuración BORRADOR, publicación inmutable, disponibilidad pública paginada, bloqueo/desbloqueo operativo; ownership, auditoría, Swagger y límites del contrato.
+- [ ] **EXT-NUM-04** Compra mixta con asientoIds, reserva indivisible, cupos conciliados e idempotencia; conservar orden asiento/asistente; venta numerada deshabilitada hasta integrar Worker.
+- [ ] **EXT-NUM-05** Integrar emisión/QR/consulta, cancelación, expiración, fallo, recuperación y reembolso; confirmar asignaciones junto con ledger/boletos; habilitar solo con API/Worker compatibles.
+- [ ] **EXT-NUM-06** Integración frontend de selección de sillas/mesa completa, disponibilidad, conflictos 409 y ubicación por boleto; revisar trabajo local existente sin sobrescribirlo.
+- [ ] **EXT-NUM-07** Cerrar pruebas integradas/concurrencia/idempotencia, documentación de demo y RAG, revisión de diff y PR; sin reportes/Power BI.
+
+PRs: A documentación (EXT-NUM-01); B esquema/configuración (02–03); C ciclo de compra completo (04–05); D frontend y cierre (06–07). Cada rama desde develop actualizado después del merge previo del usuario; no push/merge del agente. Una tarea/commit con Refs. Pruebas focalizadas por cambio y suite completa al cierre. Salida: no doble asignación, reservas múltiples indivisibles, liberación una vez por propietario, boletos históricos correctos y generales sin regresiones.
+
 ### Fase 10 — Reportería y BI
 - [ ] **F10-01** Infraestructura de reportes: contrato común (filtros, agrupación, totales, paginación) y `GET /reportes/{codigo}`.
 - [ ] **F10-02** Reportes R-01 … R-05.
@@ -363,7 +377,7 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 | Mensajes duplicados o perdidos | Outbox + `mensajes_procesados` + ACK manual + DLQ |
 | Cuotas/latencia de Ollama Cloud y Gemini API | Proyectos gratuitos sin facturación, límites de contexto/salida, lotes y rate limit; HTTP/LLM fake en pruebas sin consumo real. Sin modelos locales, Batch API diferida, reintentos automáticos ni fallback pagado. El backend no puede comprobar el nivel de facturación de la clave; 429 controlado y cuota verificable en el panel del proveedor |
 | Cambio de modelo de embeddings | La dimensión del vector queda fijada; reindexar si cambia |
-| Alcance excesivo | Asientos numerados fuera del alcance (D-08); frontend mínimo viable primero |
+| Alcance ampliado D-08 | EXT-NUM aprobado por etapas; no habilitar ventas numeradas hasta integrar API/Worker y probar el ciclo completo; reportes/Power BI pendientes |
 | Pasarela real no disponible | Adaptador simulado detrás de puerto (D-10) |
 | Licencias de paquetes | Revisar cada NuGet nuevo (ver `AGENTS.md` §2) |
 | IVA y alcance fiscal | Tasa configurable en appsettings y cálculo en Domain; conciliación de los tres componentes del cobro. Facturación electrónica fuera de alcance |

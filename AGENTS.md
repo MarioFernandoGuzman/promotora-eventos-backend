@@ -168,6 +168,10 @@ Puertos locales de referencia: Postgres 5432 · RabbitMQ 5672 (UI 15672) · Mail
 
 ---
 
+### Extensión aprobada de inventario numerado (D-08)
+
+Las posiciones pertenecen a evento/localidad, no comparten ocupación entre eventos. Cada silla tiene una sola asignación vigente; mesa COMPLETA se reserva íntegra, genera un boleto por persona y cuenta personas para el límite de compra. Todas las sillas de una mesa comparten tipo/precio. Reserva, cupo agregado, asignaciones y outbox se confirman juntos; emitir, confirmar posiciones y registrar finanzas también. Liberar exige transición ganadora y asignación propietaria; boletos USADO nunca liberan silla. Publicar congela etiquetas/distribución. Esquema, rutas y compatibilidad aprobados en [LOCALIDADES_NUMERADAS.md](docs/LOCALIDADES_NUMERADAS.md); no están implementados todavía.
+
 ## 6. Mensajería (RabbitMQ)
 
 Exchange `promotora.compras` (direct, durable). Mensajes persistentes, *publisher confirms*, ACK manual, `prefetch` configurable.
@@ -287,6 +291,8 @@ Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la 
 
 ## 15. Acuerdos de trabajo vigentes
 
+- Ampliación D-08 aprobada el 29/10/2026: ejecutar EXT-NUM-01–EXT-NUM-07 antes de F10, en orden y por PRs pequeños según docs/LOCALIDADES_NUMERADAS.md. Localidades generales y numeradas por evento; mesas COMPLETA/POR_SILLA, QR por persona y precio como suma de sillas. Esta autorización reemplaza la pausa posterior a F9 solo para este bloque; reportes/Power BI siguen pendientes. Estructura publicada inmutable, reserva atómica por silla, historial de asignaciones y liberación por propietario de reserva; API y Worker actualizados antes de habilitar ventas numeradas. Conservar cambios ajenos del frontend; no incorporarlos sin revisión. Pruebas focalizadas y suite completa al cierre.
+
 - El usuario autoriza terminar F9-03–F9-11 y luego detener implementación: reportes/Power BI se retoman después. Solicita análisis de endpoints, vistas y flujos para frontend, sin elegir aún D-09 ni crear interfaz. Aprueba POST /api/v1/ia/documentos/{id}/reindexar. Una tarea/commit en orden sobre la rama de Fase 9 existente, sin push/merge. Pruebas focalizadas por cambio y una suite completa al cierre; repetir solo ante cambios, fallos o dudas concretas. Evaluación cloud acotada del cierre: dos embeddings y una respuesta con texto público, sin reintentos ni cambios de contraseña del administrador local.
 
 - Excepción expresamente solicitada por el usuario el 13/10/2026: crear su .env privado local con las credenciales proporcionadas/existentes y utilizarlas para una prueba pequeña de embeddings y una conversación. No mostrarlas ni versionarlas; no ampliar esa autorización a divulgar claves. Start-Local.ps1 carga los valores permitidos para API/Worker sin repetir contraseñas y restaura el entorno al salir. El acceso local RabbitMQ queda limitado a recursos de esta aplicación, sin rol administrator. Esta excepción no altera el orden de F9 ni autoriza publicar secretos o activar pagos.
@@ -306,7 +312,7 @@ Decisión pendiente hasta la Fase 11 (ver plan, D-09). Sea cual sea, consume la 
 - Excepción de orden aprobada después de F6-07: adelantar F7-01 → F7-02 → F7-03, una tarea por commit, para desbloquear finalización financiera y pruebas completas; después retomar pendientes de F6-03/F6-04 y F6-08 → F6-09 → F6-10 → F6-11, cerrar salidas F5/F6 y continuar F7-04. No marcar tareas financieras antes de completarlas ni sustituir pruebas de compra pagada por efectos artificiales.
 
 - Una tarea del plan a la vez y en orden de fases. Antes de cada tarea, describir en 3–5 líneas el trabajo y los archivos; esperar «ok» si toca esquema, seguridad, mensajería o dinero.
-- D-08: sin asientos numerados. D-14: MailHog en desarrollo. OLLAMA_API_KEY y GEMINI_API_KEY las introduce el usuario en .env local ignorado o configuración externa; el agente nunca escribe la clave real.
+- D-08: venta mixta general/numerada según docs/LOCALIDADES_NUMERADAS.md; implementación pendiente del bloque EXT-NUM. D-14: MailHog en desarrollo. OLLAMA_API_KEY y GEMINI_API_KEY las introduce el usuario en .env local ignorado o configuración externa; el agente nunca escribe la clave real.
 - Ramas desde develop actualizado: documentación en docs/f1-aclaraciones; PR-B F1-02/F1-03 en feature/f1-identidad-recintos-catalogo; PR-C F1-04 a F1-06 en feature/f1-ventas-finanzas-ia-mensajeria; PR-D F1-07 a F1-10 y F1-11 (después de F1-07) en feature/f1-integridad-bi-seed. Cada PR empieza después de que el usuario mergee el anterior y actualice develop.
 - Solo commits locales, pequeños y en español, Conventional Commits y cuerpo `Refs: <ID>`. Mostrar git status y mensaje antes de cada commit. Nunca push, merge ni modificar main/develop. El usuario gestiona push y PR.
 - Marcar la tarea en el plan en el mismo commit; ejecutar build/test/format cuando existan y apliquen. En F1-10 no existe docker-compose.yml: usar contenedor temporal pgvector/pgvector:pg16 y flyway/flyway sobre database/migrations con el comando de .github/workflows/ci.yml.
