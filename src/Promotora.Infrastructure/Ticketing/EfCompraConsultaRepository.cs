@@ -14,7 +14,7 @@ public sealed class EfCompraConsultaRepository(PromotoraDbContext db) : ICompraC
         var row = await db.Compras.AsNoTracking().SingleOrDefaultAsync(c => c.PublicId == publicId && c.ClienteId == clienteId, ct);
         if (row is null) return null;
         var detalles = await db.DetalleCompra.AsNoTracking().Where(d => d.CompraId == row.Id).OrderBy(d => d.Id).ToArrayAsync(ct);
-        return new(row.Id, ToDto(row, detalles));
+        return new(row.Id, ToDto(row, detalles, await AsignacionesAsync(detalles, ct)));
     }
 
     public async Task<PaginaDto<CompraCreadaDto>> MisComprasAsync(int clienteId, int page, int pageSize, CancellationToken ct)
@@ -25,7 +25,8 @@ public sealed class EfCompraConsultaRepository(PromotoraDbContext db) : ICompraC
         int[] ids = rows.Select(c => c.Id).ToArray();
         var detalles = await db.DetalleCompra.AsNoTracking().Where(d => ids.Contains(d.CompraId)).OrderBy(d => d.Id).ToArrayAsync(ct);
         var grupos = detalles.ToLookup(d => d.CompraId);
-        return new(rows.Select(c => ToDto(c, grupos[c.Id])).ToArray(), page, pageSize, total);
+        var asignaciones = await AsignacionesAsync(detalles, ct);
+        return new(rows.Select(c => ToDto(c, grupos[c.Id], asignaciones)).ToArray(), page, pageSize, total);
     }
 
     public async Task<PaginaDto<BoletoClienteDto>> MisBoletosAsync(int clienteId, int page, int pageSize, CancellationToken ct)
@@ -43,7 +44,12 @@ public sealed class EfCompraConsultaRepository(PromotoraDbContext db) : ICompraC
             x.Boleto.FechaEmision, x.Boleto.FechaUso)).ToArray(), page, pageSize, total);
     }
 
-    private static CompraCreadaDto ToDto(CompraRow c, IEnumerable<DetalleCompraRow> detalles) => new(c.PublicId, c.EventoId, c.Estado,
+    private async Task<AsignacionAsientoRow[]> AsignacionesAsync(IEnumerable<DetalleCompraRow> detalles, CancellationToken ct)
+    {
+        int[] ids = detalles.Select(d => d.Id).ToArray();
+        return await db.AsignacionesAsiento.AsNoTracking().Where(a => ids.Contains(a.DetalleCompraId)).OrderBy(a => a.OrdinalBoleto).ToArrayAsync(ct);
+    }
+    private static CompraCreadaDto ToDto(CompraRow c, IEnumerable<DetalleCompraRow> detalles, IReadOnlyList<AsignacionAsientoRow> asignaciones) => new(c.PublicId, c.EventoId, c.Estado,
         c.FechaCompra, c.ExpiraEn, c.Moneda, c.Subtotal, c.ComisionPlataforma, c.Impuestos, c.Total,
-        detalles.Select(d => new DetalleCompraDto(d.TipoEntradaId, d.Cantidad, d.PrecioUnitario, d.Subtotal)).ToArray());
+        detalles.Select(d => new DetalleCompraDto(d.TipoEntradaId, d.Cantidad, d.PrecioUnitario, d.Subtotal, asignaciones.Any(a => a.DetalleCompraId == d.Id) ? asignaciones.Where(a => a.DetalleCompraId == d.Id).Select(a => a.AsientoId).ToArray() : null)).ToArray());
 }

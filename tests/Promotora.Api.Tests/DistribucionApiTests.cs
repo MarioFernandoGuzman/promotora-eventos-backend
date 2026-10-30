@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
+using Promotora.Application.Ticketing;
 using Promotora.Application.Ticketing.Numeracion;
 using Promotora.Application.Venues;
 using Promotora.Domain.Identity;
@@ -61,5 +62,35 @@ public sealed partial class VenuesApiTests
         Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(root + "/asientos/desbloquear", ids, ct)).StatusCode);
         Assert.Equal(2, await db.TiposEntrada.Where(t => t.Id == tipo.Id).Select(t => t.CupoDisponible).SingleAsync(ct));
         Assert.True(await db.LogsAuditoria.AnyAsync(l => l.EntidadAfectada == "distribuciones_evento", ct));
+        // Reserva mixta: si falla cupo general tampoco se retienen las sillas.
+        var general = new TipoEntradaRow { EventoId = evento.Id, Nombre = "General", Precio = 100, CupoTotal = 1, CupoDisponible = 1 };
+        db.TiposEntrada.Add(general); await db.SaveChangesAsync(ct);
+        await LoginAsync(client, cliente, ct);
+        async Task<HttpResponseMessage> Comprar(ItemCompra[] items, string key)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/compras")
+            { Content = JsonContent.Create(new { eventoId = evento.Id, items }) };
+            request.Headers.Add("Idempotency-Key", key);
+            return await client.SendAsync(request, ct);
+        }
+        await ProblemAsync(await Comprar([new(tipo.Id, 2)], Guid.NewGuid().ToString()), 422, ct);
+        await ProblemAsync(await Comprar([new(tipo.Id, 2, AsientoIds: [ids[0], ids[0]])], Guid.NewGuid().ToString()), 400, ct);
+        await ProblemAsync(await Comprar([new(tipo.Id, 2, AsientoIds: ids), new(general.Id, 2)], Guid.NewGuid().ToString()), 409, ct);
+        Assert.Equal(2, await db.AsientosEvento.CountAsync(a => a.DistribucionId == plano.Id && a.Estado == "DISPONIBLE", ct));
+        string key1 = Guid.NewGuid().ToString(), key2 = Guid.NewGuid().ToString();
+        ItemCompra[] seleccion = [new(tipo.Id, 2, AsientoIds: ids), new(general.Id, 1)];
+        var respuestas = await Task.WhenAll(Comprar(seleccion, key1), Comprar(seleccion, key2));
+        Assert.Single(respuestas, r => r.StatusCode == HttpStatusCode.Accepted);
+        Assert.Single(respuestas, r => r.StatusCode == HttpStatusCode.Conflict);
+        int ganador = respuestas[0].StatusCode == HttpStatusCode.Accepted ? 0 : 1;
+        var compra = (await respuestas[ganador].Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
+        Assert.Equal(369.60m, compra.Total);
+        var repetida = await Comprar(seleccion, ganador == 0 ? key1 : key2);
+        Assert.Equal(HttpStatusCode.Accepted, repetida.StatusCode);
+        var original = (await repetida.Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
+        Assert.Equal(compra.PublicId, original.PublicId);
+        Assert.Equal(ids, original.Items.Single(i => i.TipoEntradaId == tipo.Id).AsientoIds);
+        Assert.Equal(2, await db.AsignacionesAsiento.CountAsync(a => a.Estado == "RESERVADA" && ids.Contains(a.AsientoId), ct));
+        Assert.Equal(0, await db.TiposEntrada.Where(t => t.Id == tipo.Id).Select(t => t.CupoDisponible).SingleAsync(ct));
     }
 }

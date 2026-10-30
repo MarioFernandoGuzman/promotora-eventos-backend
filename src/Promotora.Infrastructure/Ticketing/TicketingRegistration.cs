@@ -56,6 +56,7 @@ public static class TicketingRegistration
         services.TryAddSingleton(new EmisionBoletosOptions());
         services.TryAddSingleton<ICompraProcesamientoEstado, CompraProcesamientoDisponible>();
         services.AddScoped<ICompraRepository, EfCompraRepository>();
+        services.AddScoped<IReservaAsientosPort, EfReservaAsientosRepository>();
         services.AddScoped<ICompraConsultaRepository, EfCompraConsultaRepository>();
         services.AddScoped<ClienteCompraAccess>();
         services.AddScoped<IValidacionBoletoRepository, EfValidacionBoletoRepository>();
