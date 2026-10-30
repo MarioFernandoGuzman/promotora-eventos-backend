@@ -18,9 +18,15 @@ internal static class UbicacionesNumeradas
         return filas.ToDictionary(f => f.BoletoId, f => f.Posicion);
     }
 
+    internal static async Task BloquearEventoAsync(PromotoraDbContext db, int compraId, CancellationToken ct)
+    {
+        int eventoId = await db.Compras.Where(c => c.Id == compraId).Select(c => c.EventoId).SingleAsync(ct);
+        await db.DistribucionesEvento.FromSqlInterpolated($"SELECT * FROM distribuciones_evento WHERE evento_id={eventoId} ORDER BY id FOR UPDATE").AsNoTracking().ToListAsync(ct);
+    }
     internal static async Task LiberarAsync(PromotoraDbContext db, int compraId, long[]? boletosAnulados, DateTime ahora, CancellationToken ct)
     {
         if (db.Database.CurrentTransaction is null || ahora.Kind != DateTimeKind.Utc) throw new InvalidOperationException("Liberación requiere transacción y UTC.");
+        await BloquearEventoAsync(db, compraId, ct);
         string esperado = boletosAnulados is null ? "RESERVADA" : "CONFIRMADA";
         var asignaciones = await db.AsignacionesAsiento.AsNoTracking().Where(s => s.Estado == esperado &&
             db.DetalleCompra.Any(d => d.Id == s.DetalleCompraId && d.CompraId == compraId) &&

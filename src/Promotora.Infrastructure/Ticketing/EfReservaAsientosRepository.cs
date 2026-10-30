@@ -13,6 +13,8 @@ public sealed class EfReservaAsientosRepository(PromotoraDbContext db) : IReserv
     public async Task<Result<Unit>> ReservarAsync(int eventoId, IReadOnlyList<ItemCompra> items, CancellationToken ct)
     {
         if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("Reserva numerada requiere transacción.");
+        // Un orden único de distribución evita ciclos entre compras de varias zonas.
+        await db.DistribucionesEvento.FromSqlInterpolated($"SELECT * FROM distribuciones_evento WHERE evento_id={eventoId} ORDER BY id FOR UPDATE").AsNoTracking().ToListAsync(ct);
         int[] tipos = items.Select(i => i.TipoEntradaId).ToArray();
         var configuradas = await (from t in db.TiposEntrada
                                   join d in db.DistribucionesEvento

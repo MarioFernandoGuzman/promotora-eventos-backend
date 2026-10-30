@@ -1005,6 +1005,7 @@ Solo escritura / consulta (no cuentan como CRUD): `detalle_compra` (parte de com
 | `V8__mensajeria.sql` | `notificaciones`, `outbox_mensajes`, `mensajes_procesados` |
 | `V9__indices_triggers_permisos.sql` | Índices, constraint trigger diferido de perfil, triggers de integridad (§6), cuentas cerradas e inmutabilidad de ledger/logs; roles y `REVOKE` |
 | `V10__seed_catalogos.sql` | Solo categorías de evento y cuentas PLATAFORMA e IMPUESTOS (GTQ); nunca usuarios ni credenciales |
+| `V13__integridad_boleto_numerado.sql` | Refuerza cambios de FK histórica y correspondencia boleto/asignación; sin tablas ni columnas adicionales |
 | `V12__localidades_numeradas.sql` | Cuatro tablas de distribución por evento, mesas, sillas y asignaciones; índices, triggers de integridad y permisos |
 | `V11__pasarela_simulada.sql` | Diario inmutable `pagos_simulados`, permisos SELECT/INSERT y trigger; sin FK ni cambios al ledger |
 | `R__bi_vistas.sql` | Vistas `bi.*` (repetible), rol `bi_reader` |
@@ -1027,7 +1028,7 @@ El primer SUPERADMIN se crea al arrancar la API, solo si no existe ninguno, leye
 
 ## 14. Inventario numerado — V12 (EXT-NUM-02)
 
-V12__localidades_numeradas.sql incorpora distribuciones_evento, mesas_evento, asientos_evento y asignaciones_asiento: **31 tablas y 235 columnas**. Validado con PostgreSQL temporal y Flyway; no aplicado todavía al contenedor local. Los endpoints y el ciclo de compra numerada siguen pendientes de EXT-NUM-03–05. Las tablas existentes conservan sus columnas y datos. Las migraciones anteriores permanecen intactas.
+V12__localidades_numeradas.sql incorpora distribuciones_evento, mesas_evento, asientos_evento y asignaciones_asiento: **31 tablas y 235 columnas**. Validado con PostgreSQL temporal y Flyway; V12/V13 aplicadas y validadas también en el PostgreSQL local durante EXT-NUM-07. Los endpoints y el ciclo de compra numerada están integrados en EXT-NUM-03–05; V13 refuerza sus comprobaciones históricas. Las tablas existentes conservan sus columnas y datos. Las migraciones anteriores permanecen intactas.
 
 Relaciones adicionales implementadas por V12 (complementan §2):
 

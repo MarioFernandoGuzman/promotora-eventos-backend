@@ -74,6 +74,9 @@ public sealed class EfEmisionBoletosRepository(PromotoraDbContext db, EmisionBol
             DatosExtra = b.Asistente.DatosExtraJson is null ? null : JsonDocument.Parse(b.Asistente.DatosExtraJson),
             FechaEmision = b.FechaEmision
         }).ToArray();
+        if (rows.Length == 0) return [];
+        int compraId = await db.DetalleCompra.Where(d => d.Id == rows[0].DetalleCompraId).Select(d => d.CompraId).SingleAsync(ct);
+        await UbicacionesNumeradas.BloquearEventoAsync(db, compraId, ct);
         db.Boletos.AddRange(rows); await db.SaveChangesAsync(ct);
         int[] detalleIds = rows.Select(b => b.DetalleCompraId).Distinct().ToArray();
         var asignaciones = await db.AsignacionesAsiento.AsNoTracking().Where(s => detalleIds.Contains(s.DetalleCompraId)).OrderBy(s => s.OrdinalBoleto).ToArrayAsync(ct);
@@ -97,7 +100,8 @@ public sealed class EfEmisionBoletosRepository(PromotoraDbContext db, EmisionBol
                 if (filas != 1) throw new InvalidOperationException("La silla no estaba reservada.");
             }
         }
-        return await ListarAsync(await db.DetalleCompra.Where(d => d.Id == rows[0].DetalleCompraId).Select(d => d.CompraId).SingleAsync(ct), ct);
+        var ubicaciones = await UbicacionesNumeradas.LeerAsync(db, rows.Select(b => b.Id).ToArray(), ct);
+        return rows.Select(b => ToDto(b) with { Ubicacion = ubicaciones.GetValueOrDefault(b.Id) }).ToArray();
     }
 
     private static BoletoEmitidoDto ToDto(BoletoRow b) => new(b.Id, b.PublicId, b.DetalleCompraId, b.CodigoQr, b.Estado,

@@ -80,3 +80,9 @@ Al completar se genera un QR por persona y GET /api/v1/boletos incluye ubicacion
 El catálogo muestra el selector solo para numerada=true. Carga todas las páginas antes de habilitar selección, agrupa mesa COMPLETA, cuenta personas y adjunta asientoIds. Ante 409 limpia la selección numerada, renueva intención y recarga disponibilidad sin reenviar compra automáticamente. Mis boletos muestra mesa/silla junto al QR. La configuración administrativa inicial se hace con Swagger; no se crea un editor gráfico de distribución de producción en esta ampliación.
 
 El frontend local no se distribuye con Git ni se instala en el backend. Las llamadas siguen siendo REST al API C#; Node/Vite se usan únicamente en esa herramienta cliente local.
+
+## Actualizar conocimiento RAG existente
+
+Los documentos de docs/rag no se reemplazan automáticamente en PostgreSQL. Sube nuevas versiones de REGLAMENTO.md y FAQ.md y ejecuta reindexar con el ID nuevo. La publicación retira la versión anterior de esa serie; no conservar dos documentos independientes con reglas contradictorias. La carga/indexación consume embeddings: no se ejecuta automáticamente en esta ampliación ni se llama a proveedores durante pruebas.
+
+La primera versión toma bloqueos de las distribuciones de un evento en orden de ID, compartido por reserva, emisión y liberación. Favorece consistencia y evita órdenes contradictorios al combinar zonas; puede serializar operaciones del mismo evento. No se ha hecho un benchmark de 500/1000 solicitudes numeradas: esa evidencia histórica corresponde al flujo general. La prueba nueva cubre disputa concurrente por mesa y carreras de estado.
