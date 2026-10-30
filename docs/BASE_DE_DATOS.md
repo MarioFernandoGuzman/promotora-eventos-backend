@@ -1018,7 +1018,30 @@ El primer SUPERADMIN se crea al arrancar la API, solo si no existe ninguno, leye
 
 | ID | Tema | Valor confirmado |
 |---|---|---|
-| D-08 | ¿Asientos numerados? | No: solo localidades con cupo |
+| D-08 | ¿Asientos numerados? | Sí: venta mixta general/numerada; mesas completas o por silla según evento. Diseño aprobado EXT-NUM; aún sin migración |
 | D-11 | ¿Quién asume IVA y comisión? | La comisión se cobra al cliente como cargo por servicio; el IVA se muestra aparte |
 | D-12 | Un rol por usuario | Sí (`usuarios.rol` + una fila de perfil) |
 | D-07 | Refresh tokens | Sí: tabla `refresh_tokens` definida en §4.1; esquema original v2 de 26 tablas, 27 tras diario simulado F6-11 |
+
+
+## 14. Extensión aprobada D-08 — inventario numerado (pendiente de migración)
+
+El esquema implementado conserva **27 tablas y 203 columnas**. El objetivo aprobado incorpora cuatro tablas y pasará a **31 tablas** al aplicar EXT-NUM-02: distribuciones_evento, mesas_evento, asientos_evento y asignaciones_asiento. La especificación de tipos, nulabilidad, claves, defaults, estados, índices y contratos forma parte de este modelo por referencia: [LOCALIDADES_NUMERADAS.md §3](LOCALIDADES_NUMERADAS.md#3-esquema-propuesto). No atribuir estas tablas al diccionario regenerado de V1–V11 ni dar por implementados los endpoints. V12__localidades_numeradas.sql es el nombre previsto si V11 sigue siendo la última versión al implementar; las migraciones anteriores permanecen intactas.
+
+Diagrama objetivo adicional (el diagrama de §2 sigue representando el esquema actual):
+
+```mermaid
+erDiagram
+  EVENTOS ||--o{ DISTRIBUCIONES_EVENTO : configura
+  LOCALIDADES ||--o{ DISTRIBUCIONES_EVENTO : delimita
+  DISTRIBUCIONES_EVENTO ||--o{ MESAS_EVENTO : contiene
+  DISTRIBUCIONES_EVENTO ||--o{ ASIENTOS_EVENTO : ofrece
+  MESAS_EVENTO |o--o{ ASIENTOS_EVENTO : agrupa
+  TIPOS_ENTRADA ||--o{ MESAS_EVENTO : tarifa
+  TIPOS_ENTRADA ||--o{ ASIENTOS_EVENTO : tarifa
+  ASIENTOS_EVENTO ||--o{ ASIGNACIONES_ASIENTO : historial
+  DETALLE_COMPRA ||--o{ ASIGNACIONES_ASIENTO : reserva
+  BOLETOS |o--o| ASIGNACIONES_ASIENTO : confirma
+```
+
+No DELETE sobre estas cuatro tablas; FK históricas RESTRICT, unicidad parcial de asignación vigente por silla y constraint trigger diferido de coherencia. Localidades generales y compras existentes no se convierten. Para numeradas el cupo se deriva de las posiciones; una mesa comparte tipo/precio y modo COMPLETA/POR_SILLA, QR individual. D-15 y reembolso total permanecen vigentes. Detalles en la especificación aprobada; actualizar diccionario real tras la migración.
