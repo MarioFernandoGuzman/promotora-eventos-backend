@@ -1,11 +1,19 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Promotora.Application.Shared;
+using Promotora.Application.Shared.Handlers;
 using Promotora.Application.Ticketing;
 using Promotora.Application.Ticketing.Numeracion;
+using Promotora.Application.Ticketing.Ports;
 using Promotora.Application.Venues;
 using Promotora.Domain.Identity;
+using Promotora.Infrastructure;
 using Promotora.Infrastructure.Catalog.Persistence;
+using Promotora.Infrastructure.Finance;
+using Promotora.Infrastructure.Shared.Messaging;
+using Promotora.Infrastructure.Ticketing;
 
 namespace Promotora.Api.Tests;
 
@@ -92,5 +100,60 @@ public sealed partial class VenuesApiTests
         Assert.Equal(ids, original.Items.Single(i => i.TipoEntradaId == tipo.Id).AsientoIds);
         Assert.Equal(2, await db.AsignacionesAsiento.CountAsync(a => a.Estado == "RESERVADA" && ids.Contains(a.AsientoId), ct));
         Assert.Equal(0, await db.TiposEntrada.Where(t => t.Id == tipo.Id).Select(t => t.CupoDisponible).SingleAsync(ct));
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"/api/v1/compras/{compra.PublicId}/cancelar", null, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"/api/v1/compras/{compra.PublicId}/cancelar", null, ct)).StatusCode);
+        Assert.Equal(2, await db.AsientosEvento.CountAsync(a => ids.Contains(a.Id) && a.Estado == "DISPONIBLE", ct));
+
+        async Task Procesar(Guid publicId, decimal tasaFallo)
+        {
+            var services = new ServiceCollection();
+            services.AddPromotoraInfrastructure(fixture.ConnectionString); services.AddFinanzas(.12m, .10m);
+            services.AddPagoSimulado(new(tasaFallo)); services.AddEmisionBoletos(factory.QrKey, 5);
+            services.AddFinalizacionCompras(); services.AddProcesamientoCompras(); services.AddExpiracionCompras();
+            await using var provider = services.BuildServiceProvider(); await using var scope = provider.CreateAsyncScope();
+            long mensajeId = await db.OutboxMensajes.Where(o => o.AgregadoId == publicId.ToString("D") && o.Tipo == "compra.procesar").Select(o => o.Id).SingleAsync(ct);
+            var consumidor = scope.ServiceProvider.GetRequiredService<IProcesarCompraMensajePort>();
+            var resultado = await consumidor.ProcesarAsync(new(mensajeId, publicId), ct);
+            Assert.True(resultado.IsSuccess, string.Join(",", resultado.Errors.Select(e => e.Code)));
+            Assert.True((await consumidor.ProcesarAsync(new(mensajeId, publicId), ct)).IsSuccess);
+        }
+        var fallida = (await (await Comprar(seleccion, Guid.NewGuid().ToString())).Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
+        await Procesar(fallida.PublicId, 1m);
+        Assert.Equal(2, await db.AsientosEvento.CountAsync(a => ids.Contains(a.Id) && a.Estado == "DISPONIBLE", ct));
+        var vencida = (await (await Comprar(seleccion, Guid.NewGuid().ToString())).Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
+        await db.Compras.Where(c => c.PublicId == vencida.PublicId).ExecuteUpdateAsync(s => s.SetProperty(c => c.ExpiraEn, DateTime.UtcNow.AddSeconds(-1)), ct);
+        async Task Expirar()
+        {
+            using var scope = factory.Services.CreateScope();
+            var expirador = scope.ServiceProvider.GetRequiredService<ICommandHandler<ExpirarComprasCommand, ExpiracionLoteDto>>();
+            Assert.True((await expirador.HandleAsync(new(), ct)).IsSuccess);
+        }
+        async Task Cancelar()
+        {
+            var resultado = await client.PostAsync($"/api/v1/compras/{vencida.PublicId}/cancelar", null, ct);
+            Assert.Contains(resultado.StatusCode, new[] { HttpStatusCode.OK, HttpStatusCode.Conflict });
+        }
+        await Task.WhenAll(Procesar(vencida.PublicId, 1m), Expirar(), Cancelar());
+        Assert.Equal(2, await db.AsientosEvento.CountAsync(a => ids.Contains(a.Id) && a.Estado == "DISPONIBLE", ct));
+        var pagada = (await (await Comprar(seleccion, Guid.NewGuid().ToString())).Content.ReadFromJsonAsync<CompraCreadaDto>(ct))!;
+        await Procesar(pagada.PublicId, 0m);
+        Assert.Equal(2, await db.AsientosEvento.CountAsync(a => ids.Contains(a.Id) && a.Estado == "VENDIDO", ct));
+        var boletos = (await client.GetFromJsonAsync<PaginaDto<BoletoClienteDto>>("/api/v1/boletos?pageSize=100", ct))!.Items.Where(b => b.CompraPublicId == pagada.PublicId).ToArray();
+        Assert.Equal(3, boletos.Length); Assert.Equal(2, boletos.Count(b => b.Ubicacion is not null));
+        Assert.Equal(3, boletos.Select(b => b.CodigoQr).Distinct().Count());
+        var usado = boletos.First(b => b.Ubicacion is not null);
+        await LoginAsync(client, owner, ct);
+        var lectura = await client.PostAsJsonAsync("/api/v1/boletos/validar", new { usado.CodigoQr }, ct);
+        Assert.Equal(HttpStatusCode.OK, lectura.StatusCode);
+        Assert.Equal(usado.Ubicacion, (await lectura.Content.ReadFromJsonAsync<BoletoValidadoDto>(ct))!.Ubicacion);
+        await ProblemAsync(await client.PostAsJsonAsync("/api/v1/boletos/validar", new { usado.CodigoQr }, ct), 409, ct);
+        var administrador = await CreateUserAsync(RolUsuario.ADMINISTRADOR, ct);
+        await LoginAsync(client, administrador, ct);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"/api/v1/compras/{pagada.PublicId}/reembolsar", null, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"/api/v1/compras/{pagada.PublicId}/reembolsar", null, ct)).StatusCode);
+        Assert.Equal(1, await db.AsientosEvento.CountAsync(a => ids.Contains(a.Id) && a.Estado == "DISPONIBLE", ct));
+        Assert.Equal(1, await db.AsientosEvento.CountAsync(a => ids.Contains(a.Id) && a.Estado == "VENDIDO", ct));
+        int compraId = await db.Compras.Where(c => c.PublicId == pagada.PublicId).Select(c => c.Id).SingleAsync(ct);
+        Assert.Equal(0m, await db.MovimientosFinancieros.Where(m => m.CompraId == compraId).SumAsync(m => m.Monto, ct));
     }
 }

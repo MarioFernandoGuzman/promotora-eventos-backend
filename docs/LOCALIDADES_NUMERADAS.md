@@ -1,6 +1,6 @@
 # Propuesta: localidades generales, sillas y mesas numeradas
 
-Estado: diseño aprobado para implementación por el usuario el 29/10/2026. EXT-NUM-01 registra el diseño y EXT-NUM-02 implementa el esquema V12, mapeos y validación de selección. EXT-NUM-03 incorpora configuración, publicación, consulta y bloqueo. EXT-NUM-04 incorpora reserva mixta/asignaciones/idempotencia. No habilitar venta hasta completar EXT-NUM-05: emisión y liberación.
+Estado: diseño aprobado para implementación por el usuario el 29/10/2026. EXT-NUM-01 registra el diseño y EXT-NUM-02 implementa el esquema V12, mapeos y validación de selección. EXT-NUM-03 incorpora configuración, publicación, consulta y bloqueo. EXT-NUM-04 incorpora reserva mixta/asignaciones/idempotencia. EXT-NUM-05 integra emisión, liberación, ubicación y reembolso; venta lista para validación y despliegue conjunto API/Worker.
 
 ## 1. Decisiones confirmadas
 

@@ -56,7 +56,8 @@ public sealed class EfEmisionBoletosRepository(PromotoraDbContext db, EmisionBol
     {
         var rows = await db.Boletos.AsNoTracking().Where(b => db.DetalleCompra.Any(d => d.Id == b.DetalleCompraId && d.CompraId == compraId))
             .OrderBy(b => b.Id).ToArrayAsync(ct);
-        return rows.Select(ToDto).ToArray();
+        var ubicaciones = await UbicacionesNumeradas.LeerAsync(db, rows.Select(b => b.Id).ToArray(), ct);
+        return rows.Select(b => ToDto(b) with { Ubicacion = ubicaciones.GetValueOrDefault(b.Id) }).ToArray();
     }
 
     public async Task<IReadOnlyList<BoletoEmitidoDto>> InsertarAsync(IReadOnlyList<Boleto> boletos, CancellationToken ct)
@@ -74,7 +75,29 @@ public sealed class EfEmisionBoletosRepository(PromotoraDbContext db, EmisionBol
             FechaEmision = b.FechaEmision
         }).ToArray();
         db.Boletos.AddRange(rows); await db.SaveChangesAsync(ct);
-        return rows.Select(ToDto).ToArray();
+        int[] detalleIds = rows.Select(b => b.DetalleCompraId).Distinct().ToArray();
+        var asignaciones = await db.AsignacionesAsiento.AsNoTracking().Where(s => detalleIds.Contains(s.DetalleCompraId)).OrderBy(s => s.OrdinalBoleto).ToArrayAsync(ct);
+        foreach (var grupo in rows.GroupBy(b => b.DetalleCompraId))
+        {
+            var seleccion = asignaciones.Where(a => a.DetalleCompraId == grupo.Key).ToArray();
+            if (seleccion.Length == 0) continue;
+            var emitidos = grupo.ToArray();
+            if (seleccion.Length != emitidos.Length || seleccion.Any(a => a.Estado != "RESERVADA"))
+                throw new InvalidOperationException("Emisión no coincide con las reservas persistidas.");
+            for (int i = 0; i < emitidos.Length; i++)
+            {
+                var boleto = emitidos[i]; var asignacion = seleccion[i];
+                if (asignacion.OrdinalBoleto != i + 1) throw new InvalidOperationException("Orden de asistente/posición inconsistente.");
+                int filas = await db.AsignacionesAsiento.Where(a => a.Id == asignacion.Id && a.Estado == "RESERVADA")
+                    .ExecuteUpdateAsync(s => s.SetProperty(a => a.Estado, "CONFIRMADA").SetProperty(a => a.BoletoId, boleto.Id)
+                        .SetProperty(a => a.FechaConfirmacion, boleto.FechaEmision), ct);
+                if (filas != 1) throw new InvalidOperationException("La reserva cambió al emitir.");
+                filas = await db.AsientosEvento.Where(a => a.Id == asignacion.AsientoId && a.Estado == "RESERVADO")
+                    .ExecuteUpdateAsync(s => s.SetProperty(a => a.Estado, "VENDIDO"), ct);
+                if (filas != 1) throw new InvalidOperationException("La silla no estaba reservada.");
+            }
+        }
+        return await ListarAsync(await db.DetalleCompra.Where(d => d.Id == rows[0].DetalleCompraId).Select(d => d.CompraId).SingleAsync(ct), ct);
     }
 
     private static BoletoEmitidoDto ToDto(BoletoRow b) => new(b.Id, b.PublicId, b.DetalleCompraId, b.CodigoQr, b.Estado,

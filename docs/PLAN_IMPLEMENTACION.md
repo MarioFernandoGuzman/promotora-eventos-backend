@@ -287,7 +287,8 @@ Ampliación aprobada por el usuario el 29/10/2026; excepción al orden original 
   - Seis rutas configuradas; prueba HTTP/BD de propiedad, permisos, publicación, paginación y bloqueo íntegro de mesa aprobada. Swagger esperado: 86 operaciones. Sin activar venta numerada hasta EXT-NUM-05.
 - [x] **EXT-NUM-04** Compra mixta con asientoIds, reserva indivisible, cupos conciliados e idempotencia; conservar orden asiento/asistente; venta numerada deshabilitada hasta integrar Worker.
   - Prueba HTTP/PG: compra mixta con rollback íntegro ante agotado, posiciones duplicadas, selección obligatoria, dos solicitudes concurrentes por mesa (una 202/otra 409) e idempotencia con mismos IDs. Total D-15 verificado. No desplegar hasta EXT-NUM-05.
-- [ ] **EXT-NUM-05** Integrar emisión/QR/consulta, cancelación, expiración, fallo, recuperación y reembolso; confirmar asignaciones junto con ledger/boletos; habilitar solo con API/Worker compatibles.
+- [x] **EXT-NUM-05** Integrar emisión/QR/consulta, cancelación, expiración, fallo, recuperación y reembolso; confirmar asignaciones junto con ledger/boletos; habilitar solo con API/Worker compatibles.
+  - API/BD y servicio del consumidor: QR y ubicación por persona; cancelación repetida, rechazo, carrera procesar/expirar/cancelar, emisión repetida, escaneo único y reembolso mixto VALIDO/USADO. Ledger conciliado. Pasarela fake sin red. Suite completa de cierre en ejecución; no hay venta numerada desplegada todavía.
 - [ ] **EXT-NUM-06** Integración frontend de selección de sillas/mesa completa, disponibilidad, conflictos 409 y ubicación por boleto; revisar trabajo local existente sin sobrescribirlo.
 - [ ] **EXT-NUM-07** Cerrar pruebas integradas/concurrencia/idempotencia, documentación de demo y RAG, revisión de diff y PR; sin reportes/Power BI.
 

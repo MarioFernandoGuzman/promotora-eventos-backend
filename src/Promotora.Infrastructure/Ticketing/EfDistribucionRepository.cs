@@ -29,7 +29,7 @@ public sealed class EfDistribucionRepository(PromotoraDbContext db, IClock clock
                       join c in db.CategoriasEvento on e.CategoriaId equals c.Id
                       where e.Id == eventoId && l.Id == localidadId && e.RecintoId == inicial.RecintoId
                       select new ContextoDistribucion(r.DuenoId, r.Activo && l.Activo && c.Activo && e.Estado != "CANCELADO" && e.Estado != "FINALIZADO",
-                          r.Activo && l.Activo && c.Activo && e.Estado == "EN_VENTA" && e.FechaInicio > clock.UtcNow)).SingleOrDefaultAsync(ct);
+                          r.Activo && l.Activo && c.Activo && (e.Estado == "PROGRAMADO" || e.Estado == "EN_VENTA" || e.Estado == "AGOTADO"))).SingleOrDefaultAsync(ct);
     }
 
     public async Task<DistribucionDto?> ObtenerAsync(int eventoId, int localidadId, bool publico, int page, int pageSize, long? mesaId, CancellationToken ct)

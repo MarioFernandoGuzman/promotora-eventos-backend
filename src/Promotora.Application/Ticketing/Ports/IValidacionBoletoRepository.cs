@@ -1,6 +1,6 @@
 namespace Promotora.Application.Ticketing.Ports;
 
-public sealed record BoletoParaValidar(long Id, Guid PublicId, int DuenoId, string Estado, string EstadoCompra);
+public sealed record BoletoParaValidar(long Id, Guid PublicId, int DuenoId, string Estado, string EstadoCompra, UbicacionBoletoDto? Ubicacion = null);
 public interface IValidacionBoletoRepository
 {
     Task<BoletoParaValidar?> LockAsync(Guid publicId, string codigoQr, CancellationToken ct);

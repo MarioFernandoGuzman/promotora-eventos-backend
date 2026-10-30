@@ -27,7 +27,7 @@ public sealed class EfNotificacionRepository(PromotoraDbContext db, IEmisionBole
         if (destino is null) return null;
         // Texto privado para SMTP: nunca persistir ni loguear códigos QR completos.
         var texto = $"Compra {publicId:D} confirmada. Presenta el código de tu boleto en puerta.\n"
-            + string.Join("\n", boletos.Select(b => $"Boleto {b.PublicId:D}: {b.CodigoQr}"));
+            + string.Join("\n", boletos.Select(b => $"Boleto {b.PublicId:D}: {b.CodigoQr}" + (b.Ubicacion is null ? "" : $" — Localidad {b.Ubicacion.LocalidadId}, {b.Ubicacion.Mesa ?? "sin mesa"}, silla {b.Ubicacion.Silla}")));
         return new(destino.Id, destino.Email, "Confirmación de compra — Promotora", texto);
     }
 

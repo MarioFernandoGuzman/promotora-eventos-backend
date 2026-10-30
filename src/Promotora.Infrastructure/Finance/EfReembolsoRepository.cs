@@ -42,7 +42,7 @@ public sealed class EfReembolsoRepository(PromotoraDbContext db) : IReembolsoRep
         ExigirTransaccion();
         return await db.Pagos.Where(p => p.Id == pagoId && p.Estado == "APROBADO").ExecuteUpdateAsync(s => s.SetProperty(p => p.Estado, "REEMBOLSADO"), ct) == 1;
     }
-    public async Task<Result<IReadOnlyList<BoletoAnulado>>> AnularYDevolverAsync(int compraId, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<BoletoAnulado>>> AnularYDevolverAsync(int compraId, DateTime ahora, CancellationToken ct)
     {
         ExigirTransaccion();
         var anulados = await db.Database.SqlQuery<BoletoAnulado>($"""
@@ -57,6 +57,7 @@ public sealed class EfReembolsoRepository(PromotoraDbContext db) : IReembolsoRep
                 .ExecuteUpdateAsync(s => s.SetProperty(t => t.CupoDisponible, t => t.CupoDisponible + cantidad), ct);
             if (filas != 1) return Result<IReadOnlyList<BoletoAnulado>>.Failure(new Error("reembolso.cupo", "El cupo no admite la devolución; requiere conciliación.", ErrorType.Conflict));
         }
+        await Promotora.Infrastructure.Ticketing.UbicacionesNumeradas.LiberarAsync(db, compraId, anulados.Select(b => b.Id).ToArray(), ahora, ct);
         return Result<IReadOnlyList<BoletoAnulado>>.Success(anulados);
     }
     private void ExigirTransaccion()

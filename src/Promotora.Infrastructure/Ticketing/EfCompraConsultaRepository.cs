@@ -39,9 +39,10 @@ public sealed class EfCompraConsultaRepository(PromotoraDbContext db) : ICompraC
         int total = await query.CountAsync(ct);
         var rows = await query.OrderByDescending(x => x.Boleto.FechaEmision).ThenByDescending(x => x.Boleto.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
+        var ubicaciones = await UbicacionesNumeradas.LeerAsync(db, rows.Select(r => r.Boleto.Id).ToArray(), ct);
         return new(rows.Select(x => new BoletoClienteDto(x.Boleto.PublicId, x.CompraPublicId, x.EventoId, x.TipoEntradaId,
             x.Boleto.CodigoQr, x.Boleto.Estado, new(x.Boleto.NombreAsistente, x.Boleto.DocumentoIdentidad, x.Boleto.DatosExtra?.RootElement.GetRawText()),
-            x.Boleto.FechaEmision, x.Boleto.FechaUso)).ToArray(), page, pageSize, total);
+            x.Boleto.FechaEmision, x.Boleto.FechaUso, ubicaciones.GetValueOrDefault(x.Boleto.Id))).ToArray(), page, pageSize, total);
     }
 
     private async Task<AsignacionAsientoRow[]> AsignacionesAsync(IEnumerable<DetalleCompraRow> detalles, CancellationToken ct)
