@@ -8,7 +8,7 @@ public sealed record AsistentesDetalle(int DetalleCompraId, IReadOnlyList<DatosA
 public sealed record DetalleParaEmision(int Id, int Cantidad);
 public sealed record CompraParaEmision(int Id, Guid PublicId, string Estado, string Moneda, bool? EsCarrera, ImportesCompra Importes, IReadOnlyList<DetalleParaEmision> Detalles);
 public sealed record EmisionBoletosOptions(int? CategoriaCarreraId = null);
-public sealed record BoletoEmitidoDto(long Id, Guid PublicId, int DetalleCompraId, string CodigoQr, string Estado, DatosAsistente Asistente, DateTime FechaEmision);
+public sealed record BoletoEmitidoDto(long Id, Guid PublicId, int DetalleCompraId, string CodigoQr, string Estado, DatosAsistente Asistente, DateTime FechaEmision, UbicacionBoletoDto? Ubicacion = null);
 
 // Servicio interno de finalización; no es un endpoint ni reemplaza la autorización de consultas.
 public interface IEmisionBoletosPort

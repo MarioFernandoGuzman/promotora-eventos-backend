@@ -27,7 +27,7 @@ public sealed class ValidarBoletoHandler(IValidacionBoletoRepository boletos, IT
         var ahora = new DateTime(lectura.Ticks - lectura.Ticks % 10, DateTimeKind.Utc);
         if (!await boletos.UsarAsync(boleto.Id, request.CodigoQr, actual.UsuarioId!.Value, ahora, token)) return Rechazado();
         await audit.WriteAsync(actual.UsuarioId, "VALIDATE", "boletos", boleto.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
-        return Result<BoletoValidadoDto>.Success(new(boleto.PublicId, "USADO", ahora));
+        return Result<BoletoValidadoDto>.Success(new(boleto.PublicId, "USADO", ahora, boleto.Ubicacion));
     }, ct);
 
     private static Result<BoletoValidadoDto> Rechazado() => Result<BoletoValidadoDto>.Failure(new Error("boleto.estado", "El boleto no admite entrada.", ErrorType.Conflict));

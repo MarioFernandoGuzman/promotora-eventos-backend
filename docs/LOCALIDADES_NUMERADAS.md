@@ -1,6 +1,6 @@
 # Propuesta: localidades generales, sillas y mesas numeradas
 
-Estado: diseño aprobado para implementación por el usuario el 29/10/2026. No representa esquema ni endpoints implementados. EXT-NUM-01 registra el diseño; EXT-NUM-02 en adelante siguen pendientes.
+Estado: diseño aprobado para implementación por el usuario el 29/10/2026. EXT-NUM-01 registra el diseño y EXT-NUM-02 implementa el esquema V12, mapeos y validación de selección. EXT-NUM-03 incorpora configuración, publicación, consulta y bloqueo. EXT-NUM-04 incorpora reserva mixta/asignaciones/idempotencia. EXT-NUM-05 integra emisión, liberación, ubicación y reembolso; venta lista para validación y despliegue conjunto API/Worker.
 
 ## 1. Decisiones confirmadas
 
@@ -25,7 +25,7 @@ Una localidad numerada no admite simultáneamente entradas generales en ese even
 
 ## 3. Esquema propuesto
 
-Cuatro tablas nuevas; 27 actuales pasarían a 31, sujeto a verificar el develop actualizado antes de implementar. IDs nuevos BIGINT GENERATED ALWAYS AS IDENTITY; fechas TIMESTAMPTZ UTC; FK históricas ON DELETE RESTRICT. Ninguna de estas tablas tiene DELETE para el rol de aplicación.
+V12 incorpora cuatro tablas nuevas; 31 tablas y 235 columnas verificadas en PostgreSQL temporal. IDs nuevos BIGINT GENERATED ALWAYS AS IDENTITY; fechas TIMESTAMPTZ UTC; FK históricas ON DELETE RESTRICT. Ninguna de estas tablas tiene DELETE para el rol de aplicación.
 
 ### distribuciones_evento
 
@@ -118,7 +118,7 @@ Reembolso: solo boletos VALIDO -> ANULADO liberan su asignación CONFIRMADA y si
 
 ## 6. Contratos aprobados para implementación
 
-Todas las rutas siguientes son contratos nuevos aprobados, todavía no implementados. ADMINISTRADOR habilitado o DUENO_RECINTO propietario para configurar, propiedad validada en Application; ajena/inexistente 404. No nuevas capacidades para CLIENTE.
+Todas las rutas siguientes son contratos nuevos aprobados, implementados en EXT-NUM-03. ADMINISTRADOR habilitado o DUENO_RECINTO propietario para configurar, propiedad validada en Application; ajena/inexistente 404. No nuevas capacidades para CLIENTE.
 
 | Método y ruta | Función |
 |---|---|
@@ -129,7 +129,7 @@ Todas las rutas siguientes son contratos nuevos aprobados, todavía no implement
 | POST /api/v1/eventos/{eventoId}/localidades/{localidadId}/asientos/bloquear | Bloqueo operativo de lista de IDs; mesa completa se trata como unidad; auditoría |
 | POST /api/v1/eventos/{eventoId}/localidades/{localidadId}/asientos/desbloquear | Operación inversa sobre BLOQUEADO, validación y auditoría |
 
-PUT en BORRADOR incorpora filas nuevas y edita las existentes por ID, sin eliminar filas ni reutilizar IDs. Debe incluir las filas existentes y rechazar su omisión para evitar borrados implícitos. Las sillas que no se ofrecerán se marcan BLOQUEADO y siguen contando en la capacidad física. Etiquetas y pertenencia a mesa/tipo solo se editan antes de publicar; mover una silla requiere validar las dos mesas. Las mesas persistidas no se borran y deben conservar al menos una silla al publicar. El tamaño máximo de configuración se fijará de acuerdo con las capacidades admitidas y se documentará en el contrato antes de implementar.
+PUT en BORRADOR incorpora filas nuevas y edita las existentes por ID, sin eliminar filas ni reutilizar IDs. Debe incluir las filas existentes y rechazar su omisión para evitar borrados implícitos. Las sillas que no se ofrecerán se marcan BLOQUEADO y siguen contando en la capacidad física. Etiquetas y pertenencia a mesa/tipo solo se editan antes de publicar; mover una silla requiere validar las dos mesas. Las mesas persistidas no se borran y deben conservar al menos una silla al publicar. El tamaño máximo de configuración y la paginación quedan fijados en el párrafo siguiente.
 
 Límites iniciales del contrato: hasta 2000 sillas y 500 mesas por distribución; payload JSON máximo 2 MiB para configuración; pageSize 1–100, page 1–100000, default 20. La publicación rechaza configuraciones que no respeten las capacidades, aunque estén bajo estos límites. El consumo de listas grandes será paginado. Estos límites técnicos se validarán en EXT-NUM-03 y no alteran la capacidad de localidades generales.
 

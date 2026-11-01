@@ -57,7 +57,7 @@ public sealed class ReembolsarCompraHandler(IReembolsoRepository repository, ICo
             if (!await repository.MarcarPagoAsync(pago.Id, token)) return Conflicto();
             var ids = await cobros.RegistrarMovimientosAsync(compra.Id, plan.Value, clock.UtcNow, token);
             foreach (long id in ids) await audit.WriteAsync(actorId, "CREATE", "movimientos_financieros", id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
-            var anulados = await repository.AnularYDevolverAsync(compra.Id, token);
+            var anulados = await repository.AnularYDevolverAsync(compra.Id, clock.UtcNow, token);
             if (anulados.IsFailure) return Result<ReembolsoDto>.Failure(anulados.Errors);
             foreach (var boleto in anulados.Value) await audit.WriteAsync(actorId, "UPDATE", "boletos", boleto.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
             await audit.WriteAsync(actorId, "REFUND", "pagos", pago.Id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);

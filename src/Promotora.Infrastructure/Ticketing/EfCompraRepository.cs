@@ -15,8 +15,11 @@ public sealed class EfCompraRepository(PromotoraDbContext db) : ICompraRepositor
     {
         var c = await db.Compras.AsNoTracking().SingleOrDefaultAsync(x => x.IdempotencyKey == key, ct);
         if (c is null) return null;
-        var items = await db.DetalleCompra.AsNoTracking().Where(d => d.CompraId == c.Id).OrderBy(d => d.Id)
-            .Select(d => new DetalleCompraDto(d.TipoEntradaId, d.Cantidad, d.PrecioUnitario, d.Subtotal)).ToArrayAsync(ct);
+        var detalles = await db.DetalleCompra.AsNoTracking().Where(d => d.CompraId == c.Id).OrderBy(d => d.Id).ToArrayAsync(ct);
+        int[] detalleIds = detalles.Select(d => d.Id).ToArray();
+        var asignaciones = await db.AsignacionesAsiento.AsNoTracking().Where(a => detalleIds.Contains(a.DetalleCompraId)).OrderBy(a => a.OrdinalBoleto).ToArrayAsync(ct);
+        var items = detalles.Select(d => new DetalleCompraDto(d.TipoEntradaId, d.Cantidad, d.PrecioUnitario, d.Subtotal,
+            asignaciones.Any(a => a.DetalleCompraId == d.Id) ? asignaciones.Where(a => a.DetalleCompraId == d.Id).Select(a => a.AsientoId).ToArray() : null)).ToArray();
         return new(c.ClienteId, new(c.PublicId, c.EventoId, c.Estado, c.FechaCompra, c.ExpiraEn, c.Moneda, c.Subtotal, c.ComisionPlataforma, c.Impuestos, c.Total, items));
     }
 

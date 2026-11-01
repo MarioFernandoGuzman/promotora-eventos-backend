@@ -15,7 +15,7 @@ namespace Promotora.Application.Ticketing;
 public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRepository cupos, ITicketingTransaction transaction,
     IUsuarioRepository usuarios, ISesionRepository sesiones, IUsuarioActual actual, CrearCompraFactory factory,
     CompraOptions options, IClock clock, IAuditLogger audit, IOutboxWriter outbox, ICompraProcesamientoEstado procesamiento,
-    EmisionBoletosOptions emisionOptions) : ICommandHandler<CrearCompraCommand, CrearCompraResultado>
+    EmisionBoletosOptions emisionOptions, IReservaAsientosPort? asientos = null) : ICommandHandler<CrearCompraCommand, CrearCompraResultado>
 {
     public Task<Result<CrearCompraResultado>> HandleAsync(CrearCompraCommand request, CancellationToken ct) => transaction.ExecuteAsync(async token =>
     {
@@ -59,7 +59,8 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
         var items = request.Items.GroupBy(x => x.TipoEntradaId).OrderBy(g => g.Key)
             .Select(g => new ItemCompra(g.Key, checked((int)g.Sum(x => (long)x.Cantidad)),
                 g.Any(x => x.Asistentes is not null)
-                    ? g.SelectMany(x => x.Asistentes ?? Enumerable.Repeat(new DatosAsistente(null, null), x.Cantidad)).ToArray() : null)).ToArray();
+                    ? g.SelectMany(x => x.Asistentes ?? Enumerable.Repeat(new DatosAsistente(null, null), x.Cantidad)).ToArray() : null,
+                g.Any(x => x.AsientoIds is not null) ? g.SelectMany(x => x.AsientoIds ?? []).ToArray() : null)).ToArray();
         var entradas = await compras.LockEntradasAsync(evento.Id, items.Select(x => x.TipoEntradaId).ToArray(), token);
         if (entradas.Count != items.Length) return Fallo("compra.entrada", "Hay entradas inactivas o que no pertenecen al evento.", ErrorType.BusinessRule);
         ahora = clock.UtcNow;
@@ -68,6 +69,13 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
         var dominio = factory.Crear(Guid.NewGuid(), clienteId.Value, evento.Id, ahora, ahora.AddMinutes(options.ReservaMinutos), request.IdempotencyKey,
             options.Moneda, items.Select(x => new EntradaCompra(x.TipoEntradaId, precios[x.TipoEntradaId].EventoId, x.Cantidad, precios[x.TipoEntradaId].Precio)), evento.MaxBoletos);
         if (dominio.IsFailure) return Result<CrearCompraResultado>.Failure(dominio.Errors);
+        if (asientos is not null)
+        {
+            var reserva = await asientos.ReservarAsync(evento.Id, items, token);
+            if (reserva.IsFailure) return Result<CrearCompraResultado>.Failure(reserva.Errors);
+        }
+        else if (items.Any(x => x.AsientoIds is not null))
+            return Fallo("numeracion.configuracion", "Reserva numerada no disponible.", ErrorType.BusinessRule);
         foreach (var item in items)
         {
             if (!await cupos.ReservarAsync(evento.Id, item.TipoEntradaId, item.Cantidad, token))
@@ -75,6 +83,7 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
         }
         var compra = dominio.Value;
         int id = await compras.InsertAsync(compra, token);
+        if (asientos is not null) await asientos.AsignarAsync(id, items, ahora, token);
         await audit.WriteAsync(usuarioId, "CREATE", "compras", id.ToString(CultureInfo.InvariantCulture), actual.IpOrigen, token);
         await outbox.EscribirAsync(new("Compra", compra.PublicId.ToString("D"), TiposMensaje.ProcesarCompra,
             JsonSerializer.SerializeToElement(new
@@ -82,7 +91,9 @@ public sealed class CrearCompraHandler(ICompraRepository compras, ICupoEntradaRe
                 publicId = compra.PublicId,
                 asistentes = items.Where(x => x.Asistentes is not null).Select(x => new { tipoEntradaId = x.TipoEntradaId, personas = x.Asistentes })
             })), token);
-        return Result<CrearCompraResultado>.Success(new(ToDto(compra), false, procesamiento.Disponible));
+        var dto = ToDto(compra);
+        dto = dto with { Items = dto.Items.Select(d => d with { AsientoIds = items.Single(i => i.TipoEntradaId == d.TipoEntradaId).AsientoIds }).ToArray() };
+        return Result<CrearCompraResultado>.Success(new(dto, false, procesamiento.Disponible));
     }, ct);
 
     private static Result<CrearCompraResultado> Fallo(string codigo, string mensaje, ErrorType tipo) => Result<CrearCompraResultado>.Failure(new Error(codigo, mensaje, tipo));

@@ -60,7 +60,7 @@ La API actual devuelve tokens JSON, no una cookie HttpOnly automática. El almac
 
 El listado público incluye eventos PROGRAMADO, EN_VENTA y AGOTADO con recinto/categoría activos. Usa el estado y las ventanas de venta para habilitar la compra; que un evento aparezca en el catálogo no implica que se pueda comprar en ese instante. El agente estructurado consulta una selección más estricta de eventos EN_VENTA futuros con venta vigente.
 
-El mapa usa imagenPlanoUrl y localidades.geometria. Dibuja polígonos sobre el plano manteniendo la misma referencia de coordenadas que usa el editor administrativo. Hay áreas con cupo, sin asientos numerados. Con eventoId, el mapa incluye inventario de sus entradas; sin ese parámetro, cupoDisponible puede ser null. Un cupo mostrado es informativo: el servidor puede rechazar la reserva si otro cliente lo agotó.
+El mapa usa imagenPlanoUrl y localidades.geometria. Dibuja polígonos sobre el plano manteniendo la misma referencia de coordenadas que usa el editor administrativo. D-08 ahora permite áreas generales y numeradas por evento. Para tipos numerada=true consulta la distribución pública paginada, permite selección de silla o mesa completa y envía asientoIds; las coordenadas de posiciones son normalizadas 0..1. No deduzcas disponibilidad a partir de una página incompleta. Contrato y flujo de actualización en [GUIA_NUMERACION.md](GUIA_NUMERACION.md). Con eventoId, el mapa incluye inventario de sus entradas; sin ese parámetro, cupoDisponible puede ser null. Un cupo mostrado es informativo: el servidor puede rechazar la reserva si otro cliente lo agotó.
 
 ### Compra asíncrona
 

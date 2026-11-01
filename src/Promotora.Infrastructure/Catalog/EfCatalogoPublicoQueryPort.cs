@@ -63,7 +63,7 @@ public sealed class EfCatalogoPublicoQueryPort(PromotoraDbContext db) : ICatalog
                                 select new PresentadorPublicoDto(p.Id, p.Nombre, p.Tipo, relation.Rol, p.Biografia, p.ImagenUrl)).ToListAsync(ct);
         var tipos = await db.TiposEntrada.AsNoTracking().Where(t => t.EventoId == id && t.Activo
             && (t.LocalidadId == null || db.Localidades.Any(l => l.Id == t.LocalidadId && l.Activo))).OrderBy(t => t.Id)
-            .Select(t => new TipoEntradaPublicoDto(t.Id, t.LocalidadId, t.Nombre, t.Precio, t.CupoTotal, t.CupoDisponible)).ToListAsync(ct);
+            .Select(t => new TipoEntradaPublicoDto(t.Id, t.LocalidadId, t.Nombre, t.Precio, t.CupoTotal, t.CupoDisponible, db.DistribucionesEvento.Any(d => d.EventoId == t.EventoId && d.LocalidadId == t.LocalidadId && d.Estado == "PUBLICADA"))).ToListAsync(ct);
         var row = evento.Evento;
         await tx.CommitAsync(ct);
         return new(row.Id, row.Nombre, row.Descripcion, row.FechaInicio, row.FechaFin, row.FechaInicioVenta, row.FechaFinVenta,

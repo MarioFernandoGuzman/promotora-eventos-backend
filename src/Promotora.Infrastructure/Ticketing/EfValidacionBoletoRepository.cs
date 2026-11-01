@@ -24,7 +24,8 @@ public sealed class EfValidacionBoletoRepository(PromotoraDbContext db) : IValid
         await db.Compras.FromSqlInterpolated($"SELECT * FROM compras WHERE id={inicial.CompraId} FOR SHARE").AsNoTracking().ToListAsync(ct);
         var actual = await query.SingleOrDefaultAsync(ct);
         if (actual is null || actual.RecintoId != inicial.RecintoId || actual.EventoId != inicial.EventoId || actual.CompraId != inicial.CompraId) return null;
-        return new(actual.Id, actual.PublicId, actual.DuenoId, actual.Estado, actual.EstadoCompra);
+        var ubicaciones = await UbicacionesNumeradas.LeerAsync(db, [actual.Id], ct);
+        return new(actual.Id, actual.PublicId, actual.DuenoId, actual.Estado, actual.EstadoCompra, ubicaciones.GetValueOrDefault(actual.Id));
     }
 
     public async Task<bool> UsarAsync(long id, string codigoQr, int usuarioId, DateTime fechaUso, CancellationToken ct)

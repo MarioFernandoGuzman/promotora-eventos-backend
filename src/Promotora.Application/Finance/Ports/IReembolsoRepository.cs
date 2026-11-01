@@ -13,5 +13,5 @@ public interface IReembolsoRepository
     Task<IReadOnlyList<CuentaCobro>> LockCuentasAsync(IReadOnlyList<int> ids, CancellationToken ct);
     Task<bool> BoletosCompletosAsync(int compraId, bool reembolsada, CancellationToken ct);
     Task<bool> MarcarPagoAsync(long pagoId, CancellationToken ct);
-    Task<Result<IReadOnlyList<BoletoAnulado>>> AnularYDevolverAsync(int compraId, CancellationToken ct);
+    Task<Result<IReadOnlyList<BoletoAnulado>>> AnularYDevolverAsync(int compraId, DateTime ahora, CancellationToken ct);
 }

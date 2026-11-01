@@ -57,6 +57,8 @@ public sealed class EfCupoEntradaRepository(PromotoraDbContext db) : ICupoEntrad
                 .ExecuteUpdateAsync(s => s.SetProperty(t => t.CupoDisponible, t => t.CupoDisponible + detalle.Cantidad), ct);
         }
 
+        await UbicacionesNumeradas.LiberarAsync(db, compraId, null, ahora, ct);
+
         return true;
     }
 

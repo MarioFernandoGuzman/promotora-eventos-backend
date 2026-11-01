@@ -11,7 +11,7 @@ public sealed record EventoResumenPublicoDto(int Id, string Nombre, DateTime Fec
 public sealed record CategoriaPublicaDto(int Id, string Nombre);
 public sealed record RecintoPublicoDto(int Id, string Nombre, string? Ciudad, string? Direccion, decimal? Latitud, decimal? Longitud, string? ImagenPlanoUrl);
 public sealed record PresentadorPublicoDto(int Id, string Nombre, string Tipo, string? Rol, string? Biografia, string? ImagenUrl);
-public sealed record TipoEntradaPublicoDto(int Id, int? LocalidadId, string Nombre, decimal Precio, int CupoTotal, int CupoDisponible);
+public sealed record TipoEntradaPublicoDto(int Id, int? LocalidadId, string Nombre, decimal Precio, int CupoTotal, int CupoDisponible, bool Numerada = false);
 public sealed record EventoPublicoDto(int Id, string Nombre, string? Descripcion, DateTime FechaInicio, DateTime? FechaFin,
     DateTime? FechaInicioVenta, DateTime? FechaFinVenta, int MaxBoletosPorCompra, string Estado, string? ImagenUrl,
     CategoriaPublicaDto Categoria, RecintoPublicoDto Recinto, IReadOnlyList<PresentadorPublicoDto> Presentadores, IReadOnlyList<TipoEntradaPublicoDto> TiposEntrada);
