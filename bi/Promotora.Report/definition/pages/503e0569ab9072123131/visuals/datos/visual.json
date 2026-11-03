@@ -1,0 +1,178 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "evento_id"
+                }
+              },
+              "nativeQueryRef": "evento_id",
+              "queryRef": "VentasPorEvento.evento_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "evento_nombre"
+                }
+              },
+              "nativeQueryRef": "evento_nombre",
+              "queryRef": "VentasPorEvento.evento_nombre"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "VentasPorEvento.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "R-01 Compras completadas"
+                }
+              },
+              "nativeQueryRef": "R-01 Compras completadas",
+              "queryRef": "VentasPorEvento.R-01 Compras completadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "R-01 Boletos vendidos brutos"
+                }
+              },
+              "nativeQueryRef": "R-01 Boletos vendidos brutos",
+              "queryRef": "VentasPorEvento.R-01 Boletos vendidos brutos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "R-01 Subtotal"
+                }
+              },
+              "nativeQueryRef": "R-01 Subtotal",
+              "queryRef": "VentasPorEvento.R-01 Subtotal"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "R-01 Comision"
+                }
+              },
+              "nativeQueryRef": "R-01 Comision",
+              "queryRef": "VentasPorEvento.R-01 Comision"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "R-01 IVA"
+                }
+              },
+              "nativeQueryRef": "R-01 IVA",
+              "queryRef": "VentasPorEvento.R-01 IVA"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "R-01 Total bruto"
+                }
+              },
+              "nativeQueryRef": "R-01 Total bruto",
+              "queryRef": "VentasPorEvento.R-01 Total bruto"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-01 - Ventas por evento'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

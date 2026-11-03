@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.1.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Promotora"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "440c5dd0-744f-40e6-91a2-9330e53d2bf4"
+  }
+}

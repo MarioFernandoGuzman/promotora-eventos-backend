@@ -10,6 +10,7 @@ using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Images;
+using Promotora.Infrastructure.Reporting;
 using Promotora.Infrastructure.Shared.Health;
 using Promotora.Infrastructure.Ticketing;
 using Promotora.Infrastructure.Venues;
@@ -79,6 +80,7 @@ if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Promot
     builder.Services.AddDocumentosRag();
     builder.Services.AddIdentityRegistration();
     builder.Services.AddCuentasFinancieras();
+    builder.Services.AddReporting();
     Promotora.Infrastructure.Reviews.ReviewsRegistration.AddReviews(builder.Services);
     builder.Services.AddReembolsos();
     builder.Services.AddVenues();
@@ -121,6 +123,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
     options.OperationFilter<BearerOperationFilter>();
     options.OperationFilter<ImagenesOperationFilter>();
+    options.OperationFilter<Promotora.WebApi.Reporting.ReportesOperationFilter>();
     options.SchemaFilter<IdentityExamplesFilter>();
     options.SchemaFilter<VenuesExamplesFilter>();
     options.SchemaFilter<CatalogExamplesFilter>();

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "IngresosDueno"
+                    }
+                  },
+                  "Property": "dueno_id"
+                }
+              },
+              "nativeQueryRef": "dueno_id",
+              "queryRef": "IngresosDueno.dueno_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "IngresosDueno"
+                    }
+                  },
+                  "Property": "cuenta_id"
+                }
+              },
+              "nativeQueryRef": "cuenta_id",
+              "queryRef": "IngresosDueno.cuenta_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "IngresosDueno"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "IngresosDueno.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "IngresosDueno"
+                    }
+                  },
+                  "Property": "R-07 Ventas"
+                }
+              },
+              "nativeQueryRef": "R-07 Ventas",
+              "queryRef": "IngresosDueno.R-07 Ventas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "IngresosDueno"
+                    }
+                  },
+                  "Property": "R-07 Reembolsos"
+                }
+              },
+              "nativeQueryRef": "R-07 Reembolsos",
+              "queryRef": "IngresosDueno.R-07 Reembolsos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "IngresosDueno"
+                    }
+                  },
+                  "Property": "R-07 Liquidaciones"
+                }
+              },
+              "nativeQueryRef": "R-07 Liquidaciones",
+              "queryRef": "IngresosDueno.R-07 Liquidaciones"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "IngresosDueno"
+                    }
+                  },
+                  "Property": "R-07 Movimiento neto"
+                }
+              },
+              "nativeQueryRef": "R-07 Movimiento neto",
+              "queryRef": "IngresosDueno.R-07 Movimiento neto"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-07 - Ingresos por dueno'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "height": 720,
+  "name": "503e0569ab9072123131",
+  "displayName": "R-01 Ventas por evento",
+  "width": 1280,
+  "displayOption": "FitToPage",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json"
+}

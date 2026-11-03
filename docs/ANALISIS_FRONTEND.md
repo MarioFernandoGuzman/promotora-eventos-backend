@@ -2,7 +2,7 @@
 
 Análisis del cierre de Fase 9 basado en controllers, handlers, permisos y Swagger de la API compilada: **80 operaciones REST**, diez públicas y setenta con autenticación. El [inventario completo](ENDPOINTS.md) incluye método, ruta, acceso y descripción. Las rutas técnicas /health/live, /health/ready y /swagger son adicionales.
 
-El backend está preparado para integrar catálogo, identidad, recintos, ventas simuladas, boletos, cuentas, reseñas y agente público con RAG. Este documento propone pantallas y flujos; no crea un frontend ni decide framework. D-09 permanece pendiente. A petición del usuario, reportes/exportaciones y Power BI se revisarán después; no se presentan como implementados.
+El backend está preparado para integrar catálogo, identidad, recintos, ventas simuladas, boletos, cuentas, reseñas y agente público con RAG. Este documento propone pantallas y flujos; no crea un frontend ni decide framework. D-09 permanece pendiente. Ampliaciones posteriores: seis operaciones de numeración y una de reportes, total 87 REST. Los 15 reportes JSON/Excel/PDF ya están disponibles para administración; el proyecto Power BI tiene apertura/refresh reales comprobados y PBIX local guardado y verificado.
 
 ## Organización de la aplicación
 
@@ -25,7 +25,8 @@ El backend está preparado para integrar catálogo, identidad, recintos, ventas 
 | Moderación | ADMINISTRADOR | Cola pendiente y decisión aprobar/rechazar | GET /resenas, PATCH /resenas/{id}/moderar |
 | Documentos de José | ADMINISTRADOR | Subir, revisar texto, versionar, indexar y desactivar | /ia/documentos |
 | Chat José | Visitante o usuario | Preguntas públicas y citas expandibles | POST /ia/consultas |
-| Reportes / Power BI | Pendiente | No añadir botones que aparenten exportación funcional | Fase 10 pendiente |
+| Reportes | ADMINISTRADOR | Quince reportes, filtros, totales y descargas Excel/PDF | GET /reportes/{codigo}?formato=json\|xlsx\|pdf |
+| Power BI | Administración con credencial BI | Tablero local independiente de JWT; apertura/refresh y PBIX local comprobados | bi/Promotora.pbip y POWER_BI.md |
 
 Todas las rutas de la tabla tienen prefijo /api/v1. Las categorías/presentadores de administración se leen con sesión completa y solo ADMINISTRADOR los modifica. En pantallas públicas usa los datos de categoría/presentadores incluidos en el catálogo de eventos; no llames a endpoints privados para poblar esos elementos.
 
@@ -105,9 +106,9 @@ Reinicia la API después de configurarlo. El puerto 5173 es un ejemplo de desarr
 
 ## Vistas de PostgreSQL y límites del alcance
 
-Ya existen 16 vistas bi.vw_* de ventas, ocupación, asistencia, ingresos, comisiones, clientes, compras no exitosas, calificaciones, estados, carreras, uso de IA, auditoría y notificaciones. Se crean por Flyway y están mapeadas como keyless en Infrastructure. Son base para la Fase 10; no equivalen a endpoints de reportes terminados.
+Existen 16 vistas bi.vw_* de ventas, ocupación, asistencia, ingresos, comisiones, clientes, compras no exitosas, calificaciones, estados, carreras, uso de IA, auditoría y notificaciones. Se crean por Flyway y están mapeadas como keyless en Infrastructure. F10-01–05 exponen esos 15 reportes mediante una ruta común administrativa.
 
-El frontend no debe conectarse directamente a PostgreSQL ni al esquema bi. Los quince reportes REST y exportaciones Excel/PDF aún no están implementados; Power BI y su entrega se harán después, conforme a la instrucción del usuario.
+El frontend no debe conectarse directamente a PostgreSQL ni al esquema bi. Consulta `/api/v1/reportes/{codigo}` con Bearer administrativo. Construye columnas y filas desde `secciones`; muestra `nota` y `totales` del servidor, sin sumar solamente la página actual. R-15 contiene dos secciones independientes. Para descargas usa `formato=xlsx|pdf`, conserva Authorization y recibe un Blob con Content-Disposition. Una respuesta 422 indica reducir filtros, no descargar el ProblemDetails como archivo. Formatos y límites en [REPORTES.md](REPORTES.md). Power BI usa su propio LOGIN de solo lectura y no se integra como un iframe público; su guardado PBIX está comprobado según [POWER_BI.md](POWER_BI.md).
 
 El backend tiene las capas Domain, Application, Infrastructure, WebApi y Worker. La UI consume WebApi, no RabbitMQ, servicios de IA ni el ledger. Los controllers delegan casos de uso; repositorios/SQL y proveedores viven en Infrastructure. Esta separación permite construir el frontend sin duplicar reglas críticas en JavaScript.
 
@@ -126,6 +127,6 @@ No hay endpoints dedicados de dashboard, notificaciones al navegador, recuperaci
 3. Compra simulada, polling, boletos y validación con Worker habilitado conscientemente.
 4. Paneles de recintos/eventos, reseñas/moderación y cuentas según rol.
 5. Chat con fuentes y panel documental, usando los contratos ya disponibles.
-6. Añadir reportes/BI cuando se retome Fase 10. No marcar tareas F11 como realizadas solo por este análisis.
+6. Integrar el panel administrativo de reportes con el contrato de F10; Power BI permanece como aplicación administrativa independiente. No marcar tareas F11 como realizadas solo por este análisis.
 
 Antes de una exposición pública siguen siendo necesarios el cierre de seguridad/despliegue de Fase 12, la configuración real del proxy/CORS y decidir almacenamiento de tokens, alojamiento de archivos y una pasarela/correo reales si se quieren servicios de producción. El estado actual permite desarrollo e integración local con la pasarela simulada; no se presenta como un despliegue productivo completo.

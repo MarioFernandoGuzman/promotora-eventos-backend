@@ -56,8 +56,8 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | Q7 | Agente de IA con información pública | F9-06, F9-07 | ✅ |
 | Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ✅ |
 | Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ✅ |
-| Q10 | ≥ 15 reportes con filtros y totales, exportables a Excel y PDF | F10-01 … F10-05 | ⬜ |
-| Q11 | Integración con Power BI | F1-08, F10-06 | ⬜ |
+| Q10 | ≥ 15 reportes con filtros y totales, exportables a Excel y PDF | F10-01 … F10-05 | ✅ |
+| Q11 | Integración con Power BI | F1-08, F10-06 | ✅ |
 | Q12 | Frontend funcional e integrado | F11-* | ⬜ |
 | Q13 | Entregables: CLAUDE.md, AGENTS.md y Manual Técnico | F0-05, F12-04 | ⬜ |
 | Q14 | Funcional: venta por localidad/general, alta demanda, finanzas, mapas, reseñas, 3 perfiles | F4-*, F5-*, F6-*, F7-*, F8-* | ⬜ |
@@ -297,15 +297,24 @@ Ampliación aprobada por el usuario el 29/10/2026; excepción al orden original 
 Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02–03); C ciclo de compra completo (04–05); D frontend y cierre (06–07). Excepción posterior aprobada el 29/10/2026: preparar 02–07 en una rama local basada en A mientras su CI sigue pendiente, sin esperar merge; PR de backend unificado y commits por tarea. Frontend solo local excluido; en 06 se versiona únicamente su guía. Cada rama desde develop actualizado después del merge previo del usuario; no push/merge del agente. Una tarea/commit con Refs. Pruebas focalizadas por cambio y suite completa al cierre. Salida: no doble asignación, reservas múltiples indivisibles, liberación una vez por propietario, boletos históricos correctos y generales sin regresiones.
 
 ### Fase 10 — Reportería y BI
-- [ ] **F10-01** Infraestructura de reportes: contrato común (filtros, agrupación, totales, paginación) y `GET /reportes/{codigo}`.
-- [ ] **F10-02** Reportes R-01 … R-05.
-- [ ] **F10-03** Reportes R-06 … R-10.
-- [ ] **F10-04** Reportes R-11 … R-15.
-- [ ] **F10-05** Exportadores Excel (ClosedXML) y PDF (QuestPDF) detrás de `IReportExporter`; auditoría de `EXPORT`.
-- [ ] **F10-06** Power BI: cadena de conexión a `bi` con `bi_reader`, archivo `.pbix` de ejemplo y guía.
-- [ ] **F10-07** Pruebas: totales de reportes coinciden con datos conocidos.
+- [x] **F10-01** Infraestructura de reportes: contrato común (filtros, agrupación, totales, paginación) y `GET /reportes/{codigo}`.
+  - Contrato `/api/v1/reportes/{codigo}` exclusivo de ADMINISTRADOR habilitado, también verificado en Application. Consultas parametrizadas de vistas `bi`, snapshot consistente, agrupaciones fijas, filtros incompatibles rechazados y totales por moneda independientes de la página. Los códigos se incorporan en F10-02–04. Prueba focalizada de validación aprobada.
+- [x] **F10-02** Reportes R-01 … R-05.
+  - Ventas brutas agrupadas y ocupación ponderada desde vistas bi; prueba API con venta 369.60 GTQ, ocupación 3/5, 401/403, filtros incompatibles y totales conservados en página vacía aprobada.
+- [x] **F10-03** Reportes R-06 … R-10.
+  - Asistencia, ledger neto por dueño, comisiones, clientes y compras no exitosas. Prueba API antes/después de reembolso aprobada: 3 boletos anulados, netos 300/30 → 0/0 y ventas brutas conservadas en 369.60 GTQ.
+- [x] **F10-04** Reportes R-11 … R-15.
+  - Calificaciones ponderadas, eventos, carreras, IA y auditoría/notificaciones. Prueba API focalizada aprobada, sin conversaciones expuestas. R-14 informa tiempo por grupo diario; total de tiempo null porque la vista no conserva el conteo de mediciones no nulas. R-15 separa dos secciones y etiqueta participaciones de usuarios (no únicos globales). Sin cambios de esquema.
+- [x] **F10-05** Exportadores Excel (ClosedXML) y PDF (QuestPDF) detrás de `IReportExporter`; auditoría de `EXPORT`.
+  - XLSX/PDF abiertos y verificados con ClosedXML/PdfPig desde API, total 369.60 y dos auditorías persistidas. Descarga completa filtrada (sin paginación), límites 10000/500 filas por sección, 422 sin parcial, archivos temporales eliminados al cerrar. Licencias y uso local documentados en [REPORTES.md](REPORTES.md).
+- [x] **F10-06** Power BI: cadena de conexión a `bi` con `bi_reader`, archivo `.pbix` de ejemplo y guía.
+  - Proyecto versionable bi/Promotora.pbip (16 vistas, Resumen + 15 páginas, medidas DAX), Desktop gratuito, LOGIN local promotora_bi/bi_reader y permisos/autenticación TCP verificados. Clave privada en .env.powerbi ignorado. Validación Microsoft aprobada. Comprobación real: 16 páginas abiertas, Actualizar sin errores, conexiones Mashup Engine como promotora_bi y 4 eventos cotejados (2 BORRADOR/2 EN_VENTA). El usuario confirmó el guardado y se verificó bi/Promotora.pbix (117315 bytes, modelo DataModel y 16 páginas), ignorado por Git. Fase 10 cerrada localmente; CI remoto pendiente al publicar PR. Ver [POWER_BI.md](POWER_BI.md).
+- [x] **F10-07** Pruebas: totales de reportes coinciden con datos conocidos.
+  - Backend validado con ventas 369.60 GTQ, reembolso neto cero, cancelación 246.40 no cobrada, asistencia/carreras, fechas, paginación, permisos, auditoría, XLSX/PDF legibles y límite PDF. Suite completa: 532/534 inicialmente; dos expectativas de prueba corregidas y cada caso reejecutado aprobado (sin repetir suite). Build Release sin warnings y format limpio. F10-06/Q11 cerrados tras confirmar el PBIX final, sin repetir suite para cambios documentales. Ver [VALIDACION_FASE_10.md](VALIDACION_FASE_10.md).
 
 **Salida:** 15 reportes exportables y un tablero de Power BI funcionando.
+
+Salida comprobada localmente el 03/11/2026. Pendiente únicamente CI/revisión remotos del PR; no iniciar F11 sin acordarlo con el usuario.
 
 ### Fase 11 — Frontend e integración
 - [ ] **F11-01** Definir stack del frontend (D-09) y crear proyecto.
@@ -338,21 +347,21 @@ Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02
 
 Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas, evento, categoría, recinto, estado), agrupaciones y totales; exportables a Excel y PDF.
 
-- [ ] **R-01** Ventas por evento
-- [ ] **R-02** Ventas por categoría
-- [ ] **R-03** Ventas por recinto
-- [ ] **R-04** Ventas por rango de fechas y método de pago
-- [ ] **R-05** Ocupación por localidad
-- [ ] **R-06** Boletos vendidos vs. usados (asistencia)
-- [ ] **R-07** Ingresos por dueño de recinto
-- [ ] **R-08** Comisiones de la plataforma
-- [ ] **R-09** Top clientes
-- [ ] **R-10** Compras fallidas, canceladas y expiradas
-- [ ] **R-11** Calificación promedio por presentador
-- [ ] **R-12** Eventos por estado
-- [ ] **R-13** Inscritos por distancia en carreras (5K/10K/21K/42K)
-- [ ] **R-14** Uso del agente de IA (consultas, tiempos, tokens)
-- [ ] **R-15** Auditoría de operaciones y notificaciones por estado
+- [x] **R-01** Ventas por evento
+- [x] **R-02** Ventas por categoría
+- [x] **R-03** Ventas por recinto
+- [x] **R-04** Ventas por rango de fechas y método de pago
+- [x] **R-05** Ocupación por localidad
+- [x] **R-06** Boletos vendidos vs. usados (asistencia)
+- [x] **R-07** Ingresos por dueño de recinto
+- [x] **R-08** Comisiones de la plataforma
+- [x] **R-09** Top clientes
+- [x] **R-10** Compras fallidas, canceladas y expiradas
+- [x] **R-11** Calificación promedio por presentador
+- [x] **R-12** Eventos por estado
+- [x] **R-13** Inscritos por distancia en carreras (5K/10K/21K/42K)
+- [x] **R-14** Uso del agente de IA (consultas, tiempos, tokens)
+- [x] **R-15** Auditoría de operaciones y notificaciones por estado
 
 ---
 
@@ -367,8 +376,8 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 - [ ] Prueba de concurrencia: cero sobreventa
 - [ ] Agente de IA + RAG con ingesta, recuperación y citación demostrables
 - [ ] `logs_auditoria` y `logs_agente_ia` con datos reales
-- [ ] 15 reportes con exportación Excel y PDF
-- [ ] Power BI conectado al esquema `bi`
+- [x] 15 reportes con exportación Excel y PDF
+- [x] Power BI conectado al esquema `bi`
 - [ ] Frontend integrado con el backend
 - [ ] `AGENTS.md`, `CLAUDE.md` y Manual Técnico entregados
 - [ ] Sin secretos en el repositorio
