@@ -297,7 +297,8 @@ Ampliación aprobada por el usuario el 29/10/2026; excepción al orden original 
 Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02–03); C ciclo de compra completo (04–05); D frontend y cierre (06–07). Excepción posterior aprobada el 29/10/2026: preparar 02–07 en una rama local basada en A mientras su CI sigue pendiente, sin esperar merge; PR de backend unificado y commits por tarea. Frontend solo local excluido; en 06 se versiona únicamente su guía. Cada rama desde develop actualizado después del merge previo del usuario; no push/merge del agente. Una tarea/commit con Refs. Pruebas focalizadas por cambio y suite completa al cierre. Salida: no doble asignación, reservas múltiples indivisibles, liberación una vez por propietario, boletos históricos correctos y generales sin regresiones.
 
 ### Fase 10 — Reportería y BI
-- [ ] **F10-01** Infraestructura de reportes: contrato común (filtros, agrupación, totales, paginación) y `GET /reportes/{codigo}`.
+- [x] **F10-01** Infraestructura de reportes: contrato común (filtros, agrupación, totales, paginación) y `GET /reportes/{codigo}`.
+  - Contrato `/api/v1/reportes/{codigo}` exclusivo de ADMINISTRADOR habilitado, también verificado en Application. Consultas parametrizadas de vistas `bi`, snapshot consistente, agrupaciones fijas, filtros incompatibles rechazados y totales por moneda independientes de la página. Los códigos se incorporan en F10-02–04. Prueba focalizada de validación aprobada.
 - [ ] **F10-02** Reportes R-01 … R-05.
 - [ ] **F10-03** Reportes R-06 … R-10.
 - [ ] **F10-04** Reportes R-11 … R-15.
