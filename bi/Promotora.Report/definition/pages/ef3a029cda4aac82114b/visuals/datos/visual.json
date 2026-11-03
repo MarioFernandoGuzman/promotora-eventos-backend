@@ -1,0 +1,122 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasDiarias"
+                    }
+                  },
+                  "Property": "fecha"
+                }
+              },
+              "nativeQueryRef": "fecha",
+              "queryRef": "VentasDiarias.fecha"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasDiarias"
+                    }
+                  },
+                  "Property": "metodo"
+                }
+              },
+              "nativeQueryRef": "metodo",
+              "queryRef": "VentasDiarias.metodo"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasDiarias"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "VentasDiarias.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasDiarias"
+                    }
+                  },
+                  "Property": "R-04 Compras completadas"
+                }
+              },
+              "nativeQueryRef": "R-04 Compras completadas",
+              "queryRef": "VentasDiarias.R-04 Compras completadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasDiarias"
+                    }
+                  },
+                  "Property": "R-04 Total bruto"
+                }
+              },
+              "nativeQueryRef": "R-04 Total bruto",
+              "queryRef": "VentasDiarias.R-04 Total bruto"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-04 - Ventas diarias y metodo'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

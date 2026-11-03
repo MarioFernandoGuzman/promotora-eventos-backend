@@ -1,0 +1,178 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "categoria_id"
+                }
+              },
+              "nativeQueryRef": "categoria_id",
+              "queryRef": "VentasPorCategoria.categoria_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "categoria_nombre"
+                }
+              },
+              "nativeQueryRef": "categoria_nombre",
+              "queryRef": "VentasPorCategoria.categoria_nombre"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "VentasPorCategoria.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "R-02 Compras completadas"
+                }
+              },
+              "nativeQueryRef": "R-02 Compras completadas",
+              "queryRef": "VentasPorCategoria.R-02 Compras completadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "R-02 Boletos vendidos brutos"
+                }
+              },
+              "nativeQueryRef": "R-02 Boletos vendidos brutos",
+              "queryRef": "VentasPorCategoria.R-02 Boletos vendidos brutos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "R-02 Subtotal"
+                }
+              },
+              "nativeQueryRef": "R-02 Subtotal",
+              "queryRef": "VentasPorCategoria.R-02 Subtotal"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "R-02 Comision"
+                }
+              },
+              "nativeQueryRef": "R-02 Comision",
+              "queryRef": "VentasPorCategoria.R-02 Comision"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "R-02 IVA"
+                }
+              },
+              "nativeQueryRef": "R-02 IVA",
+              "queryRef": "VentasPorCategoria.R-02 IVA"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorCategoria"
+                    }
+                  },
+                  "Property": "R-02 Total bruto"
+                }
+              },
+              "nativeQueryRef": "R-02 Total bruto",
+              "queryRef": "VentasPorCategoria.R-02 Total bruto"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-02 - Ventas por categoria'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "moneda",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "VentasPorEvento.moneda"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Moneda de ventas'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "slicer"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 80,
+    "z": 0,
+    "width": 610,
+    "y": 10
+  }
+}

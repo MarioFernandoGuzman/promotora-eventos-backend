@@ -1,0 +1,108 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CalificacionPresentador"
+                    }
+                  },
+                  "Property": "presentador_id"
+                }
+              },
+              "nativeQueryRef": "presentador_id",
+              "queryRef": "CalificacionPresentador.presentador_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CalificacionPresentador"
+                    }
+                  },
+                  "Property": "presentador_nombre"
+                }
+              },
+              "nativeQueryRef": "presentador_nombre",
+              "queryRef": "CalificacionPresentador.presentador_nombre"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CalificacionPresentador"
+                    }
+                  },
+                  "Property": "R-11 Resenas aprobadas"
+                }
+              },
+              "nativeQueryRef": "R-11 Resenas aprobadas",
+              "queryRef": "CalificacionPresentador.R-11 Resenas aprobadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "CalificacionPresentador"
+                    }
+                  },
+                  "Property": "R-11 Promedio ponderado"
+                }
+              },
+              "nativeQueryRef": "R-11 Promedio ponderado",
+              "queryRef": "CalificacionPresentador.R-11 Promedio ponderado"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-11 - Calificacion presentadores'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

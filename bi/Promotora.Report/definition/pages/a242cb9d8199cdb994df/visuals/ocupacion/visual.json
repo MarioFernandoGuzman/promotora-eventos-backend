@@ -1,0 +1,84 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "ocupacion",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "evento_id"
+                }
+              },
+              "nativeQueryRef": "evento_id",
+              "queryRef": "OcupacionLocalidad.evento_id"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "R-05 Cupo ocupado"
+                }
+              },
+              "nativeQueryRef": "R-05 Cupo ocupado",
+              "queryRef": "OcupacionLocalidad.R-05 Cupo ocupado"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Cupo ocupado por evento: reservas, bloqueos y ventas'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "clusteredBarChart"
+  },
+  "position": {
+    "x": 650,
+    "tabOrder": 0,
+    "height": 270,
+    "z": 0,
+    "width": 610,
+    "y": 100
+  }
+}

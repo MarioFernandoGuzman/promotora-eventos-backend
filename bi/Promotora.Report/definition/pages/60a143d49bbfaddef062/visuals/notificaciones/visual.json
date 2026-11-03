@@ -1,0 +1,108 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "notificaciones",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "NotificacionesEstado"
+                    }
+                  },
+                  "Property": "fecha"
+                }
+              },
+              "nativeQueryRef": "fecha",
+              "queryRef": "NotificacionesEstado.fecha"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "NotificacionesEstado"
+                    }
+                  },
+                  "Property": "tipo"
+                }
+              },
+              "nativeQueryRef": "tipo",
+              "queryRef": "NotificacionesEstado.tipo"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "NotificacionesEstado"
+                    }
+                  },
+                  "Property": "estado"
+                }
+              },
+              "nativeQueryRef": "estado",
+              "queryRef": "NotificacionesEstado.estado"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "NotificacionesEstado"
+                    }
+                  },
+                  "Property": "R-15-N Notificaciones"
+                }
+              },
+              "nativeQueryRef": "R-15-N Notificaciones",
+              "queryRef": "NotificacionesEstado.R-15-N Notificaciones"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Notificaciones (filtro propio de fecha)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 270,
+    "z": 0,
+    "width": 1240,
+    "y": 420
+  }
+}

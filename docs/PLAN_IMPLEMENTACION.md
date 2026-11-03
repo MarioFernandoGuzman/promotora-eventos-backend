@@ -308,6 +308,7 @@ Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02
 - [x] **F10-05** Exportadores Excel (ClosedXML) y PDF (QuestPDF) detrás de `IReportExporter`; auditoría de `EXPORT`.
   - XLSX/PDF abiertos y verificados con ClosedXML/PdfPig desde API, total 369.60 y dos auditorías persistidas. Descarga completa filtrada (sin paginación), límites 10000/500 filas por sección, 422 sin parcial, archivos temporales eliminados al cerrar. Licencias y uso local documentados en [REPORTES.md](REPORTES.md).
 - [ ] **F10-06** Power BI: cadena de conexión a `bi` con `bi_reader`, archivo `.pbix` de ejemplo y guía.
+  - Implementación preparada: proyecto versionable bi/Promotora.pbip (16 vistas, Resumen + 15 páginas, medidas DAX), Desktop gratuito instalado, LOGIN local promotora_bi/bi_reader creado a solicitud del usuario y permisos/autenticación TCP verificados. Clave solo en .env.powerbi ignorado. Validación final de archivos Microsoft aprobada. El usuario eligió comprobar apertura/actualización y guardar el PBIX personalmente: pendiente esa comprobación y copia .pbix; no se marca completada. Ver [POWER_BI.md](POWER_BI.md).
 - [ ] **F10-07** Pruebas: totales de reportes coinciden con datos conocidos.
 
 **Salida:** 15 reportes exportables y un tablero de Power BI funcionando.

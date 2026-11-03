@@ -1,0 +1,98 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "asistencia",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "evento_id"
+                }
+              },
+              "nativeQueryRef": "evento_id",
+              "queryRef": "AsistenciaEvento.evento_id"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "R-06 Vigentes"
+                }
+              },
+              "nativeQueryRef": "R-06 Vigentes",
+              "queryRef": "AsistenciaEvento.R-06 Vigentes"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "R-06 Usados"
+                }
+              },
+              "nativeQueryRef": "R-06 Usados",
+              "queryRef": "AsistenciaEvento.R-06 Usados"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Boletos vigentes y usados'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "clusteredColumnChart"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 300,
+    "z": 0,
+    "width": 610,
+    "y": 390
+  }
+}

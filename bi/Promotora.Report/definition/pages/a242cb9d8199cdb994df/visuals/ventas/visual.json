@@ -1,0 +1,84 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "ventas",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "evento_id"
+                }
+              },
+              "nativeQueryRef": "evento_id",
+              "queryRef": "VentasPorEvento.evento_id"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorEvento"
+                    }
+                  },
+                  "Property": "R-01 Total bruto"
+                }
+              },
+              "nativeQueryRef": "R-01 Total bruto",
+              "queryRef": "VentasPorEvento.R-01 Total bruto"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Ventas brutas por evento (selecciona moneda)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "clusteredColumnChart"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 270,
+    "z": 0,
+    "width": 610,
+    "y": 100
+  }
+}

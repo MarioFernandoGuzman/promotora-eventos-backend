@@ -1,0 +1,178 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "recinto_id"
+                }
+              },
+              "nativeQueryRef": "recinto_id",
+              "queryRef": "VentasPorRecinto.recinto_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "recinto_nombre"
+                }
+              },
+              "nativeQueryRef": "recinto_nombre",
+              "queryRef": "VentasPorRecinto.recinto_nombre"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "VentasPorRecinto.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "R-03 Compras completadas"
+                }
+              },
+              "nativeQueryRef": "R-03 Compras completadas",
+              "queryRef": "VentasPorRecinto.R-03 Compras completadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "R-03 Boletos vendidos brutos"
+                }
+              },
+              "nativeQueryRef": "R-03 Boletos vendidos brutos",
+              "queryRef": "VentasPorRecinto.R-03 Boletos vendidos brutos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "R-03 Subtotal"
+                }
+              },
+              "nativeQueryRef": "R-03 Subtotal",
+              "queryRef": "VentasPorRecinto.R-03 Subtotal"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "R-03 Comision"
+                }
+              },
+              "nativeQueryRef": "R-03 Comision",
+              "queryRef": "VentasPorRecinto.R-03 Comision"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "R-03 IVA"
+                }
+              },
+              "nativeQueryRef": "R-03 IVA",
+              "queryRef": "VentasPorRecinto.R-03 IVA"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "VentasPorRecinto"
+                    }
+                  },
+                  "Property": "R-03 Total bruto"
+                }
+              },
+              "nativeQueryRef": "R-03 Total bruto",
+              "queryRef": "VentasPorRecinto.R-03 Total bruto"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-03 - Ventas por recinto'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}
