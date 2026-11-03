@@ -303,7 +303,8 @@ Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02
   - Ventas brutas agrupadas y ocupación ponderada desde vistas bi; prueba API con venta 369.60 GTQ, ocupación 3/5, 401/403, filtros incompatibles y totales conservados en página vacía aprobada.
 - [x] **F10-03** Reportes R-06 … R-10.
   - Asistencia, ledger neto por dueño, comisiones, clientes y compras no exitosas. Prueba API antes/después de reembolso aprobada: 3 boletos anulados, netos 300/30 → 0/0 y ventas brutas conservadas en 369.60 GTQ.
-- [ ] **F10-04** Reportes R-11 … R-15.
+- [x] **F10-04** Reportes R-11 … R-15.
+  - Calificaciones ponderadas, eventos, carreras, IA y auditoría/notificaciones. Prueba API focalizada aprobada, sin conversaciones expuestas. R-14 informa tiempo por grupo diario; total de tiempo null porque la vista no conserva el conteo de mediciones no nulas. R-15 separa dos secciones y etiqueta participaciones de usuarios (no únicos globales). Sin cambios de esquema.
 - [ ] **F10-05** Exportadores Excel (ClosedXML) y PDF (QuestPDF) detrás de `IReportExporter`; auditoría de `EXPORT`.
 - [ ] **F10-06** Power BI: cadena de conexión a `bi` con `bi_reader`, archivo `.pbix` de ejemplo y guía.
 - [ ] **F10-07** Pruebas: totales de reportes coinciden con datos conocidos.
@@ -351,11 +352,11 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 - [x] **R-08** Comisiones de la plataforma
 - [x] **R-09** Top clientes
 - [x] **R-10** Compras fallidas, canceladas y expiradas
-- [ ] **R-11** Calificación promedio por presentador
-- [ ] **R-12** Eventos por estado
-- [ ] **R-13** Inscritos por distancia en carreras (5K/10K/21K/42K)
-- [ ] **R-14** Uso del agente de IA (consultas, tiempos, tokens)
-- [ ] **R-15** Auditoría de operaciones y notificaciones por estado
+- [x] **R-11** Calificación promedio por presentador
+- [x] **R-12** Eventos por estado
+- [x] **R-13** Inscritos por distancia en carreras (5K/10K/21K/42K)
+- [x] **R-14** Uso del agente de IA (consultas, tiempos, tokens)
+- [x] **R-15** Auditoría de operaciones y notificaciones por estado
 
 ---
 

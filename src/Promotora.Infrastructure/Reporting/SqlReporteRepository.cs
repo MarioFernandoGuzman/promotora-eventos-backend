@@ -51,7 +51,8 @@ public sealed class SqlReporteRepository(PromotoraDbContext db) : IReporteReposi
             };
             var filas = await ReadAsync($"{baseSql}{(orden.Length == 0 ? "" : $" ORDER BY {orden}")} LIMIT @limite OFFSET @offset", pageParams, ct);
             bool moneda = section.Dimensiones.Any(d => d.Columna == "moneda");
-            var totales = await ReadAsync($"SELECT {(moneda ? "moneda, " : "")}{metricas}{origen}{(moneda ? " GROUP BY moneda ORDER BY moneda" : "")}", filtros, ct);
+            string metricasTotales = string.Join(", ", section.Metricas.Select(m => $"{m.TotalExpresion ?? m.Expresion} AS \"{m.Campo}\""));
+            var totales = await ReadAsync($"SELECT {(moneda ? "moneda, " : "")}{metricasTotales}{origen}{(moneda ? " GROUP BY moneda ORDER BY moneda" : "")}", filtros, ct);
             var columnas = section.Dimensiones.Select(d => new ColumnaReporteDto(d.Campo, d.Titulo, d.Tipo))
                 .Concat(section.Metricas.Select(m => new ColumnaReporteDto(m.Campo, m.Titulo, m.Tipo))).ToArray();
             secciones.Add(new(section.Codigo, columnas, section.Dimensiones.Select(d => d.Campo).ToArray(), filas,
@@ -86,7 +87,8 @@ public sealed class SqlReporteRepository(PromotoraDbContext db) : IReporteReposi
         {
             var row = new Dictionary<string, object?>();
             for (int i = 0; i < reader.FieldCount; i++)
-                row[reader.GetName(i)] = await reader.IsDBNullAsync(i, ct) ? null : reader.GetValue(i);
+                row[reader.GetName(i)] = await reader.IsDBNullAsync(i, ct) ? null :
+                    reader.GetDataTypeName(i) == "date" ? reader.GetFieldValue<DateOnly>(i) : reader.GetValue(i);
             rows.Add(row);
         }
         return rows;

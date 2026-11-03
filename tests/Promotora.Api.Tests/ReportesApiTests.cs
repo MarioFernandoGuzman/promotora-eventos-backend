@@ -5,12 +5,47 @@ using Microsoft.EntityFrameworkCore;
 using Promotora.Domain.Identity;
 using Promotora.Infrastructure.Tests;
 using Promotora.Infrastructure.Venues.Persistence;
+using Promotora.Infrastructure.AI.Persistence;
+using Promotora.Infrastructure.Catalog.Persistence;
 
 namespace Promotora.Api.Tests;
 
 public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<PostgresFixture>
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task OperacionCalificacionesYTiemposNoInventanTotales()
+    {
+        await using var factory = new IdentityApiFactory(postgres.ConnectionString);
+        using var admin = factory.CreateClient(); using var cliente = factory.CreateClient();
+        await new TicketingApiTestSupport(postgres).LoginAsync(admin, RolUsuario.ADMINISTRADOR, Ct);
+        var resena = await ModeracionResenaApiTests.CrearAsync(postgres, factory, cliente, admin, Ct, 5);
+        using var moderacion = await admin.PatchAsJsonAsync($"/api/v1/resenas/{resena.Id}/moderar", new { estadoNuevo = "APROBADA" }, Ct);
+        Assert.Equal(HttpStatusCode.OK, moderacion.StatusCode);
+        await using var db = postgres.CreateContext();
+        var presentador = new PresentadorRow { Nombre = "Reporte", Tipo = "ARTISTA" };
+        db.Presentadores.Add(presentador); await db.SaveChangesAsync(Ct);
+        db.EventoPresentadores.Add(new EventoPresentadorRow { EventoId = resena.EventoId, PresentadorId = presentador.Id });
+        var fecha = new DateTime(2001, 1, 2, 12, 0, 0, DateTimeKind.Utc);
+        foreach (int? tiempo in new int?[] { 100, null })
+            db.LogsAgenteIa.Add(new LogAgenteIaRow { Consulta = "Dato público de prueba", Modelo = "modelo-prueba-reportes", Estado = "OK", SessionId = Guid.NewGuid(), FechaHora = fecha, TiempoRespuestaMs = tiempo, TokensEntrada = 2, TokensSalida = 3 });
+        await db.SaveChangesAsync(Ct);
+        var calificaciones = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-11?eventoId={resena.EventoId}", Ct);
+        Assert.Equal(5m, calificaciones.GetProperty("secciones")[0].GetProperty("totales")[0].GetProperty("promedio").GetDecimal());
+        var estados = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-12?eventoId={resena.EventoId}", Ct);
+        Assert.Equal(1, estados.GetProperty("secciones")[0].GetProperty("totales")[0].GetProperty("eventos").GetInt64());
+        var carreras = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-13?eventoId={resena.EventoId}", Ct);
+        Assert.Equal(0, carreras.GetProperty("secciones")[0].GetProperty("totalFilas").GetInt64());
+        var ia = await admin.GetFromJsonAsync<JsonElement>("/api/v1/reportes/R-14?desde=2001-01-02&hasta=2001-01-03&estado=OK", Ct);
+        var grupo = ia.GetProperty("secciones")[0];
+        Assert.Equal(100m, grupo.GetProperty("filas")[0].GetProperty("tiempoPromedioMs").GetDecimal());
+        Assert.Equal(2m, grupo.GetProperty("totales")[0].GetProperty("consultas").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, grupo.GetProperty("totales")[0].GetProperty("tiempoPromedioMs").ValueKind);
+        var auditoria = await admin.GetFromJsonAsync<JsonElement>("/api/v1/reportes/R-15?pageSize=1", Ct);
+        Assert.Equal(2, auditoria.GetProperty("secciones").GetArrayLength());
+        Assert.False(ia.ToString().Contains("Dato público de prueba", StringComparison.Ordinal));
+    }
 
     [Fact]
     public async Task AsistenciaYLedgerSeDistinguenDeVentasBrutasTrasReembolso()
