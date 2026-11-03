@@ -4,7 +4,7 @@
 
 Power BI Desktop gratuito se instaló desde Microsoft Store por autorización del usuario. El proyecto `bi/Promotora.pbip` contiene un modelo de importación desde 16 vistas `bi`, una página Resumen con gráficos y 15 páginas R-01…R-15 con tablas y filtros. Los archivos pasaron validación con la herramienta oficial `@microsoft/powerbi-report-authoring-cli` 0.5.0 (MIT), utilizada fuera del backend. No hay Node.js ni dependencias JavaScript nuevas en el repositorio.
 
-La primera apertura de Desktop detectó problemas de definición; se corrigieron identificadores, versiones, estructura y tema, y la validación final de archivos pasó. **El usuario solicitó comprobar personalmente la apertura visual y la actualización final. No se acredita todavía un tablero actualizado ni se ha generado un .pbix final. F10-06 conserva su casilla pendiente hasta esa comprobación.**
+Comprobación real del 03/11/2026, solicitada de nuevo por el usuario: Desktop muestra las 16 páginas y completó Actualizar sin errores. PostgreSQL identifica las conexiones como `promotora_bi`, aplicación `Mashup Engine`. R-12 muestra 4 eventos (2 BORRADOR y 2 EN_VENTA), exactamente iguales a la consulta de la vista `bi`. Ventas y boletos vacíos corresponden a ausencia de registros en esas vistas locales. **La copia `bi/Promotora.local.pbix` se solicitó desde Guardar como, pero Desktop sigue en “Working on it” y el archivo aún no está confirmado. F10-06 conserva su casilla pendiente solamente por ese entregable; no se da por terminado el guardado.**
 
 Se versionan PBIP/PBIR y el modelo JSON (sin datos ni contraseñas). El `.pbix`, las cachés de Power BI y sus ajustes locales quedan ignorados: pueden contener datos privados. No subirlos al PR. Esta representación revisable sustituye al binario en Git, respetando AGENTS.md §12; la copia `.pbix` de ejemplo se guarda localmente después de actualizar.
 
@@ -77,6 +77,6 @@ Power BI consulta PostgreSQL directamente, exclusivamente vistas `bi`; no consum
 
 Las medidas DAX usan las mismas bases que la API: brutos incluyen compras reembolsadas; ledger conserva signo y moneda; ocupación incluye reservas/bloqueos; asistencia separa anulados; reseñas solo aprobadas con promedio ponderado. R-14 muestra tiempos diarios y evita presentar un promedio global inexacto. Participaciones de usuarios no equivalen a usuarios únicos globales.
 
-Importación manual, no tiempo real. No hay refresh programado, gateway, publicación en Power BI Service ni licencias de pago activadas. Verificación del API y permisos de PostgreSQL realizada; apertura/render y actualización final del proyecto pendiente del usuario. No marcar Q11/F10-06 como completos antes de verificarlo.
+Importación manual, no tiempo real. No hay refresh programado, gateway, publicación en Power BI Service ni licencias de pago activadas. API, permisos, apertura y actualización real comprobados; cotejo visual limitado a los datos locales disponibles, sin insertar compras ni activar Worker. F10-06 queda pendiente del PBIX final mientras Desktop termina de guardarlo.
 
 Formato de proyecto documentado por [Microsoft](https://learn.microsoft.com/power-bi/developer/projects/projects-overview) y [estructura PBIR](https://learn.microsoft.com/power-bi/developer/projects/projects-report).

@@ -4,7 +4,7 @@ Fecha: 03/11/2026. Rama: `feature/f10-reportes-bi`, creada desde `origin/develop
 
 ## Estado real
 
-F10-01–05 y F10-07 completados: 15 reportes en `/api/v1/reportes/{codigo}`, JSON paginado, exportaciones Excel/PDF auditadas. F10-06 implementado como proyecto revisable y conexión restringida, **pendiente de aceptación visual/refresh y copia PBIX por el usuario**, quien solicitó los pasos para comprobarlo personalmente. Q10 satisfecho; Q11 y la salida completa de Fase 10 no se cierran todavía. F11 no se inicia.
+F10-01–05 y F10-07 completados: 15 reportes en `/api/v1/reportes/{codigo}`, JSON paginado, exportaciones Excel/PDF auditadas. F10-06 ya tiene apertura visual, actualización real y cotejo con PostgreSQL comprobados; **solo queda confirmar la copia PBIX que Desktop está guardando**. Q10 satisfecho; Q11 y la salida completa de Fase 10 no se cierran hasta ese entregable. F11 no se inicia.
 
 ## Evidencia del backend
 
@@ -32,7 +32,9 @@ Power BI Desktop se instaló gratuitamente desde Microsoft Store, autorizado por
 
 `Initialize-PowerBi.ps1 -SoloVerificar` aprobado también bajo Windows PowerShell 5: permisos efectivos, autenticación TCP, SELECT de vista permitido y SELECT de usuarios rechazado con SQLSTATE 42501. La verificación no imprime la contraseña y no considera cualquier error de conexión como prueba de denegación.
 
-Proyecto `bi/Promotora.pbip`: 16 vistas, 16 páginas (Resumen + R-01…R-15), tablas, gráficos, filtros y medidas DAX. Referencias de columnas explícitas, promedios ponderados y medidas monetarias vacías al combinar monedas. Validación oficial Microsoft `powerbi-report-authoring-cli` 0.5.0: resultado succeeded, cero errores/advertencias. Esa validación de archivos no sustituye comprobar render/DAX/actualización en Desktop. Las primeras aperturas dieron errores de definición; se ajustaron estructura/tema/versiones/identificadores y el usuario comprobará la versión final. No hay PBIX final ni refresh acreditado.
+Proyecto `bi/Promotora.pbip`: 16 vistas, 16 páginas (Resumen + R-01…R-15), tablas, gráficos, filtros y medidas DAX. Referencias de columnas explícitas, promedios ponderados y medidas monetarias vacías al combinar monedas. Validación oficial Microsoft `powerbi-report-authoring-cli` 0.5.0: resultado succeeded, cero errores/advertencias.
+
+Comprobación adicional real del 03/11/2026: se observaron las 16 páginas en Desktop y se ejecutó Actualizar, que terminó sin error. `pg_stat_activity` confirmó conexiones `promotora_bi` con `application_name = Mashup Engine`. R-12 presentó BORRADOR=2, EN_VENTA=2 y total=4, coincidentes con la vista PostgreSQL bajo rol BI. Las vistas de ventas y boletos no tienen filas locales, de modo que esos visuales vacíos son esperables; no se insertaron ventas para forzar resultados ni se repitió la suite. Se inició Guardar como → Power BI file (.pbix) → `bi/Promotora.local.pbix`; el diálogo sigue procesando y no se confirma todavía la existencia del archivo. El PBIX está ignorado por Git.
 
 ## Revisión de diff contra AGENTS.md §§5 y 12
 
@@ -46,7 +48,7 @@ Proyecto `bi/Promotora.pbip`: 16 vistas, 16 páginas (Resumen + R-01…R-15), ta
 
 ## Pendientes y límites
 
-1. Criterio de salida no cumplido aún: tablero actualizado y funcionando en Power BI Desktop, junto con PBIX local de ejemplo. Usuario realizará esa comprobación con POWER_BI.md; mantener F10-06 y Q11 pendientes hasta confirmarla. CI remoto también requiere publicar el PR.
+1. Tablero abierto y actualizado, con cotejo real de cuatro eventos y conexión BI restringida. Falta confirmar el PBIX local de ejemplo: Desktop continúa guardando; mantener F10-06/Q11 pendientes de ese entregable. CI remoto también requiere publicar el PR.
 2. R-14: el total de tiempo global queda null porque la vista agregada no conserva conteo de mediciones no nulas; no se inventa un promedio. R-15 cuenta participaciones diarias de usuarios, no únicos globales.
 3. Exportación acotada: 10000 filas XLSX y 500 PDF por sección. Se transmite el archivo como stream, pero ClosedXML conserva el libro en memoria; no es generación ilimitada en memoria constante. Rechazo explícito sin truncamiento ante exceso.
 4. Power BI importa manualmente y usa credencial administrativa de reportes independiente de JWT. No hay RLS por dueño, refresh programado, publicación cloud ni servicios/licencias de pago activados. Un PBIX puede contener información privada.
