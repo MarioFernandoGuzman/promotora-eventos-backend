@@ -299,7 +299,8 @@ Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02
 ### Fase 10 — Reportería y BI
 - [x] **F10-01** Infraestructura de reportes: contrato común (filtros, agrupación, totales, paginación) y `GET /reportes/{codigo}`.
   - Contrato `/api/v1/reportes/{codigo}` exclusivo de ADMINISTRADOR habilitado, también verificado en Application. Consultas parametrizadas de vistas `bi`, snapshot consistente, agrupaciones fijas, filtros incompatibles rechazados y totales por moneda independientes de la página. Los códigos se incorporan en F10-02–04. Prueba focalizada de validación aprobada.
-- [ ] **F10-02** Reportes R-01 … R-05.
+- [x] **F10-02** Reportes R-01 … R-05.
+  - Ventas brutas agrupadas y ocupación ponderada desde vistas bi; prueba API con venta 369.60 GTQ, ocupación 3/5, 401/403, filtros incompatibles y totales conservados en página vacía aprobada.
 - [ ] **F10-03** Reportes R-06 … R-10.
 - [ ] **F10-04** Reportes R-11 … R-15.
 - [ ] **F10-05** Exportadores Excel (ClosedXML) y PDF (QuestPDF) detrás de `IReportExporter`; auditoría de `EXPORT`.
@@ -339,11 +340,11 @@ Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02
 
 Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas, evento, categoría, recinto, estado), agrupaciones y totales; exportables a Excel y PDF.
 
-- [ ] **R-01** Ventas por evento
-- [ ] **R-02** Ventas por categoría
-- [ ] **R-03** Ventas por recinto
-- [ ] **R-04** Ventas por rango de fechas y método de pago
-- [ ] **R-05** Ocupación por localidad
+- [x] **R-01** Ventas por evento
+- [x] **R-02** Ventas por categoría
+- [x] **R-03** Ventas por recinto
+- [x] **R-04** Ventas por rango de fechas y método de pago
+- [x] **R-05** Ocupación por localidad
 - [ ] **R-06** Boletos vendidos vs. usados (asistencia)
 - [ ] **R-07** Ingresos por dueño de recinto
 - [ ] **R-08** Comisiones de la plataforma
