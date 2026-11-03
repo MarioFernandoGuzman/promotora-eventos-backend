@@ -34,15 +34,30 @@ public sealed class EfCompraConsultaRepository(PromotoraDbContext db) : ICompraC
         var query = from boleto in db.Boletos.AsNoTracking()
                     join detalle in db.DetalleCompra on boleto.DetalleCompraId equals detalle.Id
                     join compra in db.Compras on detalle.CompraId equals compra.Id
+                    join evento in db.Eventos on compra.EventoId equals evento.Id
+                    join recinto in db.Recintos on evento.RecintoId equals recinto.Id
+                    join tipoEntrada in db.TiposEntrada on detalle.TipoEntradaId equals tipoEntrada.Id
                     where compra.ClienteId == clienteId
-                    select new { Boleto = boleto, CompraPublicId = compra.PublicId, compra.EventoId, detalle.TipoEntradaId };
+                    select new
+                    {
+                        Boleto = boleto,
+                        CompraPublicId = compra.PublicId,
+                        compra.EventoId,
+                        detalle.TipoEntradaId,
+                        EventoTitulo = evento.Nombre,
+                        evento.FechaInicio,
+                        RecintoNombre = recinto.Nombre,
+                        TipoEntradaNombre = tipoEntrada.Nombre,
+                        detalle.PrecioUnitario
+                    };
         int total = await query.CountAsync(ct);
         var rows = await query.OrderByDescending(x => x.Boleto.FechaEmision).ThenByDescending(x => x.Boleto.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
         var ubicaciones = await UbicacionesNumeradas.LeerAsync(db, rows.Select(r => r.Boleto.Id).ToArray(), ct);
         return new(rows.Select(x => new BoletoClienteDto(x.Boleto.PublicId, x.CompraPublicId, x.EventoId, x.TipoEntradaId,
             x.Boleto.CodigoQr, x.Boleto.Estado, new(x.Boleto.NombreAsistente, x.Boleto.DocumentoIdentidad, x.Boleto.DatosExtra?.RootElement.GetRawText()),
-            x.Boleto.FechaEmision, x.Boleto.FechaUso, ubicaciones.GetValueOrDefault(x.Boleto.Id))).ToArray(), page, pageSize, total);
+            x.Boleto.FechaEmision, x.Boleto.FechaUso, x.EventoTitulo, x.RecintoNombre, x.FechaInicio,
+            x.TipoEntradaNombre, x.PrecioUnitario, ubicaciones.GetValueOrDefault(x.Boleto.Id))).ToArray(), page, pageSize, total);
     }
 
     private async Task<AsignacionAsientoRow[]> AsignacionesAsync(IEnumerable<DetalleCompraRow> detalles, CancellationToken ct)

@@ -10,7 +10,9 @@ public sealed record MisComprasQuery(int Page = 1, int PageSize = 20) : IQuery<P
 public sealed record MisBoletosQuery(int Page = 1, int PageSize = 20) : IQuery<PaginaDto<BoletoClienteDto>>;
 public sealed record CancelarCompraCommand(Guid PublicId) : ICommand<CompraCreadaDto>;
 public sealed record BoletoClienteDto(Guid PublicId, Guid CompraPublicId, int EventoId, int TipoEntradaId,
-    string CodigoQr, string Estado, DatosAsistente Asistente, DateTime FechaEmision, DateTime? FechaUso, UbicacionBoletoDto? Ubicacion = null);
+    string CodigoQr, string Estado, DatosAsistente Asistente, DateTime FechaEmision, DateTime? FechaUso,
+    string EventoTitulo, string RecintoNombre, DateTime FechaInicio, string TipoEntradaNombre, decimal PrecioUnitario,
+    UbicacionBoletoDto? Ubicacion = null);
 
 public sealed class ObtenerCompraValidator : AbstractValidator<ObtenerCompraQuery>
 {
