@@ -56,7 +56,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | Q7 | Agente de IA con información pública | F9-06, F9-07 | ✅ |
 | Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ✅ |
 | Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ✅ |
-| Q10 | ≥ 15 reportes con filtros y totales, exportables a Excel y PDF | F10-01 … F10-05 | ⬜ |
+| Q10 | ≥ 15 reportes con filtros y totales, exportables a Excel y PDF | F10-01 … F10-05 | ✅ |
 | Q11 | Integración con Power BI | F1-08, F10-06 | ⬜ |
 | Q12 | Frontend funcional e integrado | F11-* | ⬜ |
 | Q13 | Entregables: CLAUDE.md, AGENTS.md y Manual Técnico | F0-05, F12-04 | ⬜ |
@@ -309,7 +309,8 @@ Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02
   - XLSX/PDF abiertos y verificados con ClosedXML/PdfPig desde API, total 369.60 y dos auditorías persistidas. Descarga completa filtrada (sin paginación), límites 10000/500 filas por sección, 422 sin parcial, archivos temporales eliminados al cerrar. Licencias y uso local documentados en [REPORTES.md](REPORTES.md).
 - [ ] **F10-06** Power BI: cadena de conexión a `bi` con `bi_reader`, archivo `.pbix` de ejemplo y guía.
   - Implementación preparada: proyecto versionable bi/Promotora.pbip (16 vistas, Resumen + 15 páginas, medidas DAX), Desktop gratuito instalado, LOGIN local promotora_bi/bi_reader creado a solicitud del usuario y permisos/autenticación TCP verificados. Clave solo en .env.powerbi ignorado. Validación final de archivos Microsoft aprobada. El usuario eligió comprobar apertura/actualización y guardar el PBIX personalmente: pendiente esa comprobación y copia .pbix; no se marca completada. Ver [POWER_BI.md](POWER_BI.md).
-- [ ] **F10-07** Pruebas: totales de reportes coinciden con datos conocidos.
+- [x] **F10-07** Pruebas: totales de reportes coinciden con datos conocidos.
+  - Backend validado con ventas 369.60 GTQ, reembolso neto cero, cancelación 246.40 no cobrada, asistencia/carreras, fechas, paginación, permisos, auditoría, XLSX/PDF legibles y límite PDF. Suite completa: 532/534 inicialmente; dos expectativas de prueba corregidas y cada caso reejecutado aprobado (sin repetir suite). Build Release sin warnings y format limpio. F10-06/Q11 siguen pendientes de aceptación Desktop del usuario; ver [VALIDACION_FASE_10.md](VALIDACION_FASE_10.md).
 
 **Salida:** 15 reportes exportables y un tablero de Power BI funcionando.
 

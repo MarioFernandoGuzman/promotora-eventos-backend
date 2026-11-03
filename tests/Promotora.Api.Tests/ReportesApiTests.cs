@@ -1,13 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Promotora.Domain.Identity;
+using Promotora.Infrastructure.AI.Persistence;
+using Promotora.Infrastructure.Audit.Persistence;
+using Promotora.Infrastructure.Catalog.Persistence;
 using Promotora.Infrastructure.Tests;
 using Promotora.Infrastructure.Venues.Persistence;
-using Promotora.Infrastructure.AI.Persistence;
-using Promotora.Infrastructure.Catalog.Persistence;
-using ClosedXML.Excel;
 using UglyToad.PdfPig;
 
 namespace Promotora.Api.Tests;
@@ -15,6 +16,28 @@ namespace Promotora.Api.Tests;
 public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<PostgresFixture>
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task CompraCanceladaAportaUnIntentoSinConvertirseEnIngreso()
+    {
+        await using var factory = new IdentityApiFactory(postgres.ConnectionString);
+        using var admin = factory.CreateClient(); using var cliente = factory.CreateClient();
+        var soporte = new TicketingApiTestSupport(postgres);
+        await soporte.LoginAsync(admin, RolUsuario.ADMINISTRADOR, Ct);
+        await soporte.LoginAsync(cliente, RolUsuario.CLIENTE, Ct);
+        await using var db = postgres.CreateContext();
+        var datos = await CompraFixture.CrearAsync(db, 5, Ct);
+        var compra = await TicketingApiTestSupport.ComprarAsync(cliente, datos.EventoId, datos.TipoId, 2, Ct);
+        using var cancelar = await cliente.PostAsync($"/api/v1/compras/{compra.PublicId}/cancelar", null, Ct);
+        Assert.Equal(HttpStatusCode.OK, cancelar.StatusCode);
+        var reporte = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-10?eventoId={datos.EventoId}&estado=CANCELADA", Ct);
+        var total = reporte.GetProperty("secciones")[0].GetProperty("totales")[0];
+        Assert.Equal(1, total.GetProperty("compras").GetInt64());
+        Assert.Equal(246.40m, total.GetProperty("totalIntentado").GetDecimal());
+        Assert.Equal(0, total.GetProperty("intentosPago").GetDecimal());
+        var ventas = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-01?eventoId={datos.EventoId}", Ct);
+        Assert.Equal(0, ventas.GetProperty("secciones")[0].GetProperty("totalFilas").GetInt64());
+    }
 
     [Fact]
     public async Task ExportacionesSonArchivosLegiblesYQuedanAuditadas()
@@ -25,6 +48,7 @@ public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<P
         await using var db = postgres.CreateContext();
         var venta = await ReembolsoFixture.VentaAsync(db, postgres.ConnectionString, factory.QrKey, false, Ct);
         int evento = await db.Compras.Where(c => c.Id == venta.Id).Select(c => c.EventoId).SingleAsync(Ct);
+        await db.Eventos.Where(e => e.Id == evento).ExecuteUpdateAsync(s => s.SetProperty(e => e.Nombre, "=SUM(1,1)"), Ct);
         using (var xlsx = await admin.GetAsync($"/api/v1/reportes/R-01?eventoId={evento}&page=2&pageSize=1&formato=xlsx", Ct))
         {
             Assert.Equal(HttpStatusCode.OK, xlsx.StatusCode);
@@ -32,6 +56,8 @@ public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<P
             using var stream = await xlsx.Content.ReadAsStreamAsync(Ct);
             using var workbook = new XLWorkbook(stream);
             Assert.Equal(369.60m, workbook.Worksheet("ventas").Cell(2, 9).GetValue<decimal>());
+            Assert.False(workbook.Worksheet("ventas").Cell(2, 2).HasFormula);
+            Assert.Equal("=SUM(1,1)", workbook.Worksheet("ventas").Cell(2, 2).GetString());
         }
         using (var pdf = await admin.GetAsync($"/api/v1/reportes/R-01?eventoId={evento}&formato=pdf", Ct))
         {
@@ -43,6 +69,14 @@ public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<P
         Assert.Equal(2, await db.LogsAuditoria.CountAsync(l => l.UsuarioId == actor && l.Accion == "EXPORT" && l.EntidadAfectada == "reporte", Ct));
         using var formato = await admin.GetAsync("/api/v1/reportes/R-01?formato=csv", Ct);
         Assert.Equal(HttpStatusCode.BadRequest, formato.StatusCode);
+        var fechaLimite = new DateTime(2002, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        db.LogsAuditoria.AddRange(Enumerable.Range(0, 501).Select(i => new LogAuditoriaRow
+        { UsuarioId = actor, EntidadAfectada = $"limite_{i}", Accion = "CREATE", FechaHora = fechaLimite }));
+        await db.SaveChangesAsync(Ct);
+        using var exceso = await admin.GetAsync("/api/v1/reportes/R-15?desde=2002-01-01&hasta=2002-01-02&formato=pdf", Ct);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, exceso.StatusCode);
+        Assert.Equal("application/problem+json", exceso.Content.Headers.ContentType!.MediaType);
+        Assert.Equal(2, await db.LogsAuditoria.CountAsync(l => l.UsuarioId == actor && l.Accion == "EXPORT", Ct));
     }
 
     [Fact]
@@ -68,6 +102,13 @@ public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<P
         Assert.Equal(1, estados.GetProperty("secciones")[0].GetProperty("totales")[0].GetProperty("eventos").GetInt64());
         var carreras = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-13?eventoId={resena.EventoId}", Ct);
         Assert.Equal(0, carreras.GetProperty("secciones")[0].GetProperty("totalFilas").GetInt64());
+        int categoriaCarrera = await db.CategoriasEvento.Where(c => c.Nombre == "Carrera").Select(c => c.Id).SingleAsync(Ct);
+        await db.Eventos.Where(e => e.Id == resena.EventoId).ExecuteUpdateAsync(s => s.SetProperty(e => e.CategoriaId, categoriaCarrera), Ct);
+        await db.TiposEntrada.Where(t => t.EventoId == resena.EventoId).ExecuteUpdateAsync(s => s.SetProperty(t => t.Nombre, "5K"), Ct);
+        var inscritos = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-13?eventoId={resena.EventoId}", Ct);
+        var conteo = inscritos.GetProperty("secciones")[0].GetProperty("totales")[0];
+        Assert.Equal(3, conteo.GetProperty("inscritos").GetDecimal());
+        Assert.Equal(1, conteo.GetProperty("validados").GetDecimal());
         var ia = await admin.GetFromJsonAsync<JsonElement>("/api/v1/reportes/R-14?desde=2001-01-02&hasta=2001-01-03&estado=OK", Ct);
         var grupo = ia.GetProperty("secciones")[0];
         Assert.Equal(100m, grupo.GetProperty("filas")[0].GetProperty("tiempoPromedioMs").GetDecimal());
@@ -149,5 +190,14 @@ public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<P
         var pagina = segunda.GetProperty("secciones")[0];
         Assert.Equal(0, pagina.GetProperty("filas").GetArrayLength());
         Assert.Equal(369.60m, pagina.GetProperty("totales")[0].GetProperty("total").GetDecimal());
+        var compraFecha = await db.Compras.Where(c => c.Id == venta.Id).Select(c => c.FechaCompra).SingleAsync(Ct);
+        string dia = compraFecha.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        var fueraDeRango = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-01?eventoId={evento}&hasta={dia}", Ct);
+        Assert.Equal(0, fueraDeRango.GetProperty("secciones")[0].GetProperty("totalFilas").GetInt64());
+        var swagger = await publico.GetFromJsonAsync<JsonElement>("/swagger/v1/swagger.json", Ct);
+        var content = swagger.GetProperty("paths").GetProperty("/api/v1/reportes/{codigo}").GetProperty("get").GetProperty("responses").GetProperty("200").GetProperty("content");
+        Assert.True(content.TryGetProperty("application/json", out _));
+        Assert.True(content.TryGetProperty("application/pdf", out _));
+        Assert.True(content.TryGetProperty("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", out _));
     }
 }

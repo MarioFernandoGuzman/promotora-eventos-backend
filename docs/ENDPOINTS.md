@@ -1,6 +1,8 @@
-# Inventario de endpoints — cierre Fase 9
+# Inventario de endpoints — Fase 9 y ampliaciones
 
 Inventario generado desde Swagger de la API compilada. Hay 80 operaciones REST; health checks y Swagger son rutas técnicas adicionales. Autenticado indica Bearer, no sustituye comprobar rol y propiedad en cada operación. Consultar la descripción de Swagger y ANALISIS_FRONTEND.md para los flujos.
+
+La tabla original contiene las 80 operaciones de F9. EXT-NUM añade seis y F10 añade una: **87 operaciones REST** en total. Las ampliaciones se detallan al final; los tres formatos de reportes pertenecen a la misma ruta GET.
 
 | Método | Ruta | Acceso | Descripción |
 |---|---|---|---|
@@ -99,3 +101,11 @@ El inventario previo contiene 80 operaciones; estas seis incorporan un total de 
 | POST /asientos/desbloquear | Admin/dueño propietario habilitado | Lista de IDs bloqueados; restaura disponibilidad |
 
 page 1–100000, pageSize 1–100 (default 20). 400 validación, 401 autenticación, 403 rol, 404 ajena/inexistente/no pública, 409 conflicto, 413 tamaño. Compra numerada pendiente de integración EXT-NUM-04–05. El diseño y contrato de cuerpos están en LOCALIDADES_NUMERADAS.md y Swagger.
+
+## Ampliación F10: reportes administrativos
+
+| Método/ruta | Acceso | Función |
+|---|---|---|
+| GET `/api/v1/reportes/{codigo}` | ADMINISTRADOR habilitado | R-01…R-15; filtros, agrupaciones y totales por moneda; `formato=json|xlsx|pdf` |
+
+JSON paginado; XLSX/PDF contienen todo el conjunto filtrado y auditan EXPORT. 400 contrato/filtro incompatible, 401 anónimo, 403 rol/usuario inhabilitado, 404 reporte no disponible, 422 límite de exportación. Swagger declara los tres tipos de respuesta. Guía: [REPORTES.md](REPORTES.md). Power BI se conecta directamente a vistas `bi` con su credencial restringida; ver [POWER_BI.md](POWER_BI.md), aceptación visual pendiente del usuario.

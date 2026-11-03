@@ -71,10 +71,18 @@ SELECT count(*) AS filas_visibles FROM bi.vw_ventas_por_evento;
             if (-not $lineaPassword) { throw 'Credencial privada incompleta.' }
             $env:PGPASSWORD = $lineaPassword.Substring('BI_PASSWORD='.Length)
             $lineaPassword = $null
-            $conexionReal = 'SELECT count(*) FROM bi.vw_ventas_por_evento;' | & docker compose exec -T -e PGPASSWORD postgres psql -h 127.0.0.1 -U promotora_bi -d promotora -X -q -v ON_ERROR_STOP=1 2>&1
+            $conexionReal = 'SELECT count(*) FROM bi.vw_ventas_por_evento;' | & docker compose exec -T -e PGPASSWORD postgres psql -h postgres -U promotora_bi -d promotora -X -q -v ON_ERROR_STOP=1 2>&1
             if ($LASTEXITCODE -ne 0) { throw 'La autenticación TCP del LOGIN BI falló; la contraseña privada no fue mostrada.' }
-            $denegado = 'SELECT count(*) FROM public.usuarios;' | & docker compose exec -T -e PGPASSWORD postgres psql -h 127.0.0.1 -U promotora_bi -d promotora -X -q -v ON_ERROR_STOP=1 2>&1
-            if ($LASTEXITCODE -eq 0) { throw 'El LOGIN BI pudo acceder a usuarios; no debe usarse.' }
+            $preferenciaErrores = $ErrorActionPreference
+            try {
+                # PowerShell 5 convierte stderr nativo en ErrorRecord: se captura
+                # únicamente este rechazo esperado, sin interrumpir la verificación.
+                $ErrorActionPreference = 'Continue'
+                $denegado = 'SELECT count(*) FROM public.usuarios;' | & docker compose exec -T -e PGPASSWORD postgres psql -h postgres -U promotora_bi -d promotora -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate 2>&1
+                $codigoDenegado = $LASTEXITCODE
+            }
+            finally { $ErrorActionPreference = $preferenciaErrores }
+            if ($codigoDenegado -eq 0 -or ($denegado -join '') -notmatch '42501') { throw 'No se verificó el rechazo de acceso a usuarios; no uses el LOGIN BI hasta revisarlo.' }
         }
         finally { $env:PGPASSWORD = $passwordAnterior; $conexionReal = $null; $denegado = $null }
     }
