@@ -57,7 +57,7 @@ Marca ✅ solo cuando **todas** las tareas listadas estén completas y probadas.
 | Q8 | RAG: ingesta, recuperación y citación | F9-01 … F9-05 | ✅ |
 | Q9 | Logs y auditoría (sistema + agente IA) | F3-06, F9-08, F1-07 | ✅ |
 | Q10 | ≥ 15 reportes con filtros y totales, exportables a Excel y PDF | F10-01 … F10-05 | ✅ |
-| Q11 | Integración con Power BI | F1-08, F10-06 | ⬜ |
+| Q11 | Integración con Power BI | F1-08, F10-06 | ✅ |
 | Q12 | Frontend funcional e integrado | F11-* | ⬜ |
 | Q13 | Entregables: CLAUDE.md, AGENTS.md y Manual Técnico | F0-05, F12-04 | ⬜ |
 | Q14 | Funcional: venta por localidad/general, alta demanda, finanzas, mapas, reseñas, 3 perfiles | F4-*, F5-*, F6-*, F7-*, F8-* | ⬜ |
@@ -307,12 +307,14 @@ Plan inicial de PRs: A documentación (EXT-NUM-01); B esquema/configuración (02
   - Calificaciones ponderadas, eventos, carreras, IA y auditoría/notificaciones. Prueba API focalizada aprobada, sin conversaciones expuestas. R-14 informa tiempo por grupo diario; total de tiempo null porque la vista no conserva el conteo de mediciones no nulas. R-15 separa dos secciones y etiqueta participaciones de usuarios (no únicos globales). Sin cambios de esquema.
 - [x] **F10-05** Exportadores Excel (ClosedXML) y PDF (QuestPDF) detrás de `IReportExporter`; auditoría de `EXPORT`.
   - XLSX/PDF abiertos y verificados con ClosedXML/PdfPig desde API, total 369.60 y dos auditorías persistidas. Descarga completa filtrada (sin paginación), límites 10000/500 filas por sección, 422 sin parcial, archivos temporales eliminados al cerrar. Licencias y uso local documentados en [REPORTES.md](REPORTES.md).
-- [ ] **F10-06** Power BI: cadena de conexión a `bi` con `bi_reader`, archivo `.pbix` de ejemplo y guía.
-  - Proyecto versionable bi/Promotora.pbip (16 vistas, Resumen + 15 páginas, medidas DAX), Desktop gratuito, LOGIN local promotora_bi/bi_reader y permisos/autenticación TCP verificados. Clave privada en .env.powerbi ignorado. Validación Microsoft aprobada. Comprobación real adicional: 16 páginas abiertas, Actualizar sin errores, conexiones Mashup Engine como promotora_bi y 4 eventos cotejados (2 BORRADOR/2 EN_VENTA). Guardar como bi/Promotora.local.pbix iniciado; Desktop sigue procesando y el archivo no se confirma todavía. Solo ese entregable mantiene la tarea pendiente. Ver [POWER_BI.md](POWER_BI.md).
+- [x] **F10-06** Power BI: cadena de conexión a `bi` con `bi_reader`, archivo `.pbix` de ejemplo y guía.
+  - Proyecto versionable bi/Promotora.pbip (16 vistas, Resumen + 15 páginas, medidas DAX), Desktop gratuito, LOGIN local promotora_bi/bi_reader y permisos/autenticación TCP verificados. Clave privada en .env.powerbi ignorado. Validación Microsoft aprobada. Comprobación real: 16 páginas abiertas, Actualizar sin errores, conexiones Mashup Engine como promotora_bi y 4 eventos cotejados (2 BORRADOR/2 EN_VENTA). El usuario confirmó el guardado y se verificó bi/Promotora.pbix (117315 bytes, modelo DataModel y 16 páginas), ignorado por Git. Fase 10 cerrada localmente; CI remoto pendiente al publicar PR. Ver [POWER_BI.md](POWER_BI.md).
 - [x] **F10-07** Pruebas: totales de reportes coinciden con datos conocidos.
-  - Backend validado con ventas 369.60 GTQ, reembolso neto cero, cancelación 246.40 no cobrada, asistencia/carreras, fechas, paginación, permisos, auditoría, XLSX/PDF legibles y límite PDF. Suite completa: 532/534 inicialmente; dos expectativas de prueba corregidas y cada caso reejecutado aprobado (sin repetir suite). Build Release sin warnings y format limpio. F10-06/Q11 pendientes solo del PBIX final; apertura/refresh ya comprobados. Ver [VALIDACION_FASE_10.md](VALIDACION_FASE_10.md).
+  - Backend validado con ventas 369.60 GTQ, reembolso neto cero, cancelación 246.40 no cobrada, asistencia/carreras, fechas, paginación, permisos, auditoría, XLSX/PDF legibles y límite PDF. Suite completa: 532/534 inicialmente; dos expectativas de prueba corregidas y cada caso reejecutado aprobado (sin repetir suite). Build Release sin warnings y format limpio. F10-06/Q11 cerrados tras confirmar el PBIX final, sin repetir suite para cambios documentales. Ver [VALIDACION_FASE_10.md](VALIDACION_FASE_10.md).
 
 **Salida:** 15 reportes exportables y un tablero de Power BI funcionando.
+
+Salida comprobada localmente el 03/11/2026. Pendiente únicamente CI/revisión remotos del PR; no iniciar F11 sin acordarlo con el usuario.
 
 ### Fase 11 — Frontend e integración
 - [ ] **F11-01** Definir stack del frontend (D-09) y crear proyecto.
@@ -374,8 +376,8 @@ Vistas y tablas de origen en `BASE_DE_DATOS.md` §10. Todos con filtros (fechas,
 - [ ] Prueba de concurrencia: cero sobreventa
 - [ ] Agente de IA + RAG con ingesta, recuperación y citación demostrables
 - [ ] `logs_auditoria` y `logs_agente_ia` con datos reales
-- [ ] 15 reportes con exportación Excel y PDF
-- [ ] Power BI conectado al esquema `bi`
+- [x] 15 reportes con exportación Excel y PDF
+- [x] Power BI conectado al esquema `bi`
 - [ ] Frontend integrado con el backend
 - [ ] `AGENTS.md`, `CLAUDE.md` y Manual Técnico entregados
 - [ ] Sin secretos en el repositorio

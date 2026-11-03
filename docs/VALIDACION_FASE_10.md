@@ -4,7 +4,7 @@ Fecha: 03/11/2026. Rama: `feature/f10-reportes-bi`, creada desde `origin/develop
 
 ## Estado real
 
-F10-01–05 y F10-07 completados: 15 reportes en `/api/v1/reportes/{codigo}`, JSON paginado, exportaciones Excel/PDF auditadas. F10-06 ya tiene apertura visual, actualización real y cotejo con PostgreSQL comprobados; **solo queda confirmar la copia PBIX que Desktop está guardando**. Q10 satisfecho; Q11 y la salida completa de Fase 10 no se cierran hasta ese entregable. F11 no se inicia.
+F10-01–05 y F10-07 completados: 15 reportes en `/api/v1/reportes/{codigo}`, JSON paginado, exportaciones Excel/PDF auditadas. F10-06 tiene apertura visual, actualización real, cotejo con PostgreSQL y copia `bi/Promotora.pbix` confirmados. Q10/Q11 y el criterio de salida de Fase 10 quedan satisfechos localmente. CI/revisión remotos pendientes al publicar PR. F11 no se inicia.
 
 ## Evidencia del backend
 
@@ -34,7 +34,7 @@ Power BI Desktop se instaló gratuitamente desde Microsoft Store, autorizado por
 
 Proyecto `bi/Promotora.pbip`: 16 vistas, 16 páginas (Resumen + R-01…R-15), tablas, gráficos, filtros y medidas DAX. Referencias de columnas explícitas, promedios ponderados y medidas monetarias vacías al combinar monedas. Validación oficial Microsoft `powerbi-report-authoring-cli` 0.5.0: resultado succeeded, cero errores/advertencias.
 
-Comprobación adicional real del 03/11/2026: se observaron las 16 páginas en Desktop y se ejecutó Actualizar, que terminó sin error. `pg_stat_activity` confirmó conexiones `promotora_bi` con `application_name = Mashup Engine`. R-12 presentó BORRADOR=2, EN_VENTA=2 y total=4, coincidentes con la vista PostgreSQL bajo rol BI. Las vistas de ventas y boletos no tienen filas locales, de modo que esos visuales vacíos son esperables; no se insertaron ventas para forzar resultados ni se repitió la suite. Se inició Guardar como → Power BI file (.pbix) → `bi/Promotora.local.pbix`; el diálogo sigue procesando y no se confirma todavía la existencia del archivo. El PBIX está ignorado por Git.
+Comprobación adicional real del 03/11/2026: se observaron las 16 páginas en Desktop y se ejecutó Actualizar, que terminó sin error. `pg_stat_activity` confirmó conexiones `promotora_bi` con `application_name = Mashup Engine`. R-12 presentó BORRADOR=2, EN_VENTA=2 y total=4, coincidentes con la vista PostgreSQL bajo rol BI. Las vistas de ventas y boletos no tienen filas locales, de modo que esos visuales vacíos son esperables; no se insertaron ventas para forzar resultados ni se repitió la suite. El primer intento de guardado demoró; posteriormente el usuario confirmó la copia `bi/Promotora.pbix`. Se verificó su existencia (117315 bytes) y estructura de paquete con DataModel y 16 páginas. El PBIX está ignorado por Git y no se versiona.
 
 ## Revisión de diff contra AGENTS.md §§5 y 12
 
@@ -48,7 +48,7 @@ Comprobación adicional real del 03/11/2026: se observaron las 16 páginas en De
 
 ## Pendientes y límites
 
-1. Tablero abierto y actualizado, con cotejo real de cuatro eventos y conexión BI restringida. Falta confirmar el PBIX local de ejemplo: Desktop continúa guardando; mantener F10-06/Q11 pendientes de ese entregable. CI remoto también requiere publicar el PR.
+1. Criterio de salida local cumplido: tablero abierto/actualizado, cuatro eventos cotejados, conexión BI restringida y PBIX de ejemplo guardado y verificado. Pendiente únicamente CI/revisión remotos al publicar el PR. La comprobación local de ventas vacías no sustituye los casos con importes conocidos de las pruebas automatizadas ya ejecutadas.
 2. R-14: el total de tiempo global queda null porque la vista agregada no conserva conteo de mediciones no nulas; no se inventa un promedio. R-15 cuenta participaciones diarias de usuarios, no únicos globales.
 3. Exportación acotada: 10000 filas XLSX y 500 PDF por sección. Se transmite el archivo como stream, pero ClosedXML conserva el libro en memoria; no es generación ilimitada en memoria constante. Rechazo explícito sin truncamiento ante exceso.
 4. Power BI importa manualmente y usa credencial administrativa de reportes independiente de JWT. No hay RLS por dueño, refresh programado, publicación cloud ni servicios/licencias de pago activados. Un PBIX puede contener información privada.

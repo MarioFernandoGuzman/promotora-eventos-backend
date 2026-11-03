@@ -108,4 +108,4 @@ page 1–100000, pageSize 1–100 (default 20). 400 validación, 401 autenticaci
 |---|---|---|
 | GET `/api/v1/reportes/{codigo}` | ADMINISTRADOR habilitado | R-01…R-15; filtros, agrupaciones y totales por moneda; `formato=json|xlsx|pdf` |
 
-JSON paginado; XLSX/PDF contienen todo el conjunto filtrado y auditan EXPORT. 400 contrato/filtro incompatible, 401 anónimo, 403 rol/usuario inhabilitado, 404 reporte no disponible, 422 límite de exportación. Swagger declara los tres tipos de respuesta. Guía: [REPORTES.md](REPORTES.md). Power BI se conecta directamente a vistas `bi` con su credencial restringida; ver [POWER_BI.md](POWER_BI.md), apertura/refresh comprobados y guardado PBIX pendiente.
+JSON paginado; XLSX/PDF contienen todo el conjunto filtrado y auditan EXPORT. 400 contrato/filtro incompatible, 401 anónimo, 403 rol/usuario inhabilitado, 404 reporte no disponible, 422 límite de exportación. Swagger declara los tres tipos de respuesta. Guía: [REPORTES.md](REPORTES.md). Power BI se conecta directamente a vistas `bi` con su credencial restringida; ver [POWER_BI.md](POWER_BI.md), apertura/refresh y PBIX local guardado comprobados.
