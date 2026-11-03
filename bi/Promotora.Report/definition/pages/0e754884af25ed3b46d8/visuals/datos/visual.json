@@ -1,0 +1,122 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "InscritosCarreras"
+                    }
+                  },
+                  "Property": "evento_id"
+                }
+              },
+              "nativeQueryRef": "evento_id",
+              "queryRef": "InscritosCarreras.evento_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "InscritosCarreras"
+                    }
+                  },
+                  "Property": "evento_nombre"
+                }
+              },
+              "nativeQueryRef": "evento_nombre",
+              "queryRef": "InscritosCarreras.evento_nombre"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "InscritosCarreras"
+                    }
+                  },
+                  "Property": "distancia"
+                }
+              },
+              "nativeQueryRef": "distancia",
+              "queryRef": "InscritosCarreras.distancia"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "InscritosCarreras"
+                    }
+                  },
+                  "Property": "R-13 Inscritos"
+                }
+              },
+              "nativeQueryRef": "R-13 Inscritos",
+              "queryRef": "InscritosCarreras.R-13 Inscritos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "InscritosCarreras"
+                    }
+                  },
+                  "Property": "R-13 Validados"
+                }
+              },
+              "nativeQueryRef": "R-13 Validados",
+              "queryRef": "InscritosCarreras.R-13 Validados"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-13 - Inscritos carreras'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

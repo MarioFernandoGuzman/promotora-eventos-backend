@@ -19,15 +19,15 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 
 ## 1. Visión general
 
-26 tablas agrupadas por módulo (coinciden con los módulos de código):
+31 tablas agrupadas por módulo; V12 incorpora las cuatro tablas de inventario numerado (EXT-NUM-02). F6-11 añadió el diario del proveedor simulado:
 
 | Módulo | Tablas | Propósito |
 |---|---|---|
 | Identity | `usuarios`, `clientes`, `administradores`, `duenos_recinto`, `refresh_tokens` | Cuentas, roles, perfiles y renovación de sesión |
 | Venues | `recintos`, `localidades` | Lugares físicos y sus zonas (mapa) |
 | Catalog | `categorias_evento`, `presentadores`, `eventos`, `evento_presentadores`, `tipos_entrada` | Qué se vende y a qué precio/cupo |
-| Ticketing | `compras`, `detalle_compra`, `boletos` | Venta y emisión de boletos |
-| Finance | `pagos`, `cuentas_financieras`, `movimientos_financieros` | Dinero: cobros, cuentas y ledger |
+| Ticketing | `compras`, `detalle_compra`, `boletos`, `distribuciones_evento`, `mesas_evento`, `asientos_evento`, `asignaciones_asiento` | Venta y emisión de boletos |
+| Finance | `pagos`, `pagos_simulados`, `cuentas_financieras`, `movimientos_financieros` | Dinero: intentos, diario del proveedor simulado, cuentas y ledger |
 | Reviews | `resenas` | Opiniones de clientes |
 | AI | `documentos_rag`, `chunks_rag`, `logs_agente_ia` | RAG y trazabilidad del agente |
 | Audit / Messaging | `logs_auditoria`, `notificaciones`, `outbox_mensajes`, `mensajes_procesados` | Auditoría y mensajería confiable |
@@ -77,9 +77,18 @@ erDiagram
   USUARIOS |o--o{ NOTIFICACIONES : recibe
   USUARIOS ||--o{ DOCUMENTOS_RAG : "subido_por"
   DOCUMENTOS_RAG ||--o{ CHUNKS_RAG : "se divide en"
+  PAGOS_SIMULADOS {
+    uuid referencia PK
+    numeric monto
+    varchar moneda
+    varchar estado
+    timestamptz fecha
+  }
 ```
 
 `outbox_mensajes` y `mensajes_procesados` no tienen FK: son infraestructura de mensajería referenciada por valor (`agregado`, `agregado_id`, `mensaje_id`).
+
+`pagos_simulados` tampoco tiene FK: `referencia` coincide por valor con `compras.public_id`, pero el resultado del proveedor se confirma en una conexión independiente y debe sobrevivir al rollback de la compra. No representa el ledger ni una pasarela externa.
 
 ---
 
@@ -101,7 +110,7 @@ erDiagram
 
 ## 4. Diccionario de datos
 
-Regenerado en F1-11 desde los catálogos de PostgreSQL 16 tras aplicar V1–V9 con Flyway: **26 tablas y 198 columnas**. Los tipos, claves, nulabilidad, defaults, CHECKs e índices siguientes reflejan las migraciones, que son la fuente de verdad. — indica ausencia de default o clave; los IDs usan GENERATED ALWAYS AS IDENTITY. Los triggers de integridad se describen en §6; el DDL completo permanece en database/migrations/.
+Regenerado en F1-11 desde los catálogos de PostgreSQL 16 tras aplicar V1–V9 con Flyway (26 tablas y 198 columnas), ampliado en F6-11 con V11: **31 tablas y 235 columnas**, incluidas las 32 columnas nuevas de V12. Los tipos, claves, nulabilidad, defaults, CHECKs e índices siguientes reflejan las migraciones, que son la fuente de verdad. — indica ausencia de default o clave; los IDs numéricos usan GENERATED ALWAYS AS IDENTITY. Los triggers de integridad se describen en §6; el DDL completo permanece en database/migrations/.
 
 ### 4.1 Identity
 
@@ -462,6 +471,8 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 #### `boletos` 🔧
 Un boleto = una persona = un QR. Se **generan** al completarse la compra (una fila por unidad de `cantidad`). codigo_qr contiene un token firmado HMAC-SHA256; UNIQUE no valida la firma. Application exige nombre_asistente y documento_identidad para carreras, aunque sean nullable en BD; datos_extra puede incluir talla de camiseta y contacto de emergencia. fecha_uso y validado_por registran la validación en puerta.
 
+Acuerdo F6-03/F6-04: POST /api/v1/compras recibe asistentes por ítem. Mientras la compra está pendiente, se conservan en `outbox_mensajes.payload`, asociados a tipo_entrada_id, sin nuevas tablas o columnas. El Worker los relaciona con detalle_compra al emitir; RabbitMQ recibe solamente publicId. El outbox conserva estos datos después de publicar, sin purga automática definida; no se copian a logs ni DLQ.
+
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
 | `id` | `bigint` | NOT NULL | `GENERATED ALWAYS AS IDENTITY` | `PK (boletos_pkey)` |
@@ -494,6 +505,20 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 
 ### 4.5 Finance
 
+#### `pagos_simulados` ➕ — F6-11, aprobación explícita del usuario
+
+Diario del proveedor simulado: una fila inmutable por referencia; no se borra ni sobrescribe al cambiar tasas o reiniciar el host. Solo SELECT/INSERT para promotora_app; trigger bloquea UPDATE/DELETE/TRUNCATE incluso al propietario. bi_reader no tiene acceso. No contiene secretos ni datos de tarjeta.
+
+| Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
+|---|---|---|---|---|
+| `referencia` | `uuid` | NOT NULL | — | PK, sin FK |
+| `monto` | `numeric(10,2)` | NOT NULL | — | CHECK monto >= 0 |
+| `moneda` | `character varying(3)` | NOT NULL | — | CHECK moneda = 'GTQ' |
+| `estado` | `character varying(20)` | NOT NULL | — | CHECK estado IN ('APROBADO','RECHAZADO') |
+| `fecha` | `timestamp with time zone` | NOT NULL | `now()` | — |
+
+La PK proporciona unicidad e índice de consulta. Sin índices adicionales. El adaptador inserta con ON CONFLICT DO NOTHING, consulta la fila confirmada y exige los mismos importes. Ausencia tras consulta exitosa significa que este simulador durable no registró cobro; error de consulta no significa ausencia. Un pago/ledger/boleto histórico sin respaldo consistente requiere conciliación, no devolución automática.
+
 #### `pagos` ➕
 Intentos de cobro de una compra (una compra puede tener varios si el primero falla).
 
@@ -522,6 +547,8 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 
 #### `cuentas_financieras` ➕
 Dónde "vive" el dinero. Por moneda: una cuenta `PLATAFORMA` (comisiones), una `IMPUESTOS` (IVA) y una `DUENO` por dueño de recinto (ventas).
+
+Consultas F7-06 aprobadas: GET /api/v1/cuentas, GET /api/v1/cuentas/{id} y GET /api/v1/cuentas/{id}/movimientos. Administradores consultan todas; dueños solo propias, incluidas cerradas. Listados paginados (default 20, máximo 100); cuentas por dueño/moneda/tipo/estado, extracto por tipo/compra/intervalo UTC desde inclusivo/hasta exclusivo, orden fecha e ID descendentes. Sin cambios de esquema. Contrato completo en [CONSULTAS_FINANCIERAS.md](CONSULTAS_FINANCIERAS.md).
 
 Índices únicos parciales: `UNIQUE(moneda) WHERE tipo='PLATAFORMA'` y `UNIQUE(moneda) WHERE tipo='IMPUESTOS'`.
 Solo se cierra una cuenta DUENO con saldo = 0. PLATAFORMA e IMPUESTOS no se cierran. Un trigger rechaza movimientos en cuentas CERRADA.
@@ -560,6 +587,8 @@ Cada cambio de dinero es una fila. **Solo `INSERT`** (se revoca `UPDATE`/`DELETE
 | Reembolso | `REEMBOLSO` revierte los tres componentes en las mismas cuentas |
 | Liquidación al dueño | `LIQUIDACION` negativo en la cuenta del dueño (retiro) |
 
+Contrato F7-05 aprobado: POST /api/v1/cuentas/{id}/liquidar solo ADMINISTRADOR habilitado, con monto positivo de hasta dos decimales e Idempotency-Key por cuenta. Una operación nueva requiere DUENO ACTIVA, saldo suficiente y conciliado; el débito, saldo y auditoría comparten transacción. compra_id queda NULL. descripcion reserva `liquidacion:v1:<SHA-256 hexadecimal de la clave UTF-8>`; buscar e insertar bajo bloqueo de cuenta evita duplicados sin cambiar esquema. No existe un índice único para esa referencia: todo escritor debe seguir el protocolo. Repetir mismo monto devuelve el movimiento original; cambiarlo devuelve 409. Sin transferencia externa. Guía: [LIQUIDACIONES.md](LIQUIDACIONES.md).
+
 Al completar una compra, la suma de sus movimientos de cobro debe igualar `compras.total` (antes de reembolsos). Los componentes de monto cero no generan movimientos, por el CHECK ≠ 0. La comisión es un cargo al cliente; el IVA se muestra aparte. Su tasa se configura en appsettings y el cálculo pertenece a Domain. La facturación electrónica queda fuera de alcance.
 
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
@@ -591,6 +620,8 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 #### `resenas` ✅
 `calificacion` 1–5, `comentario`, `estado` ∈ `PENDIENTE`, `APROBADA`, `RECHAZADA`. UNIQUE (`evento_id`, `cliente_id`).
 Reglas de aplicación: solo clientes con boleto `USADO` del evento; moderación por ADMINISTRADOR; el promedio por presentador sale de `resenas APROBADA → evento_presentadores`.
+
+Contrato Fase 8 aprobado: comentario opcional máximo 510 caracteres, calificación 1–5. Crear nace PENDIENTE; autor puede editar para volver a PENDIENTE y retirar usando RECHAZADA sin DELETE, incluso editar rechazada/retirada para revisión. Moderador solo ADMINISTRADOR, desde PENDIENTE. Listados paginados y agregados públicos solo sobre APROBADA. Rutas y prueba local en [RESENAS.md](RESENAS.md). No se añade estado RETIRADA ni columnas. Elección de IA resuelta en D-05: Ollama Cloud para chat y Gemini API en nivel gratuito para embeddings, sin descargas.
 
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
@@ -624,6 +655,10 @@ Documentos del negocio ingestados (reglamentos, políticas de reembolso, FAQ, gu
 Columnas: `titulo`, `tipo_documento`, `contenido` (texto extraído), `ruta_archivo`, `version`, `fecha_carga` (TIMESTAMPTZ), `estado` ➕* ∈ `PENDIENTE`, `INDEXADO`, `ERROR`, `INACTIVO`, `subido_por` ➕* (FK `usuarios`).
 Solo los `INDEXADO` participan en la recuperación.
 
+Fase 9: indexación explícita en POST /api/v1/ia/documentos/{id}/reindexar. Los chunks conservan modelo en metadata.modelo, orden y página; el chat filtra por modelo vigente. ERROR puede reintentarse hacia INDEXADO; reindexar INDEXADO sustituye sus chunks en una única transacción manteniendo INDEXADO, y un fallo conserva el índice anterior. La publicación de una nueva versión retira las anteriores INDEXADO de su referencia lógica. No se altera el esquema; ver [IA_RAG.md](IA_RAG.md).
+
+Convención F9-02: el texto se conserva en `contenido`, sin almacenar el binario original. `tipo_documento` identifica el formato extraído (PDF/DOCX/TXT/MD); `ruta_archivo` es una referencia lógica privada `db:documentos-rag/<UUID>` compartida por las versiones de una serie, no una ruta recibida del cliente ni un archivo público. Una nueva versión crea otra fila PENDIENTE bajo bloqueo de la primera fila de la serie, sin sobrescribir texto o estado previos. La desactivación administrativa condicional permite PENDIENTE/INDEXADO/ERROR → INACTIVO. Detalles y límites: [IA_DOCUMENTOS.md](IA_DOCUMENTOS.md).
+
 | Columna | Tipo PostgreSQL | Nulabilidad | Default / generación | Claves |
 |---|---|---|---|---|
 | `id` | `integer` | NOT NULL | `GENERATED ALWAYS AS IDENTITY` | `PK (documentos_rag_pkey)` |
@@ -643,7 +678,7 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 - `documentos_rag_pkey`: `PRIMARY KEY (id)`.
 
 #### `chunks_rag` ➕
-Fragmentos de cada documento con su vector. embedding tiene dimensión 1536, correspondiente a text-embedding-3-small; cambiar el modelo obliga a reindexar. orden y pagina permiten citar el fragmento; metadata puede incluir sección e idioma.
+Fragmentos de cada documento con su vector. embedding conserva dimensión 1536; D-05 selecciona gemini-embedding-2 cloud con outputDimensionality=1536. El modelo histórico era text-embedding-3-small; cambiar modelo obliga a reindexar aunque conserve dimensión, nunca mezclar vectores de modelos distintos. orden y pagina permiten citar el fragmento; metadata puede incluir sección e idioma.
 
 Índice: `USING hnsw (embedding vector_cosine_ops)`.
 
@@ -812,9 +847,11 @@ pagos:     PENDIENTE → APROBADO → REEMBOLSADO
                   └──► RECHAZADO
 
 resenas:   PENDIENTE → APROBADA | RECHAZADA
-documentos_rag: PENDIENTE → INDEXADO | ERROR      INDEXADO → INACTIVO
+documentos_rag: PENDIENTE → INDEXADO | ERROR      PENDIENTE/INDEXADO/ERROR → INACTIVO
 ```
 Toda transición de estado usa UPDATE condicional con el estado esperado. Solo quien gana (1 fila afectada) devuelve el cupo, en la misma transacción. Al pasar a FALLIDA, EXPIRADA o CANCELADA se devuelve una sola vez. La expiración y la cancelación por el usuario solo proceden desde PENDIENTE; cancelar en PROCESANDO responde 409. En reembolsos se devuelve únicamente el cupo de boletos que pasaron de VALIDO a ANULADO.
+
+F7-04, política aprobada: reembolso total por ADMINISTRADOR habilitado; pago APROBADO → REEMBOLSADO y compra permanece COMPLETADA. Se insertan REEMBOLSO por el negativo exacto de cada movimiento original distinto de cero, en las mismas cuentas, sin recalcular tasas. Solo con cuentas afectadas ACTIVA y saldo suficiente. Boletos USADO conservan historial y no liberan cupo; ANULADO previo no libera otra vez. Pago, ledger/saldos, boletos/cupo y auditoría se confirman juntos. Repetición consistente devuelve 200 sin escrituras. No modifica pagos_simulados ni representa una devolución externa. Contrato y pruebas: [REEMBOLSOS.md](REEMBOLSOS.md).
 
 ---
 
@@ -904,7 +941,7 @@ V9 crea flyway y promotora_app como roles de grupo NOLOGIN, sin contraseñas ni 
 
 Cada reporte se apoya en una vista; la API de reportes y Power BI leen las mismas vistas.
 
-Implementadas en `R__bi_vistas.sql` (F1-08): 16 vistas para 15 reportes. Las fechas diarias se calculan en UTC y los importes mantienen moneda separada. Las vistas conservan las dimensiones necesarias para filtrar antes de la agrupación final en F10; R-02/R-03 amplían la base diaria por evento con los nombres de categoría y recinto, y R-12 expone eventos para contar por estado después de aplicar filtros. Los endpoints, exportaciones y reportes finales siguen pendientes de F10.
+Implementadas en `R__bi_vistas.sql` (F1-08): 16 vistas para 15 reportes. Las fechas diarias se calculan en UTC y los importes mantienen moneda separada. Las vistas conservan las dimensiones necesarias para filtrar antes de la agrupación final en F10; R-02/R-03 amplían la base diaria por evento con los nombres de categoría y recinto, y R-12 expone eventos para contar por estado después de aplicar filtros. F10-01–05 implementan `/api/v1/reportes/{codigo}` con JSON/Excel/PDF, solo administrador habilitado; ver [REPORTES.md](REPORTES.md). El proyecto de Power BI, su acceso restringido, apertura y actualización real están comprobados; F10-06 está cerrado con bi/Promotora.pbix guardado, verificado y excluido de Git; ver [POWER_BI.md](POWER_BI.md). No se modifican las vistas con esta entrega.
 
 R-01/R-04/R-09 muestran ventas brutas de compras COMPLETADA; los detalles se agregan antes de unir cabeceras, y R-04 toma el último pago APROBADO por compra para evitar duplicación por reintentos. R-05 cuenta cupo ocupado (incluidas reservas); R-06 distingue boletos vigentes, usados y anulados. R-07/R-08 mantienen el signo del ledger y separan reembolsos; R-11 usa solo reseñas APROBADA y expone cantidad/suma para calcular promedios ponderados. R-13 reconoce Carrera y tipos 5K/10K/21K/42K, contando boletos VALIDO/USADO. Los logs de R-14/R-15 se exponen agregados, sin textos de consultas ni IPs.
 
@@ -968,6 +1005,9 @@ Solo escritura / consulta (no cuentan como CRUD): `detalle_compra` (parte de com
 | `V8__mensajeria.sql` | `notificaciones`, `outbox_mensajes`, `mensajes_procesados` |
 | `V9__indices_triggers_permisos.sql` | Índices, constraint trigger diferido de perfil, triggers de integridad (§6), cuentas cerradas e inmutabilidad de ledger/logs; roles y `REVOKE` |
 | `V10__seed_catalogos.sql` | Solo categorías de evento y cuentas PLATAFORMA e IMPUESTOS (GTQ); nunca usuarios ni credenciales |
+| `V13__integridad_boleto_numerado.sql` | Refuerza cambios de FK histórica y correspondencia boleto/asignación; sin tablas ni columnas adicionales |
+| `V12__localidades_numeradas.sql` | Cuatro tablas de distribución por evento, mesas, sillas y asignaciones; índices, triggers de integridad y permisos |
+| `V11__pasarela_simulada.sql` | Diario inmutable `pagos_simulados`, permisos SELECT/INSERT y trigger; sin FK ni cambios al ledger |
 | `R__bi_vistas.sql` | Vistas `bi.*` (repetible), rol `bi_reader` |
 
 Datos de prueba (eventos, recintos, compras de ejemplo) en `database/seed-dev/`, **fuera** de las migraciones de producción.
@@ -980,7 +1020,99 @@ El primer SUPERADMIN se crea al arrancar la API, solo si no existe ninguno, leye
 
 | ID | Tema | Valor confirmado |
 |---|---|---|
-| D-08 | ¿Asientos numerados? | No: solo localidades con cupo |
+| D-08 | ¿Asientos numerados? | Sí: venta mixta general/numerada; mesas completas o por silla según evento. Diseño aprobado EXT-NUM; aún sin migración |
 | D-11 | ¿Quién asume IVA y comisión? | La comisión se cobra al cliente como cargo por servicio; el IVA se muestra aparte |
 | D-12 | Un rol por usuario | Sí (`usuarios.rol` + una fila de perfil) |
-| D-07 | Refresh tokens | Sí: tabla `refresh_tokens` definida en §4.1 → 26 tablas |
+| D-07 | Refresh tokens | Sí: tabla `refresh_tokens` definida en §4.1; esquema original v2 de 26 tablas, 27 tras diario simulado F6-11 |
+
+
+## 14. Inventario numerado — V12 (EXT-NUM-02)
+
+V12__localidades_numeradas.sql incorpora distribuciones_evento, mesas_evento, asientos_evento y asignaciones_asiento: **31 tablas y 235 columnas**. Validado con PostgreSQL temporal y Flyway; V12/V13 aplicadas y validadas también en el PostgreSQL local durante EXT-NUM-07. Los endpoints y el ciclo de compra numerada están integrados en EXT-NUM-03–05; V13 refuerza sus comprobaciones históricas. Las tablas existentes conservan sus columnas y datos. Las migraciones anteriores permanecen intactas.
+
+Relaciones adicionales implementadas por V12 (complementan §2):
+
+```mermaid
+erDiagram
+  EVENTOS ||--o{ DISTRIBUCIONES_EVENTO : configura
+  LOCALIDADES ||--o{ DISTRIBUCIONES_EVENTO : delimita
+  DISTRIBUCIONES_EVENTO ||--o{ MESAS_EVENTO : contiene
+  DISTRIBUCIONES_EVENTO ||--o{ ASIENTOS_EVENTO : ofrece
+  MESAS_EVENTO |o--o{ ASIENTOS_EVENTO : agrupa
+  TIPOS_ENTRADA ||--o{ MESAS_EVENTO : tarifa
+  TIPOS_ENTRADA ||--o{ ASIENTOS_EVENTO : tarifa
+  ASIENTOS_EVENTO ||--o{ ASIGNACIONES_ASIENTO : historial
+  DETALLE_COMPRA ||--o{ ASIGNACIONES_ASIENTO : reserva
+  BOLETOS |o--o| ASIGNACIONES_ASIENTO : confirma
+```
+
+No DELETE sobre estas cuatro tablas; FK históricas RESTRICT, unicidad parcial de asignación vigente por silla y constraint trigger diferido de coherencia. Localidades generales y compras existentes no se convierten. Para numeradas el cupo se deriva de las posiciones; una mesa comparte tipo/precio y modo COMPLETA/POR_SILLA, QR individual. D-15 y reembolso total permanecen vigentes. Detalles en la especificación aprobada; El diccionario adicional se detalla a continuación.
+
+
+### 14.1 Diccionario adicional V12
+
+Los cuatro IDs son BIGINT GENERATED ALWAYS AS IDENTITY. FKs ON DELETE RESTRICT. Las definiciones siguientes se corresponden con V12 y los tipos/nulabilidad de sus 32 columnas se contrastan contra PostgreSQL en PersistenceTests. Campos sin default indicado no tienen default. UNIQUE de boleto_id admite múltiples NULL; índice vigente por asiento es parcial. Estados, coherencia histórica y restricciones cruzadas se comprueban al COMMIT.
+
+### distribuciones_evento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| evento_id | INT NOT NULL FK eventos |
+| localidad_id | INT NOT NULL FK localidades |
+| estado | VARCHAR(20) NOT NULL DEFAULT BORRADOR; BORRADOR/PUBLICADA |
+| imagen_plano_url | VARCHAR(255) NULL; referencia congelada al publicar, no carga arbitraria de URL externa |
+| fecha_creacion | TIMESTAMPTZ NOT NULL DEFAULT now() |
+| fecha_publicacion | TIMESTAMPTZ NULL |
+
+UNIQUE(evento_id, localidad_id). Validar localidad del recinto del evento. Estado y fecha coherentes mediante CHECK. PUBLICADA implica inventario completo y listo para vender; no se vende antes. No hay edición estructural después de publicar en esta primera versión, incluso si luego se cancelan todas las reservas. Las localidades existentes sin distribución conservan venta general.
+
+### mesas_evento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| distribucion_id | BIGINT NOT NULL FK distribuciones_evento |
+| etiqueta | VARCHAR(50) NOT NULL; ejemplo Mesa 7 |
+| modalidad | VARCHAR(20) NOT NULL; COMPLETA/POR_SILLA |
+| tipo_entrada_id | INT NOT NULL FK tipos_entrada |
+| x, y | NUMERIC(10,6) NOT NULL; coordenadas normalizadas 0..1 |
+
+UNIQUE(distribucion_id, etiqueta), texto no vacío. Capacidad derivada del número de sillas: no mantener otro contador editable. Mesa completa exige al menos una silla; si se desea retirar una silla por operativa, debe resolverse en BORRADOR antes de publicar.
+
+### asientos_evento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| distribucion_id | BIGINT NOT NULL FK distribuciones_evento |
+| mesa_id | BIGINT NULL FK mesas_evento |
+| tipo_entrada_id | INT NOT NULL FK tipos_entrada |
+| etiqueta | VARCHAR(50) NOT NULL; ejemplo A-04 o M07-S02 |
+| fila | VARCHAR(50) NULL |
+| x, y | NUMERIC(10,6) NOT NULL; coordenadas normalizadas 0..1 |
+| estado | VARCHAR(20) NOT NULL DEFAULT DISPONIBLE; DISPONIBLE/RESERVADO/VENDIDO/BLOQUEADO |
+
+UNIQUE(distribucion_id, etiqueta). Índices por distribución/estado y mesa. CHECK coordenadas y etiqueta no vacía. Si tiene mesa, debe coincidir distribución y tipo de entrada; tipo debe pertenecer al evento/localidad de la distribución. Las relaciones entre tablas requieren FK compuestas o triggers de integridad; no confiar únicamente en C#.
+
+BLOQUEADO es una exclusión operativa, no otra venta. Solo se bloquean sillas disponibles; para mesa COMPLETA se bloquea/desbloquea toda la mesa atómicamente. No se bloquean posiciones reservadas o vendidas. Un cambio operativo no borra posiciones ni altera su etiqueta.
+
+### asignaciones_asiento
+
+| Columna | Definición V12 |
+|---|---|
+| id | BIGINT identity PK |
+| asiento_id | BIGINT NOT NULL FK asientos_evento |
+| detalle_compra_id | INT NOT NULL FK detalle_compra |
+| ordinal_boleto | INT NOT NULL CHECK > 0; posición dentro del detalle |
+| estado | VARCHAR(20) NOT NULL DEFAULT RESERVADA; RESERVADA/CONFIRMADA/LIBERADA |
+| boleto_id | BIGINT NULL FK boletos, UNIQUE cuando no NULL |
+| fecha_reserva | TIMESTAMPTZ NOT NULL DEFAULT now() |
+| fecha_confirmacion | TIMESTAMPTZ NULL |
+| fecha_liberacion | TIMESTAMPTZ NULL |
+
+UNIQUE(detalle_compra_id, ordinal_boleto); ordinal <= cantidad del detalle. Índice UNIQUE parcial por asiento_id WHERE estado IN ('RESERVADA','CONFIRMADA'): como máximo una asignación vigente por silla. La reserva expira con compras.expira_en, no con un segundo plazo propio.
+
+RESERVADA sin boleto ni fecha de confirmación/liberación; CONFIRMADA con boleto y fecha de confirmación; LIBERADA con fecha de liberación, conserva boleto/confirmación si existieron. Boleto debe pertenecer al mismo detalle. Eventos, localidades y tipos deben coincidir en toda la cadena. Un constraint trigger diferido verifica al COMMIT la correspondencia del estado del asiento con su asignación vigente y el estado del boleto. USADO conserva CONFIRMADA/VENDIDO; no hay reutilización después de asistencia.
+
+El historial se conserva al liberar y vender de nuevo: nueva asignación, nunca sobrescribir la anterior. El precio histórico sigue en detalle_compra, y las etiquetas de la distribución publicada quedan inmutables. No se utiliza datos_extra JSONB para sustituir relaciones o unicidad.

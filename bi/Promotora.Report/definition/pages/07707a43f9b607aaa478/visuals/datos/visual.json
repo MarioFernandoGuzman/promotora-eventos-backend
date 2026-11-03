@@ -1,0 +1,150 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "UsoAgenteIa"
+                    }
+                  },
+                  "Property": "fecha"
+                }
+              },
+              "nativeQueryRef": "fecha",
+              "queryRef": "UsoAgenteIa.fecha"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "UsoAgenteIa"
+                    }
+                  },
+                  "Property": "modelo"
+                }
+              },
+              "nativeQueryRef": "modelo",
+              "queryRef": "UsoAgenteIa.modelo"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "UsoAgenteIa"
+                    }
+                  },
+                  "Property": "estado"
+                }
+              },
+              "nativeQueryRef": "estado",
+              "queryRef": "UsoAgenteIa.estado"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "UsoAgenteIa"
+                    }
+                  },
+                  "Property": "R-14 Consultas"
+                }
+              },
+              "nativeQueryRef": "R-14 Consultas",
+              "queryRef": "UsoAgenteIa.R-14 Consultas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "UsoAgenteIa"
+                    }
+                  },
+                  "Property": "R-14 Tiempo diario ms"
+                }
+              },
+              "nativeQueryRef": "R-14 Tiempo diario ms",
+              "queryRef": "UsoAgenteIa.R-14 Tiempo diario ms"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "UsoAgenteIa"
+                    }
+                  },
+                  "Property": "R-14 Tokens entrada"
+                }
+              },
+              "nativeQueryRef": "R-14 Tokens entrada",
+              "queryRef": "UsoAgenteIa.R-14 Tokens entrada"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "UsoAgenteIa"
+                    }
+                  },
+                  "Property": "R-14 Tokens salida"
+                }
+              },
+              "nativeQueryRef": "R-14 Tokens salida",
+              "queryRef": "UsoAgenteIa.R-14 Tokens salida"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-14 - Uso del agente IA'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

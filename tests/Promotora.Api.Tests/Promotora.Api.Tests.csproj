@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="../ParallelismoContenedores.cs" Link="Configuration/ParallelismoContenedores.cs" />
+    <Compile Include="../Promotora.Infrastructure.Tests/ImagenFixture.cs" Link="Fixtures/ImagenFixture.cs" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <Compile Include="../Promotora.Infrastructure.Tests/PostgresFixture.cs" Link="Fixtures/PostgresFixture.cs" />
+    <Compile Include="../Promotora.Infrastructure.Tests/RabbitMqFixture.cs" Link="Fixtures/RabbitMqFixture.cs" />
+    <Compile Include="../Promotora.Infrastructure.Tests/CompraFixture.cs" Link="Fixtures/CompraFixture.cs" />
+    <Compile Include="../Promotora.Infrastructure.Tests/ReembolsoFixture.cs" Link="Fixtures/ReembolsoFixture.cs" />
+    <None Include="../../database/migrations/*.sql" Link="Migrations/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Promotora.WebApi/Promotora.WebApi.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "evento_id"
+                }
+              },
+              "nativeQueryRef": "evento_id",
+              "queryRef": "AsistenciaEvento.evento_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "evento_nombre"
+                }
+              },
+              "nativeQueryRef": "evento_nombre",
+              "queryRef": "AsistenciaEvento.evento_nombre"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "AsistenciaEvento.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "R-06 Emitidos"
+                }
+              },
+              "nativeQueryRef": "R-06 Emitidos",
+              "queryRef": "AsistenciaEvento.R-06 Emitidos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "R-06 Vigentes"
+                }
+              },
+              "nativeQueryRef": "R-06 Vigentes",
+              "queryRef": "AsistenciaEvento.R-06 Vigentes"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "R-06 Usados"
+                }
+              },
+              "nativeQueryRef": "R-06 Usados",
+              "queryRef": "AsistenciaEvento.R-06 Usados"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AsistenciaEvento"
+                    }
+                  },
+                  "Property": "R-06 Anulados"
+                }
+              },
+              "nativeQueryRef": "R-06 Anulados",
+              "queryRef": "AsistenciaEvento.R-06 Anulados"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-06 - Boletos y asistencia'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AuditoriaOperaciones"
+                    }
+                  },
+                  "Property": "fecha"
+                }
+              },
+              "nativeQueryRef": "fecha",
+              "queryRef": "AuditoriaOperaciones.fecha"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AuditoriaOperaciones"
+                    }
+                  },
+                  "Property": "entidad_afectada"
+                }
+              },
+              "nativeQueryRef": "entidad_afectada",
+              "queryRef": "AuditoriaOperaciones.entidad_afectada"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AuditoriaOperaciones"
+                    }
+                  },
+                  "Property": "accion"
+                }
+              },
+              "nativeQueryRef": "accion",
+              "queryRef": "AuditoriaOperaciones.accion"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AuditoriaOperaciones"
+                    }
+                  },
+                  "Property": "R-15 Operaciones"
+                }
+              },
+              "nativeQueryRef": "R-15 Operaciones",
+              "queryRef": "AuditoriaOperaciones.R-15 Operaciones"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "AuditoriaOperaciones"
+                    }
+                  },
+                  "Property": "R-15 Participaciones usuarios"
+                }
+              },
+              "nativeQueryRef": "R-15 Participaciones usuarios",
+              "queryRef": "AuditoriaOperaciones.R-15 Participaciones usuarios"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-15 - Auditoria y notificaciones'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 280,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

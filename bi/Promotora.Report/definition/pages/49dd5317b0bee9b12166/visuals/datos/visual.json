@@ -1,0 +1,122 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ComisionesPlataforma"
+                    }
+                  },
+                  "Property": "fecha"
+                }
+              },
+              "nativeQueryRef": "fecha",
+              "queryRef": "ComisionesPlataforma.fecha"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ComisionesPlataforma"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "ComisionesPlataforma.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ComisionesPlataforma"
+                    }
+                  },
+                  "Property": "R-08 Comisiones"
+                }
+              },
+              "nativeQueryRef": "R-08 Comisiones",
+              "queryRef": "ComisionesPlataforma.R-08 Comisiones"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ComisionesPlataforma"
+                    }
+                  },
+                  "Property": "R-08 Reembolsos"
+                }
+              },
+              "nativeQueryRef": "R-08 Reembolsos",
+              "queryRef": "ComisionesPlataforma.R-08 Reembolsos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ComisionesPlataforma"
+                    }
+                  },
+                  "Property": "R-08 Comision neta"
+                }
+              },
+              "nativeQueryRef": "R-08 Comision neta",
+              "queryRef": "ComisionesPlataforma.R-08 Comision neta"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-08 - Comisiones plataforma'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

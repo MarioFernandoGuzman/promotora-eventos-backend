@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="../ParallelismoContenedores.cs" Link="Configuration/ParallelismoContenedores.cs" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <None Include="../../database/migrations/*.sql" Link="Migrations/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Promotora.Infrastructure/Promotora.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Promotora.Worker/Promotora.Worker.csproj" />
+  </ItemGroup>
+</Project>

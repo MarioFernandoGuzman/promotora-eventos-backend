@@ -1,0 +1,136 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TopClientes"
+                    }
+                  },
+                  "Property": "cliente_id"
+                }
+              },
+              "nativeQueryRef": "cliente_id",
+              "queryRef": "TopClientes.cliente_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TopClientes"
+                    }
+                  },
+                  "Property": "nombre"
+                }
+              },
+              "nativeQueryRef": "nombre",
+              "queryRef": "TopClientes.nombre"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TopClientes"
+                    }
+                  },
+                  "Property": "apellido"
+                }
+              },
+              "nativeQueryRef": "apellido",
+              "queryRef": "TopClientes.apellido"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TopClientes"
+                    }
+                  },
+                  "Property": "moneda"
+                }
+              },
+              "nativeQueryRef": "moneda",
+              "queryRef": "TopClientes.moneda"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TopClientes"
+                    }
+                  },
+                  "Property": "R-09 Compras completadas"
+                }
+              },
+              "nativeQueryRef": "R-09 Compras completadas",
+              "queryRef": "TopClientes.R-09 Compras completadas"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "TopClientes"
+                    }
+                  },
+                  "Property": "R-09 Total bruto"
+                }
+              },
+              "nativeQueryRef": "R-09 Total bruto",
+              "queryRef": "TopClientes.R-09 Total bruto"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-09 - Top clientes'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

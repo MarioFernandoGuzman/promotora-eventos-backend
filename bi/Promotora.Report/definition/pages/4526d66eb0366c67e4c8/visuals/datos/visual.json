@@ -1,0 +1,164 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "datos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "evento_id"
+                }
+              },
+              "nativeQueryRef": "evento_id",
+              "queryRef": "OcupacionLocalidad.evento_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "evento_nombre"
+                }
+              },
+              "nativeQueryRef": "evento_nombre",
+              "queryRef": "OcupacionLocalidad.evento_nombre"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "localidad_id"
+                }
+              },
+              "nativeQueryRef": "localidad_id",
+              "queryRef": "OcupacionLocalidad.localidad_id"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "localidad_nombre"
+                }
+              },
+              "nativeQueryRef": "localidad_nombre",
+              "queryRef": "OcupacionLocalidad.localidad_nombre"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "R-05 Cupo total"
+                }
+              },
+              "nativeQueryRef": "R-05 Cupo total",
+              "queryRef": "OcupacionLocalidad.R-05 Cupo total"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "R-05 Cupo disponible"
+                }
+              },
+              "nativeQueryRef": "R-05 Cupo disponible",
+              "queryRef": "OcupacionLocalidad.R-05 Cupo disponible"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "R-05 Cupo ocupado"
+                }
+              },
+              "nativeQueryRef": "R-05 Cupo ocupado",
+              "queryRef": "OcupacionLocalidad.R-05 Cupo ocupado"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "OcupacionLocalidad"
+                    }
+                  },
+                  "Property": "R-05 Ocupacion porcentaje"
+                }
+              },
+              "nativeQueryRef": "R-05 Ocupacion porcentaje",
+              "queryRef": "OcupacionLocalidad.R-05 Ocupacion porcentaje"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'R-05 - Ocupacion por localidad'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "tableEx"
+  },
+  "position": {
+    "x": 20,
+    "tabOrder": 0,
+    "height": 570,
+    "z": 0,
+    "width": 1240,
+    "y": 120
+  }
+}

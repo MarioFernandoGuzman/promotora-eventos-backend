@@ -1,0 +1,1851 @@
+{
+  "name": "Promotora",
+  "compatibilityLevel": 1606,
+  "model": {
+    "culture": "es-GT",
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "es-GT",
+    "expressions": [
+      {
+        "kind": "m",
+        "name": "ServidorBI",
+        "expression": "\"localhost:5432\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      },
+      {
+        "kind": "m",
+        "name": "BaseDatosBI",
+        "expression": "\"promotora\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      }
+    ],
+    "tables": [
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_ventas_por_evento\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "VentasPorEvento"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-01 Compras completadas",
+            "expression": "SUM(VentasPorEvento[compras_completadas])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-01 Boletos vendidos brutos",
+            "expression": "SUM(VentasPorEvento[boletos_vendidos])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-01 Subtotal",
+            "expression": "IF(HASONEVALUE(VentasPorEvento[moneda]), SUM(VentasPorEvento[subtotal]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-01 Comision",
+            "expression": "IF(HASONEVALUE(VentasPorEvento[moneda]), SUM(VentasPorEvento[comision_plataforma]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-01 IVA",
+            "expression": "IF(HASONEVALUE(VentasPorEvento[moneda]), SUM(VentasPorEvento[impuestos]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-01 Total bruto",
+            "expression": "IF(HASONEVALUE(VentasPorEvento[moneda]), SUM(VentasPorEvento[total]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "VentasPorEvento",
+        "description": "R-01 - Ventas por evento. Solo vista bi.vw_ventas_por_evento; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "int64",
+            "name": "compras_completadas",
+            "summarizeBy": "none",
+            "sourceColumn": "compras_completadas"
+          },
+          {
+            "dataType": "decimal",
+            "name": "boletos_vendidos",
+            "summarizeBy": "none",
+            "sourceColumn": "boletos_vendidos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "subtotal",
+            "summarizeBy": "none",
+            "sourceColumn": "subtotal",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "impuestos",
+            "summarizeBy": "none",
+            "sourceColumn": "impuestos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "comision_plataforma",
+            "summarizeBy": "none",
+            "sourceColumn": "comision_plataforma",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "total",
+            "summarizeBy": "none",
+            "sourceColumn": "total",
+            "formatString": "0.00"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_ventas_por_categoria\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "VentasPorCategoria"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-02 Compras completadas",
+            "expression": "SUM(VentasPorCategoria[compras_completadas])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-02 Boletos vendidos brutos",
+            "expression": "SUM(VentasPorCategoria[boletos_vendidos])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-02 Subtotal",
+            "expression": "IF(HASONEVALUE(VentasPorCategoria[moneda]), SUM(VentasPorCategoria[subtotal]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-02 Comision",
+            "expression": "IF(HASONEVALUE(VentasPorCategoria[moneda]), SUM(VentasPorCategoria[comision_plataforma]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-02 IVA",
+            "expression": "IF(HASONEVALUE(VentasPorCategoria[moneda]), SUM(VentasPorCategoria[impuestos]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-02 Total bruto",
+            "expression": "IF(HASONEVALUE(VentasPorCategoria[moneda]), SUM(VentasPorCategoria[total]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "VentasPorCategoria",
+        "description": "R-02 - Ventas por categoria. Solo vista bi.vw_ventas_por_categoria; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "int64",
+            "name": "compras_completadas",
+            "summarizeBy": "none",
+            "sourceColumn": "compras_completadas"
+          },
+          {
+            "dataType": "decimal",
+            "name": "boletos_vendidos",
+            "summarizeBy": "none",
+            "sourceColumn": "boletos_vendidos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "subtotal",
+            "summarizeBy": "none",
+            "sourceColumn": "subtotal",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "impuestos",
+            "summarizeBy": "none",
+            "sourceColumn": "impuestos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "comision_plataforma",
+            "summarizeBy": "none",
+            "sourceColumn": "comision_plataforma",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "total",
+            "summarizeBy": "none",
+            "sourceColumn": "total",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "string",
+            "name": "categoria_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_nombre"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_ventas_por_recinto\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "VentasPorRecinto"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-03 Compras completadas",
+            "expression": "SUM(VentasPorRecinto[compras_completadas])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-03 Boletos vendidos brutos",
+            "expression": "SUM(VentasPorRecinto[boletos_vendidos])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-03 Subtotal",
+            "expression": "IF(HASONEVALUE(VentasPorRecinto[moneda]), SUM(VentasPorRecinto[subtotal]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-03 Comision",
+            "expression": "IF(HASONEVALUE(VentasPorRecinto[moneda]), SUM(VentasPorRecinto[comision_plataforma]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-03 IVA",
+            "expression": "IF(HASONEVALUE(VentasPorRecinto[moneda]), SUM(VentasPorRecinto[impuestos]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-03 Total bruto",
+            "expression": "IF(HASONEVALUE(VentasPorRecinto[moneda]), SUM(VentasPorRecinto[total]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "VentasPorRecinto",
+        "description": "R-03 - Ventas por recinto. Solo vista bi.vw_ventas_por_recinto; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "int64",
+            "name": "compras_completadas",
+            "summarizeBy": "none",
+            "sourceColumn": "compras_completadas"
+          },
+          {
+            "dataType": "decimal",
+            "name": "boletos_vendidos",
+            "summarizeBy": "none",
+            "sourceColumn": "boletos_vendidos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "subtotal",
+            "summarizeBy": "none",
+            "sourceColumn": "subtotal",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "impuestos",
+            "summarizeBy": "none",
+            "sourceColumn": "impuestos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "comision_plataforma",
+            "summarizeBy": "none",
+            "sourceColumn": "comision_plataforma",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "total",
+            "summarizeBy": "none",
+            "sourceColumn": "total",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "string",
+            "name": "recinto_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_nombre"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_ventas_diarias\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "VentasDiarias"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-04 Compras completadas",
+            "expression": "SUM(VentasDiarias[compras_completadas])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-04 Total bruto",
+            "expression": "IF(HASONEVALUE(VentasDiarias[moneda]), SUM(VentasDiarias[total]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "VentasDiarias",
+        "description": "R-04 - Ventas diarias y metodo. Solo vista bi.vw_ventas_diarias; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "string",
+            "name": "metodo",
+            "summarizeBy": "none",
+            "sourceColumn": "metodo"
+          },
+          {
+            "dataType": "int64",
+            "name": "compras_completadas",
+            "summarizeBy": "none",
+            "sourceColumn": "compras_completadas"
+          },
+          {
+            "dataType": "decimal",
+            "name": "total",
+            "summarizeBy": "none",
+            "sourceColumn": "total",
+            "formatString": "0.00"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_ocupacion_localidad\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "OcupacionLocalidad"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-05 Cupo total",
+            "expression": "SUM(OcupacionLocalidad[cupo_total])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-05 Cupo disponible",
+            "expression": "SUM(OcupacionLocalidad[cupo_disponible])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-05 Cupo ocupado",
+            "expression": "SUM(OcupacionLocalidad[cupo_ocupado])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-05 Ocupacion porcentaje",
+            "expression": "100 * DIVIDE(SUM(OcupacionLocalidad[cupo_ocupado]), SUM(OcupacionLocalidad[cupo_total]))",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "OcupacionLocalidad",
+        "description": "R-05 - Ocupacion por localidad. Solo vista bi.vw_ocupacion_localidad; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "localidad_id",
+            "summarizeBy": "none",
+            "sourceColumn": "localidad_id"
+          },
+          {
+            "dataType": "string",
+            "name": "localidad_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "localidad_nombre"
+          },
+          {
+            "dataType": "int64",
+            "name": "capacidad",
+            "summarizeBy": "none",
+            "sourceColumn": "capacidad"
+          },
+          {
+            "dataType": "int64",
+            "name": "cupo_total",
+            "summarizeBy": "none",
+            "sourceColumn": "cupo_total"
+          },
+          {
+            "dataType": "int64",
+            "name": "cupo_disponible",
+            "summarizeBy": "none",
+            "sourceColumn": "cupo_disponible"
+          },
+          {
+            "dataType": "int64",
+            "name": "cupo_ocupado",
+            "summarizeBy": "none",
+            "sourceColumn": "cupo_ocupado"
+          },
+          {
+            "dataType": "decimal",
+            "name": "porcentaje_ocupacion",
+            "summarizeBy": "none",
+            "sourceColumn": "porcentaje_ocupacion",
+            "formatString": "0.00"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_asistencia_evento\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "AsistenciaEvento"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-06 Emitidos",
+            "expression": "SUM(AsistenciaEvento[boletos_emitidos])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-06 Vigentes",
+            "expression": "SUM(AsistenciaEvento[boletos_vendidos])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-06 Usados",
+            "expression": "SUM(AsistenciaEvento[boletos_usados])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-06 Anulados",
+            "expression": "SUM(AsistenciaEvento[boletos_anulados])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          }
+        ],
+        "name": "AsistenciaEvento",
+        "description": "R-06 - Boletos y asistencia. Solo vista bi.vw_asistencia_evento; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "int64",
+            "name": "boletos_emitidos",
+            "summarizeBy": "none",
+            "sourceColumn": "boletos_emitidos"
+          },
+          {
+            "dataType": "int64",
+            "name": "boletos_vendidos",
+            "summarizeBy": "none",
+            "sourceColumn": "boletos_vendidos"
+          },
+          {
+            "dataType": "int64",
+            "name": "boletos_usados",
+            "summarizeBy": "none",
+            "sourceColumn": "boletos_usados"
+          },
+          {
+            "dataType": "int64",
+            "name": "boletos_anulados",
+            "summarizeBy": "none",
+            "sourceColumn": "boletos_anulados"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_ingresos_dueno\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "IngresosDueno"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-07 Ventas",
+            "expression": "IF(HASONEVALUE(IngresosDueno[moneda]), SUM(IngresosDueno[ventas]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-07 Reembolsos",
+            "expression": "IF(HASONEVALUE(IngresosDueno[moneda]), SUM(IngresosDueno[reembolsos]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-07 Liquidaciones",
+            "expression": "IF(HASONEVALUE(IngresosDueno[moneda]), SUM(IngresosDueno[liquidaciones]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-07 Movimiento neto",
+            "expression": "IF(HASONEVALUE(IngresosDueno[moneda]), SUM(IngresosDueno[movimiento_neto]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "IngresosDueno",
+        "description": "R-07 - Ingresos por dueno. Solo vista bi.vw_ingresos_dueno; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "cuenta_id",
+            "summarizeBy": "none",
+            "sourceColumn": "cuenta_id"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "decimal",
+            "name": "ventas",
+            "summarizeBy": "none",
+            "sourceColumn": "ventas",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "reembolsos",
+            "summarizeBy": "none",
+            "sourceColumn": "reembolsos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "liquidaciones",
+            "summarizeBy": "none",
+            "sourceColumn": "liquidaciones",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "movimiento_neto",
+            "summarizeBy": "none",
+            "sourceColumn": "movimiento_neto",
+            "formatString": "0.00"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_comisiones_plataforma\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "ComisionesPlataforma"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-08 Comisiones",
+            "expression": "IF(HASONEVALUE(ComisionesPlataforma[moneda]), SUM(ComisionesPlataforma[comisiones]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-08 Reembolsos",
+            "expression": "IF(HASONEVALUE(ComisionesPlataforma[moneda]), SUM(ComisionesPlataforma[reembolsos]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-08 Comision neta",
+            "expression": "IF(HASONEVALUE(ComisionesPlataforma[moneda]), SUM(ComisionesPlataforma[comision_neta]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "ComisionesPlataforma",
+        "description": "R-08 - Comisiones plataforma. Solo vista bi.vw_comisiones_plataforma; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "decimal",
+            "name": "comisiones",
+            "summarizeBy": "none",
+            "sourceColumn": "comisiones",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "reembolsos",
+            "summarizeBy": "none",
+            "sourceColumn": "reembolsos",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "decimal",
+            "name": "comision_neta",
+            "summarizeBy": "none",
+            "sourceColumn": "comision_neta",
+            "formatString": "0.00"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_top_clientes\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "TopClientes"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-09 Compras completadas",
+            "expression": "SUM(TopClientes[compras_completadas])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-09 Total bruto",
+            "expression": "IF(HASONEVALUE(TopClientes[moneda]), SUM(TopClientes[total]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "TopClientes",
+        "description": "R-09 - Top clientes. Solo vista bi.vw_top_clientes; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "cliente_id",
+            "summarizeBy": "none",
+            "sourceColumn": "cliente_id"
+          },
+          {
+            "dataType": "string",
+            "name": "nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "apellido",
+            "summarizeBy": "none",
+            "sourceColumn": "apellido"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "int64",
+            "name": "compras_completadas",
+            "summarizeBy": "none",
+            "sourceColumn": "compras_completadas"
+          },
+          {
+            "dataType": "decimal",
+            "name": "total",
+            "summarizeBy": "none",
+            "sourceColumn": "total",
+            "formatString": "0.00"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_compras_no_exitosas\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "ComprasNoExitosas"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-10 Compras",
+            "expression": "COUNTROWS(ComprasNoExitosas)",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-10 Intentos pago",
+            "expression": "SUM(ComprasNoExitosas[intentos_pago])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-10 Pagos rechazados",
+            "expression": "SUM(ComprasNoExitosas[pagos_rechazados])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-10 Total intentado",
+            "expression": "IF(HASONEVALUE(ComprasNoExitosas[moneda]), SUM(ComprasNoExitosas[total]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "ComprasNoExitosas",
+        "description": "R-10 - Compras no exitosas. Solo vista bi.vw_compras_no_exitosas; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "string",
+            "name": "compra_public_id",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_public_id"
+          },
+          {
+            "dataType": "dateTime",
+            "name": "fecha_compra",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha_compra",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "string",
+            "name": "compra_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "compra_estado"
+          },
+          {
+            "dataType": "string",
+            "name": "moneda",
+            "summarizeBy": "none",
+            "sourceColumn": "moneda"
+          },
+          {
+            "dataType": "decimal",
+            "name": "total",
+            "summarizeBy": "none",
+            "sourceColumn": "total",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "int64",
+            "name": "cliente_id",
+            "summarizeBy": "none",
+            "sourceColumn": "cliente_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "intentos_pago",
+            "summarizeBy": "none",
+            "sourceColumn": "intentos_pago"
+          },
+          {
+            "dataType": "int64",
+            "name": "pagos_rechazados",
+            "summarizeBy": "none",
+            "sourceColumn": "pagos_rechazados"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_calificacion_presentador\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "CalificacionPresentador"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-11 Resenas aprobadas",
+            "expression": "SUM(CalificacionPresentador[resenas_aprobadas])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-11 Promedio ponderado",
+            "expression": "DIVIDE(SUM(CalificacionPresentador[suma_calificaciones]), SUM(CalificacionPresentador[resenas_aprobadas]))",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          }
+        ],
+        "name": "CalificacionPresentador",
+        "description": "R-11 - Calificacion presentadores. Solo vista bi.vw_calificacion_presentador; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "presentador_id",
+            "summarizeBy": "none",
+            "sourceColumn": "presentador_id"
+          },
+          {
+            "dataType": "string",
+            "name": "presentador_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "presentador_nombre"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "resenas_aprobadas",
+            "summarizeBy": "none",
+            "sourceColumn": "resenas_aprobadas"
+          },
+          {
+            "dataType": "int64",
+            "name": "suma_calificaciones",
+            "summarizeBy": "none",
+            "sourceColumn": "suma_calificaciones"
+          },
+          {
+            "dataType": "decimal",
+            "name": "calificacion_promedio",
+            "summarizeBy": "none",
+            "sourceColumn": "calificacion_promedio",
+            "formatString": "0.00"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_eventos_por_estado\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "EventosPorEstado"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-12 Eventos",
+            "expression": "COUNTROWS(EventosPorEstado)",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          }
+        ],
+        "name": "EventosPorEstado",
+        "description": "R-12 - Eventos por estado. Solo vista bi.vw_eventos_por_estado; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "dateTime",
+            "name": "fecha_inicio",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha_inicio",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_inscritos_carreras\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "InscritosCarreras"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-13 Inscritos",
+            "expression": "SUM(InscritosCarreras[inscritos])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-13 Validados",
+            "expression": "SUM(InscritosCarreras[participantes_validados])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          }
+        ],
+        "name": "InscritosCarreras",
+        "description": "R-13 - Inscritos carreras. Solo vista bi.vw_inscritos_carreras; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "int64",
+            "name": "evento_id",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_id"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_nombre",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_nombre"
+          },
+          {
+            "dataType": "string",
+            "name": "evento_estado",
+            "summarizeBy": "none",
+            "sourceColumn": "evento_estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "categoria_id",
+            "summarizeBy": "none",
+            "sourceColumn": "categoria_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "recinto_id",
+            "summarizeBy": "none",
+            "sourceColumn": "recinto_id"
+          },
+          {
+            "dataType": "int64",
+            "name": "dueno_id",
+            "summarizeBy": "none",
+            "sourceColumn": "dueno_id"
+          },
+          {
+            "dataType": "string",
+            "name": "distancia",
+            "summarizeBy": "none",
+            "sourceColumn": "distancia"
+          },
+          {
+            "dataType": "int64",
+            "name": "inscritos",
+            "summarizeBy": "none",
+            "sourceColumn": "inscritos"
+          },
+          {
+            "dataType": "int64",
+            "name": "participantes_validados",
+            "summarizeBy": "none",
+            "sourceColumn": "participantes_validados"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_uso_agente_ia\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "UsoAgenteIa"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-14 Consultas",
+            "expression": "SUM(UsoAgenteIa[consultas])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-14 Tiempo diario ms",
+            "expression": "IF(HASONEVALUE(UsoAgenteIa[fecha]) && HASONEVALUE(UsoAgenteIa[modelo]) && HASONEVALUE(UsoAgenteIa[estado]), MAX(UsoAgenteIa[tiempo_promedio_ms]), BLANK())",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0.00"
+          },
+          {
+            "name": "R-14 Tokens entrada",
+            "expression": "SUM(UsoAgenteIa[tokens_entrada])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-14 Tokens salida",
+            "expression": "SUM(UsoAgenteIa[tokens_salida])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          }
+        ],
+        "name": "UsoAgenteIa",
+        "description": "R-14 - Uso del agente IA. Solo vista bi.vw_uso_agente_ia; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "string",
+            "name": "modelo",
+            "summarizeBy": "none",
+            "sourceColumn": "modelo"
+          },
+          {
+            "dataType": "string",
+            "name": "estado",
+            "summarizeBy": "none",
+            "sourceColumn": "estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "consultas",
+            "summarizeBy": "none",
+            "sourceColumn": "consultas"
+          },
+          {
+            "dataType": "decimal",
+            "name": "tiempo_promedio_ms",
+            "summarizeBy": "none",
+            "sourceColumn": "tiempo_promedio_ms",
+            "formatString": "0.00"
+          },
+          {
+            "dataType": "int64",
+            "name": "tokens_entrada",
+            "summarizeBy": "none",
+            "sourceColumn": "tokens_entrada"
+          },
+          {
+            "dataType": "int64",
+            "name": "tokens_salida",
+            "summarizeBy": "none",
+            "sourceColumn": "tokens_salida"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_auditoria_operaciones\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "AuditoriaOperaciones"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-15 Operaciones",
+            "expression": "SUM(AuditoriaOperaciones[operaciones])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          },
+          {
+            "name": "R-15 Participaciones usuarios",
+            "expression": "SUM(AuditoriaOperaciones[usuarios_identificados])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          }
+        ],
+        "name": "AuditoriaOperaciones",
+        "description": "R-15 - Auditoria y notificaciones. Solo vista bi.vw_auditoria_operaciones; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "string",
+            "name": "entidad_afectada",
+            "summarizeBy": "none",
+            "sourceColumn": "entidad_afectada"
+          },
+          {
+            "dataType": "string",
+            "name": "accion",
+            "summarizeBy": "none",
+            "sourceColumn": "accion"
+          },
+          {
+            "dataType": "int64",
+            "name": "operaciones",
+            "summarizeBy": "none",
+            "sourceColumn": "operaciones"
+          },
+          {
+            "dataType": "int64",
+            "name": "usuarios_identificados",
+            "summarizeBy": "none",
+            "sourceColumn": "usuarios_identificados"
+          }
+        ]
+      },
+      {
+        "partitions": [
+          {
+            "source": {
+              "expression": [
+                "let",
+                "    Origen = PostgreSQL.Database(ServidorBI, BaseDatosBI, [CreateNavigationProperties=false]),",
+                "    Vista = Origen{[Schema=\"bi\", Item=\"vw_notificaciones_estado\"]}[Data]",
+                "in",
+                "    Vista"
+              ],
+              "type": "m"
+            },
+            "mode": "import",
+            "name": "NotificacionesEstado"
+          }
+        ],
+        "measures": [
+          {
+            "name": "R-15-N Notificaciones",
+            "expression": "SUM(NotificacionesEstado[notificaciones])",
+            "description": "Ver interpretacion y filtros en docs/REPORTES.md. Importes en blanco cuando hay mas de una moneda.",
+            "formatString": "#,0"
+          }
+        ],
+        "name": "NotificacionesEstado",
+        "description": "R-15-N - Notificaciones. Solo vista bi.vw_notificaciones_estado; sin acceso operativo.",
+        "columns": [
+          {
+            "dataType": "dateTime",
+            "name": "fecha",
+            "summarizeBy": "none",
+            "sourceColumn": "fecha",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "dataType": "string",
+            "name": "tipo",
+            "summarizeBy": "none",
+            "sourceColumn": "tipo"
+          },
+          {
+            "dataType": "string",
+            "name": "estado",
+            "summarizeBy": "none",
+            "sourceColumn": "estado"
+          },
+          {
+            "dataType": "int64",
+            "name": "notificaciones",
+            "summarizeBy": "none",
+            "sourceColumn": "notificaciones"
+          }
+        ]
+      }
+    ]
+  }
+}

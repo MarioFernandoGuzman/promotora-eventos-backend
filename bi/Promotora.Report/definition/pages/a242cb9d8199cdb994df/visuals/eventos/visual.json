@@ -1,0 +1,84 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "eventos",
+  "visual": {
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "EventosPorEstado"
+                    }
+                  },
+                  "Property": "evento_estado"
+                }
+              },
+              "nativeQueryRef": "evento_estado",
+              "queryRef": "EventosPorEstado.evento_estado"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "EventosPorEstado"
+                    }
+                  },
+                  "Property": "R-12 Eventos"
+                }
+              },
+              "nativeQueryRef": "R-12 Eventos",
+              "queryRef": "EventosPorEstado.R-12 Eventos"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Eventos por estado'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualType": "clusteredBarChart"
+  },
+  "position": {
+    "x": 650,
+    "tabOrder": 0,
+    "height": 300,
+    "z": 0,
+    "width": 610,
+    "y": 390
+  }
+}
