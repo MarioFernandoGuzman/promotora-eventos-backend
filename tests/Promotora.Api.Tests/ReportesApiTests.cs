@@ -13,6 +13,31 @@ public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<P
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task AsistenciaYLedgerSeDistinguenDeVentasBrutasTrasReembolso()
+    {
+        await using var factory = new IdentityApiFactory(postgres.ConnectionString);
+        using var admin = factory.CreateClient();
+        await new TicketingApiTestSupport(postgres).LoginAsync(admin, RolUsuario.ADMINISTRADOR, Ct);
+        await using var db = postgres.CreateContext();
+        var venta = await ReembolsoFixture.VentaAsync(db, postgres.ConnectionString, factory.QrKey, false, Ct);
+        int evento = await db.Compras.Where(c => c.Id == venta.Id).Select(c => c.EventoId).SingleAsync(Ct);
+        foreach (var (codigo, campo, esperado) in new[] { ("R-06", "vendidos", 3m), ("R-07", "neto", 300m), ("R-08", "neto", 30m), ("R-09", "total", 369.60m) })
+        {
+            var reporte = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/{codigo}?eventoId={evento}", Ct);
+            Assert.Equal(esperado, reporte.GetProperty("secciones")[0].GetProperty("totales")[0].GetProperty(campo).GetDecimal());
+        }
+        using var refund = await admin.PostAsync($"/api/v1/compras/{venta.PublicId}/reembolsar", null, Ct);
+        Assert.Equal(HttpStatusCode.OK, refund.StatusCode);
+        foreach (var (codigo, campo, esperado) in new[] { ("R-06", "anulados", 3m), ("R-07", "neto", 0m), ("R-08", "neto", 0m), ("R-09", "total", 369.60m) })
+        {
+            var reporte = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/{codigo}?eventoId={evento}", Ct);
+            Assert.Equal(esperado, reporte.GetProperty("secciones")[0].GetProperty("totales")[0].GetProperty(campo).GetDecimal());
+        }
+        var fallidas = await admin.GetFromJsonAsync<JsonElement>($"/api/v1/reportes/R-10?eventoId={evento}&estado=FALLIDA", Ct);
+        Assert.Equal(0, fallidas.GetProperty("secciones")[0].GetProperty("totalFilas").GetInt64());
+    }
+
+    [Fact]
     public async Task VentasOcupacionPermisosYFiltrosCoincidenConCompraConocida()
     {
         await using var factory = new IdentityApiFactory(postgres.ConnectionString);
