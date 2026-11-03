@@ -7,12 +7,43 @@ using Promotora.Infrastructure.Tests;
 using Promotora.Infrastructure.Venues.Persistence;
 using Promotora.Infrastructure.AI.Persistence;
 using Promotora.Infrastructure.Catalog.Persistence;
+using ClosedXML.Excel;
+using UglyToad.PdfPig;
 
 namespace Promotora.Api.Tests;
 
 public sealed class ReportesApiTests(PostgresFixture postgres) : IClassFixture<PostgresFixture>
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task ExportacionesSonArchivosLegiblesYQuedanAuditadas()
+    {
+        await using var factory = new IdentityApiFactory(postgres.ConnectionString);
+        using var admin = factory.CreateClient();
+        int actor = await new TicketingApiTestSupport(postgres).LoginAsync(admin, RolUsuario.ADMINISTRADOR, Ct);
+        await using var db = postgres.CreateContext();
+        var venta = await ReembolsoFixture.VentaAsync(db, postgres.ConnectionString, factory.QrKey, false, Ct);
+        int evento = await db.Compras.Where(c => c.Id == venta.Id).Select(c => c.EventoId).SingleAsync(Ct);
+        using (var xlsx = await admin.GetAsync($"/api/v1/reportes/R-01?eventoId={evento}&page=2&pageSize=1&formato=xlsx", Ct))
+        {
+            Assert.Equal(HttpStatusCode.OK, xlsx.StatusCode);
+            Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx.Content.Headers.ContentType!.MediaType);
+            using var stream = await xlsx.Content.ReadAsStreamAsync(Ct);
+            using var workbook = new XLWorkbook(stream);
+            Assert.Equal(369.60m, workbook.Worksheet("ventas").Cell(2, 9).GetValue<decimal>());
+        }
+        using (var pdf = await admin.GetAsync($"/api/v1/reportes/R-01?eventoId={evento}&formato=pdf", Ct))
+        {
+            Assert.Equal(HttpStatusCode.OK, pdf.StatusCode);
+            Assert.Equal("application/pdf", pdf.Content.Headers.ContentType!.MediaType);
+            using var document = PdfDocument.Open(await pdf.Content.ReadAsByteArrayAsync(Ct));
+            Assert.Contains("369.60", string.Join(" ", document.GetPages().Select(p => p.Text)));
+        }
+        Assert.Equal(2, await db.LogsAuditoria.CountAsync(l => l.UsuarioId == actor && l.Accion == "EXPORT" && l.EntidadAfectada == "reporte", Ct));
+        using var formato = await admin.GetAsync("/api/v1/reportes/R-01?formato=csv", Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, formato.StatusCode);
+    }
 
     [Fact]
     public async Task OperacionCalificacionesYTiemposNoInventanTotales()

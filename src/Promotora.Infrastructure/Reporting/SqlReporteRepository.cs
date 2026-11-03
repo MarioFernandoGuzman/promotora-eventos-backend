@@ -12,7 +12,7 @@ public sealed class SqlReporteRepository(PromotoraDbContext db) : IReporteReposi
 {
     private static readonly IReadOnlyDictionary<string, ReporteDefinition> Catalogo = ReporteCatalogo.Crear();
 
-    public async Task<Result<ReporteDto>> ConsultarAsync(ReporteQuery query, CancellationToken ct)
+    public async Task<Result<ReporteDto>> ConsultarAsync(ReporteQuery query, CancellationToken ct, int? limiteExportacion = null)
     {
         if (!Catalogo.TryGetValue(query.Codigo, out var definition))
             return Result<ReporteDto>.Failure(new Error("reporte.no_encontrado", "Reporte no disponible.", ErrorType.NotFound));
@@ -43,11 +43,13 @@ public sealed class SqlReporteRepository(PromotoraDbContext db) : IReporteReposi
             long cantidad;
             await using (var cmd = Command($"SELECT count(*) FROM ({baseSql}) AS grupos", filtros))
                 cantidad = Convert.ToInt64(await cmd.ExecuteScalarAsync(ct), System.Globalization.CultureInfo.InvariantCulture);
+            if (limiteExportacion is int maximo && cantidad > maximo)
+                return Result<ReporteDto>.Failure(new Error("reporte.exportacion_grande", $"La sección {section.Codigo} supera {maximo} filas; reduce el rango o aplica filtros. No se exportó un archivo parcial.", ErrorType.BusinessRule));
             string orden = section.Orden ?? string.Join(", ", section.Dimensiones.Select(d => $"\"{d.Campo}\" NULLS FIRST"));
             var pageParams = new Dictionary<string, object>(filtros)
             {
-                ["limite"] = query.Filtros.PageSize,
-                ["offset"] = (query.Filtros.Page - 1) * query.Filtros.PageSize
+                ["limite"] = limiteExportacion ?? query.Filtros.PageSize,
+                ["offset"] = limiteExportacion is null ? (query.Filtros.Page - 1) * query.Filtros.PageSize : 0
             };
             var filas = await ReadAsync($"{baseSql}{(orden.Length == 0 ? "" : $" ORDER BY {orden}")} LIMIT @limite OFFSET @offset", pageParams, ct);
             bool moneda = section.Dimensiones.Any(d => d.Columna == "moneda");

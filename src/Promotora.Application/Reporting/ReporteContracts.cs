@@ -17,7 +17,7 @@ public sealed record ReporteDto(string Codigo, string Titulo, string Nota, Repor
 
 public interface IReporteRepository
 {
-    Task<Result<ReporteDto>> ConsultarAsync(ReporteQuery query, CancellationToken ct);
+    Task<Result<ReporteDto>> ConsultarAsync(ReporteQuery query, CancellationToken ct, int? limiteExportacion = null);
 }
 
 public sealed class ReporteValidator : AbstractValidator<ReporteQuery>

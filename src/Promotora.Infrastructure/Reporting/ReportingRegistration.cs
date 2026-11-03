@@ -13,6 +13,9 @@ public static class ReportingRegistration
         services.AddScoped<IReporteRepository, SqlReporteRepository>();
         services.AddScoped<IValidator<ReporteQuery>, ReporteValidator>();
         services.AddQueryHandler<ReporteQuery, ReporteDto, ReporteHandler>();
+        services.AddScoped<IReportExporter, ReportExporter>();
+        services.AddScoped<IValidator<ExportarReporteQuery>, ExportarReporteValidator>();
+        services.AddQueryHandler<ExportarReporteQuery, ArchivoReporteDto, ExportarReporteHandler>();
         return services;
     }
 }

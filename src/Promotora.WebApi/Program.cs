@@ -123,6 +123,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
     options.OperationFilter<BearerOperationFilter>();
     options.OperationFilter<ImagenesOperationFilter>();
+    options.OperationFilter<Promotora.WebApi.Reporting.ReportesOperationFilter>();
     options.SchemaFilter<IdentityExamplesFilter>();
     options.SchemaFilter<VenuesExamplesFilter>();
     options.SchemaFilter<CatalogExamplesFilter>();
