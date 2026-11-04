@@ -1,10 +1,12 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Promotora.Application.Audit;
 using Promotora.Application.Identity.Ports;
+using Promotora.Application.Identity.Sessions;
 using Promotora.Application.Ticketing;
 using Promotora.Application.Venues;
 using Promotora.Domain.Identity;
@@ -17,6 +19,46 @@ namespace Promotora.Api.Tests;
 
 public sealed class BoletoValidacionApiTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
+    [Fact]
+    public async Task ValidadorCambiaPasswordYValidaSinPermisosDeGestion()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = new IdentityApiFactory(fixture.ConnectionString);
+        using var admin = factory.CreateClient();
+        using var validator = factory.CreateClient();
+        var support = new TicketingApiTestSupport(fixture);
+        await support.LoginAsync(admin, RolUsuario.ADMINISTRADOR, ct);
+        var email = $"{Guid.NewGuid():N}@example.test";
+        var password = Guid.NewGuid().ToString("N");
+        var alta = new { email, password, nombre = "Control", apellido = "Prueba" };
+        using var create = await admin.PostAsJsonAsync("/api/v1/usuarios/validadores-boletos", alta, ct);
+        Assert.Equal(HttpStatusCode.OK, create.StatusCode);
+
+        async Task<TokenDto> LoginAsync(string currentPassword)
+        {
+            using var login = await validator.PostAsJsonAsync("/api/v1/auth/login", new { email, password = currentPassword }, ct);
+            Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+            var token = (await login.Content.ReadFromJsonAsync<TokenDto>(ct))!;
+            validator.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            return token;
+        }
+
+        var temporary = await LoginAsync(password);
+        Assert.True(temporary.DebeCambiarPassword);
+        var datos = await PrepararAsync(factory, "VALIDO", ct);
+        Assert.Equal(HttpStatusCode.Forbidden, (await ValidarAsync(validator, datos.Boleto.CodigoQr, ct)).StatusCode);
+        var passwordNuevo = Guid.NewGuid().ToString("N");
+        Assert.Equal(HttpStatusCode.OK, (await validator.PutAsJsonAsync($"/api/v1/usuarios/{temporary.UsuarioId}/password", new { passwordActual = password, passwordNuevo }, ct)).StatusCode);
+        var active = await LoginAsync(passwordNuevo);
+        Assert.False(active.DebeCambiarPassword);
+        foreach (var route in new[] { "/api/v1/eventos", "/api/v1/recintos", "/api/v1/cuentas", "/api/v1/boletos", "/api/v1/compras", "/api/v1/usuarios", $"/api/v1/usuarios/{active.UsuarioId}" })
+            Assert.Equal(HttpStatusCode.Forbidden, (await validator.GetAsync(route, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await validator.PostAsJsonAsync("/api/v1/usuarios/validadores-boletos", alta, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await ValidarAsync(validator, datos.Boleto.CodigoQr, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await ValidarAsync(validator, datos.Boleto.CodigoQr, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await validator.PostAsJsonAsync("/api/v1/auth/logout", new { refreshToken = active.RefreshToken }, ct)).StatusCode);
+    }
+
     [Fact]
     public async Task AdminValidaUnaVezAuditaSinQrYRechazaFirmaAlterada()
     {

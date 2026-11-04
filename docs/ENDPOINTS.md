@@ -2,7 +2,7 @@
 
 Inventario generado desde Swagger de la API compilada. Hay 80 operaciones REST; health checks y Swagger son rutas técnicas adicionales. Autenticado indica Bearer, no sustituye comprobar rol y propiedad en cada operación. Consultar la descripción de Swagger y ANALISIS_FRONTEND.md para los flujos.
 
-La tabla original contiene las 80 operaciones de F9. EXT-NUM añade seis y F10 añade una: **87 operaciones REST** en total. Las ampliaciones se detallan al final; los tres formatos de reportes pertenecen a la misma ruta GET.
+La tabla original contiene las 80 operaciones de F9. EXT-NUM añade seis, F10 añade una y F11 incorpora el alta de validadores. El total es de **88 operaciones REST**. Los tres formatos de reportes pertenecen a la misma ruta GET.
 
 | Método | Ruta | Acceso | Descripción |
 |---|---|---|---|
@@ -11,7 +11,7 @@ La tabla original contiene las 80 operaciones de F9. EXT-NUM añade seis y F10 a
 | POST | `/api/v1/auth/refresh` | Público |  |
 | POST | `/api/v1/auth/registro` | Público |  |
 | GET | `/api/v1/boletos` | Autenticado | Mis boletos con token QR; incluye VALIDO, USADO y ANULADO |
-| POST | `/api/v1/boletos/validar` | Autenticado | Validar firma y registrar una única entrada VALIDO → USADO |
+| POST | `/api/v1/boletos/validar` | Administrador, dueño del recinto o validador habilitado | Validar firma y registrar una única entrada VALIDO → USADO |
 | GET | `/api/v1/catalogo/eventos` | Público | Catálogo público: PROGRAMADO/EN_VENTA/AGOTADO, filtros combinables y paginación |
 | GET | `/api/v1/catalogo/eventos/{id}` | Público | Detalle público con recinto, categoría, presentadores y tipos activos; no contiene usuarios ni finanzas |
 | GET | `/api/v1/categorias` | Autenticado | Listar catálogo paginado, incluidos inactivos; requiere sesión completa |
@@ -86,6 +86,7 @@ La tabla original contiene las 80 operaciones de F9. EXT-NUM añade seis y F10 a
 | PUT | `/api/v1/usuarios/{id}/password` | Autenticado |  |
 | POST | `/api/v1/usuarios/administradores` | Autenticado |  |
 | POST | `/api/v1/usuarios/duenos-recinto` | Autenticado |  |
+| POST | `/api/v1/usuarios/validadores-boletos` | Administrador habilitado | Crear una cuenta de escaneo con cambio obligatorio de contraseña. Los campos son `email`, `password`, `nombre` y `apellido`. |
 
 ## Ampliación EXT-NUM-03: seis operaciones de distribución
 

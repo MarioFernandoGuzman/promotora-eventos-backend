@@ -1,0 +1,10 @@
+**
+!src/
+!src/**
+!Directory.Build.props
+!Directory.Packages.props
+!global.json
+src/**/bin/
+src/**/obj/
+src/**/uploads/
+src/**/.env*

@@ -84,4 +84,15 @@ public sealed class UsuariosController(ICommandHandler<CrearUsuarioCommand, Usua
     public async Task<ActionResult<UsuarioDto>> Dueno(AltaDuenoRequest request, CancellationToken ct) =>
         FromResult(await crear.HandleAsync(new CrearUsuarioCommand(request.Email, request.Password, request.Nombre,
             request.Apellido, RolUsuario.DUENO_RECINTO, new PerfilNuevo(Empresa: request.Empresa, Nit: request.Nit)), ct));
+
+    [HttpPost("validadores-boletos")]
+    [Authorize(Policy = IdentityPolicies.Administrador)]
+    [EndpointSummary("Crear una cuenta de validación de boletos con cambio obligatorio de contraseña")]
+    [ProducesResponseType<UsuarioDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<UsuarioDto>> Validador(AltaValidadorRequest request, CancellationToken ct) =>
+        FromResult(await crear.HandleAsync(new CrearUsuarioCommand(request.Email, request.Password, request.Nombre,
+            request.Apellido, RolUsuario.VALIDADOR_BOLETOS, new PerfilNuevo()), ct));
 }

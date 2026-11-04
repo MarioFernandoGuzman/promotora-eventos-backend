@@ -22,7 +22,7 @@ public sealed class CrearUsuarioHandler(IUsuarioRepository repository, IPassword
 
         var email = request.Email.Trim().ToLowerInvariant();
         var usuario = new Usuario(0, email, passwords.Hash(request.Password), request.Nombre.Trim(), request.Apellido.Trim(),
-            request.Rol, "ACTIVO", false, clock.UtcNow);
+            request.Rol, "ACTIVO", request.Rol == RolUsuario.VALIDADOR_BOLETOS, clock.UtcNow);
         return await repository.CreateAsync(usuario, request.Perfil, actual.UsuarioId, actual.IpOrigen, false, ct);
     }
 }

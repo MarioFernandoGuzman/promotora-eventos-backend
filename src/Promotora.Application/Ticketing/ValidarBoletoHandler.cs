@@ -14,7 +14,7 @@ public sealed class ValidarBoletoHandler(IValidacionBoletoRepository boletos, IT
 {
     public Task<Result<BoletoValidadoDto>> HandleAsync(ValidarBoletoCommand request, CancellationToken ct) => transaction.ExecuteAsync(async token =>
     {
-        var actor = await access.ActorAsync(true, token);
+        var actor = await access.ActorValidacionAsync(token);
         if (actor is null) return Result<BoletoValidadoDto>.Failure(VenuesAccess.Forbidden);
         if (!tokens.Validar(request.CodigoQr, out var publicId))
             return Result<BoletoValidadoDto>.Failure(new Error("boleto.firma", "Firma de boleto inválida.", ErrorType.BusinessRule));

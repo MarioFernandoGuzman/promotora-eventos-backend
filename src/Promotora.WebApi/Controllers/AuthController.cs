@@ -42,7 +42,7 @@ public sealed class AuthController(ICommandHandler<CrearUsuarioCommand, UsuarioD
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<TokenDto>> Refresh(RefreshCommand request, CancellationToken ct) => FromResult(await refresh.HandleAsync(request, ct));
 
-    [Authorize(Policy = IdentityPolicies.SesionCompleta)]
+    [Authorize(Policy = IdentityPolicies.CerrarSesion)]
     [HttpPost("logout")]
     [ProducesResponseType<Unit>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]

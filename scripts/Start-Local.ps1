@@ -1,10 +1,12 @@
 ﻿# Carga únicamente configuración del proyecto. El archivo .env nunca se ejecuta ni imprime.
 param(
     [ValidateSet('Api', 'Worker', 'Infra')][string]$Servicio = 'Api',
-    [string]$EnvPath = (Join-Path $PSScriptRoot '..\.env')
+    [string]$EnvPath = (Join-Path $PSScriptRoot '..\.env'),
+    [switch]$ProcesarCompras
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ProcesarCompras -and $Servicio -ne 'Worker') { throw 'ProcesarCompras solo se aplica al Worker.' }
 if (-not (Test-Path -LiteralPath $EnvPath)) { throw 'Falta el archivo .env local.' }
 if ((Get-Item -LiteralPath $EnvPath).Length -gt 262144) { throw '.env excede el tamaño permitido.' }
 $valores = @{}
@@ -31,6 +33,11 @@ foreach ($linea in Get-Content -LiteralPath $EnvPath -Encoding UTF8) {
 # Las claves proporcionadas en .env tienen prioridad sobre user-secrets anteriores en este arranque.
 if ($valores.ContainsKey('OLLAMA_API_KEY')) { $valores['Ollama__ApiKey'] = $valores['OLLAMA_API_KEY'] }
 if ($valores.ContainsKey('GEMINI_API_KEY')) { $valores['Gemini__ApiKey'] = $valores['GEMINI_API_KEY'] }
+if ($ProcesarCompras) {
+    foreach ($opcion in 'Outbox__Enabled', 'Compras__ConsumerEnabled', 'Expiracion__Enabled', 'Recuperacion__Enabled') {
+        $valores[$opcion] = 'true'
+    }
+}
 $anteriores = @{}
 foreach ($nombre in $valores.Keys) {
     $anteriores[$nombre] = [Environment]::GetEnvironmentVariable($nombre, 'Process')
