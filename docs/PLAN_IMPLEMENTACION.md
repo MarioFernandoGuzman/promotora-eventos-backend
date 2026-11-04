@@ -325,6 +325,7 @@ Salida comprobada localmente el 03/11/2026. Pendiente únicamente CI/revisión r
 - [ ] **F11-05** Flujo de compra con estado asíncrono (polling del 202) y mis boletos con QR.
 - [ ] **F11-06** Panel de dueño/administrador: recintos, localidades, eventos, finanzas.
 - [ ] **F11-07** Validación de boletos (lector/entrada de QR).
+  - Extensión autorizada. Un administrador habilitado crea cuentas `VALIDADOR_BOLETOS` con contraseña temporal mediante `POST /api/v1/usuarios/validadores-boletos`. V14 preserva un único perfil por usuario. El validador tiene acceso global a la operación de escaneo y a su sesión. La comprobación con cámara física queda pendiente.
 - [ ] **F11-08** Reseñas y moderación.
 - [ ] **F11-09** Chat del agente de IA mostrando fuentes citadas.
 - [ ] **F11-10** Pantalla de reportes con filtros y botones Excel/PDF.

@@ -4,5 +4,6 @@ public enum RolUsuario
 {
     CLIENTE,
     ADMINISTRADOR,
-    DUENO_RECINTO
+    DUENO_RECINTO,
+    VALIDADOR_BOLETOS
 }

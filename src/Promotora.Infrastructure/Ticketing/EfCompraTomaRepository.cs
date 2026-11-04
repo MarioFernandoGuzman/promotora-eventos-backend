@@ -14,7 +14,7 @@ public sealed class EfCompraTomaRepository(PromotoraDbContext db, IClock clock, 
         if (db.Database.CurrentTransaction is null) throw new InvalidOperationException("Tomar una compra requiere transacción explícita.");
         if (publicId == Guid.Empty) throw new ArgumentException("Referencia de compra inválida.", nameof(publicId));
         var ahora = clock.UtcNow;
-        int filas = await db.Compras.Where(c => c.PublicId == publicId && c.Estado == "PENDIENTE")
+        int filas = await db.Compras.Where(c => c.PublicId == publicId && c.Estado == "PENDIENTE" && c.ExpiraEn > ahora)
             .ExecuteUpdateAsync(setters => setters.SetProperty(c => c.Estado, "PROCESANDO")
                 .SetProperty(c => c.ProcesandoDesde, ahora), ct);
         if (filas == 0) return null;

@@ -10,7 +10,13 @@ public sealed class VenuesAccess(IUsuarioActual actual, IUsuarioRepository usuar
     public static readonly Error Forbidden = new("venues.forbidden", "No tienes permiso para gestionar este recinto.", ErrorType.Forbidden);
     public static readonly Error NotFound = new("venues.not_found", "No se encontró el recinto.", ErrorType.NotFound);
 
-    public async Task<(bool Admin, int? DuenoId)?> ActorAsync(bool bloquear, CancellationToken ct)
+    public Task<(bool Admin, int? DuenoId)?> ActorAsync(bool bloquear, CancellationToken ct) =>
+        ResolverActorAsync(bloquear, permitirValidador: false, ct);
+
+    public Task<(bool Admin, int? DuenoId)?> ActorValidacionAsync(CancellationToken ct) =>
+        ResolverActorAsync(bloquear: true, permitirValidador: true, ct);
+
+    private async Task<(bool Admin, int? DuenoId)?> ResolverActorAsync(bool bloquear, bool permitirValidador, CancellationToken ct)
     {
         if (actual.UsuarioId is not int id)
         {
@@ -28,7 +34,7 @@ public sealed class VenuesAccess(IUsuarioActual actual, IUsuarioRepository usuar
             return null;
         }
 
-        if (user.EsAdministradorHabilitado)
+        if (user.EsAdministradorHabilitado || (permitirValidador && user.Rol == RolUsuario.VALIDADOR_BOLETOS))
         {
             return (true, null);
         }

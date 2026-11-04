@@ -95,6 +95,12 @@ dotnet test --project tests/Promotora.Api.Tests
 
 El Worker se inicia con `dotnet run --project src/Promotora.Worker` en otra terminal con la misma variable de conexión, o sus propios user-secrets. En Fase 2 es un host preparado con DI/logging; los consumidores, relay y jobs se implementan en Fase 6. Detener API y Worker con Ctrl+C.
 
+Con el `.env` local configurado, inicia el flujo de compras, expiración y recuperación con este comando. El interruptor habilita esas tareas para el proceso del Worker.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Local.ps1 -Servicio Worker -ProcesarCompras
+```
+
 ## Arquitectura (F2-06)
 
 `dotnet test --project tests/Promotora.Architecture.Tests` comprueba dependencias con NetArchTest, referencias de proyectos, Domain sin NuGets, controllers sin DbContext/adaptadores y base versionada. Solo el composition root de la API registra Infrastructure. Si una regla falla, corregir la dependencia; no desactivar la prueba.

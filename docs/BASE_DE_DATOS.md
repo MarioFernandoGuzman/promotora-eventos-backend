@@ -19,11 +19,11 @@ Este documento explica el modelo **objetivo (v2)**: el script original más las 
 
 ## 1. Visión general
 
-31 tablas agrupadas por módulo; V12 incorpora las cuatro tablas de inventario numerado (EXT-NUM-02). F6-11 añadió el diario del proveedor simulado:
+32 tablas agrupadas por módulo. V14 incorpora el perfil `validadores_boletos`. V12 incorpora las cuatro tablas de inventario numerado y V11 añade el diario del proveedor simulado.
 
 | Módulo | Tablas | Propósito |
 |---|---|---|
-| Identity | `usuarios`, `clientes`, `administradores`, `duenos_recinto`, `refresh_tokens` | Cuentas, roles, perfiles y renovación de sesión |
+| Identity | `usuarios`, `clientes`, `administradores`, `duenos_recinto`, `validadores_boletos`, `refresh_tokens` | Cuentas, roles, perfiles y renovación de sesión |
 | Venues | `recintos`, `localidades` | Lugares físicos y sus zonas (mapa) |
 | Catalog | `categorias_evento`, `presentadores`, `eventos`, `evento_presentadores`, `tipos_entrada` | Qué se vende y a qué precio/cupo |
 | Ticketing | `compras`, `detalle_compra`, `boletos`, `distribuciones_evento`, `mesas_evento`, `asientos_evento`, `asignaciones_asiento` | Venta y emisión de boletos |
@@ -110,7 +110,7 @@ erDiagram
 
 ## 4. Diccionario de datos
 
-Regenerado en F1-11 desde los catálogos de PostgreSQL 16 tras aplicar V1–V9 con Flyway (26 tablas y 198 columnas), ampliado en F6-11 con V11: **31 tablas y 235 columnas**, incluidas las 32 columnas nuevas de V12. Los tipos, claves, nulabilidad, defaults, CHECKs e índices siguientes reflejan las migraciones, que son la fuente de verdad. — indica ausencia de default o clave; los IDs numéricos usan GENERATED ALWAYS AS IDENTITY. Los triggers de integridad se describen en §6; el DDL completo permanece en database/migrations/.
+El diccionario se regeneró en F1-11 a partir de PostgreSQL 16 y se amplió con las migraciones posteriores. V14 deja **32 tablas y 236 columnas**. Las migraciones son la fuente de verdad para tipos, claves, nulabilidad, valores predeterminados e índices. Los triggers de integridad se describen en §6.
 
 ### 4.1 Identity
 
@@ -132,7 +132,7 @@ Cuenta de acceso de cualquier persona. Es el discriminador de rol. Normalizar em
 Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 
 - `ck_usuarios_estado`: `CHECK (estado::text = ANY (ARRAY['ACTIVO'::character varying, 'INACTIVO'::character varying, 'SUSPENDIDO'::character varying]::text[]))`.
-- `ck_usuarios_rol`: `CHECK (rol::text = ANY (ARRAY['CLIENTE'::character varying, 'ADMINISTRADOR'::character varying, 'DUENO_RECINTO'::character varying]::text[]))`.
+- `ck_usuarios_rol`: admite `CLIENTE`, `ADMINISTRADOR`, `DUENO_RECINTO` y `VALIDADOR_BOLETOS`.
 - `usuarios_pkey`: `PRIMARY KEY (id)`.
 - `uq_usuarios_email`: `UNIQUE (email)`.
 
@@ -212,6 +212,14 @@ Restricciones de la tabla (PK, FK, UNIQUE y CHECK):
 - `CREATE INDEX idx_refresh_usuario ON public.refresh_tokens USING btree (usuario_id)`.
 
 ---
+
+#### `validadores_boletos` ➕
+
+| Columna | Tipo | Nulabilidad | Default | Clave |
+|---|---|---|---|---|
+| `usuario_id` | `integer` | NOT NULL | — | PK y FK a `usuarios(id)` con `ON DELETE RESTRICT` |
+
+Los triggers bloquean el usuario relacionado al modificar el perfil y comprueban al confirmar la transacción que el perfil coincide con el rol. `promotora_app` tiene `SELECT` e `INSERT`.
 
 ### 4.2 Venues
 
@@ -1006,6 +1014,7 @@ Solo escritura / consulta (no cuentan como CRUD): `detalle_compra` (parte de com
 | `V9__indices_triggers_permisos.sql` | Índices, constraint trigger diferido de perfil, triggers de integridad (§6), cuentas cerradas e inmutabilidad de ledger/logs; roles y `REVOKE` |
 | `V10__seed_catalogos.sql` | Solo categorías de evento y cuentas PLATAFORMA e IMPUESTOS (GTQ); nunca usuarios ni credenciales |
 | `V13__integridad_boleto_numerado.sql` | Refuerza cambios de FK histórica y correspondencia boleto/asignación; sin tablas ni columnas adicionales |
+| `V14__validadores_boletos.sql` | Añade el rol `VALIDADOR_BOLETOS` y su perfil `validadores_boletos`. El perfil tiene `usuario_id` entero como PK y FK a `usuarios(id)` con `ON DELETE RESTRICT`. El trigger diferido verifica exactamente un perfil por usuario y `promotora_app` puede consultar y crear perfiles de validación. |
 | `V12__localidades_numeradas.sql` | Cuatro tablas de distribución por evento, mesas, sillas y asignaciones; índices, triggers de integridad y permisos |
 | `V11__pasarela_simulada.sql` | Diario inmutable `pagos_simulados`, permisos SELECT/INSERT y trigger; sin FK ni cambios al ledger |
 | `R__bi_vistas.sql` | Vistas `bi.*` (repetible), rol `bi_reader` |

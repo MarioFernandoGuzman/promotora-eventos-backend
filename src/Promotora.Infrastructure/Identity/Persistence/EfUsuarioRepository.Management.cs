@@ -31,6 +31,9 @@ public sealed partial class EfUsuarioRepository
                 var dueno = await db.DuenosRecinto.AsNoTracking().SingleAsync(x => x.UsuarioId == id, ct);
                 profile = new PerfilDto(null, null, dueno.Empresa, dueno.Nit, null);
                 break;
+            case "VALIDADOR_BOLETOS":
+                profile = new PerfilDto(null, null, null, null, null);
+                break;
             default:
                 throw new InvalidOperationException("Perfil desconocido.");
         }

@@ -77,6 +77,9 @@ public sealed partial class EfUsuarioRepository(PromotoraDbContext db, IUnitOfWo
                         db.DuenosRecinto.Add(dueno); await db.SaveChangesAsync(token);
                         await cuentas.CrearEnTransaccionAsync(dueno.Id, actorId, ip, token);
                         break;
+                    case RolUsuario.VALIDADOR_BOLETOS:
+                        db.Set<ValidadorBoletoRow>().Add(new ValidadorBoletoRow { UsuarioId = row.Id });
+                        break;
                     default:
                         throw new InvalidOperationException("Rol desconocido.");
                 }

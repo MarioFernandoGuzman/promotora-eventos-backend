@@ -9,14 +9,13 @@ namespace Promotora.WebApi.Controllers;
 
 public sealed record ValidarBoletoRequest(string CodigoQr);
 
-[Authorize(Policy = IdentityPolicies.SesionCompleta)]
 public sealed class BoletosController(IQueryHandler<MisBoletosQuery, PaginaDto<BoletoClienteDto>> listar,
     ICommandHandler<ValidarBoletoCommand, BoletoValidadoDto> validar) : ApiControllerBase
 {
-    [Authorize(Roles = "ADMINISTRADOR,DUENO_RECINTO")]
+    [Authorize(Policy = IdentityPolicies.ValidarBoletos)]
     [HttpPost("validar")]
     [EndpointSummary("Validar firma y registrar una única entrada VALIDO → USADO")]
-    [EndpointDescription("Administrador o dueño del recinto, con sesión completa. Body: {codigoQr: token firmado}. Repetido/anulado/compra no completada: 409; firma inválida: 422; ajeno/inexistente: 404. Guarda fechaUso UTC y validadoPor junto con auditoría.")]
+    [EndpointDescription("Administrador, dueño del recinto o validador de boletos habilitado. Repetido/anulado/compra no completada: 409; firma inválida: 422; ajeno/inexistente: 404. Guarda fechaUso UTC y validadoPor junto con auditoría.")]
     [ProducesResponseType<BoletoValidadoDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]

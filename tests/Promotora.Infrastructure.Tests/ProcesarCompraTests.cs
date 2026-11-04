@@ -23,6 +23,21 @@ public sealed class ProcesarCompraTests(PostgresFixture fixture) : IClassFixture
     private static readonly SystemClock Clock = new(TimeProvider.System);
     private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
 
+    [Fact]
+    public async Task MensajeDeReservaVencidaNoIniciaPagoNiEmiteBoletos()
+    {
+        var compra = await PrepararAsync();
+        await using var db = fixture.CreateContext();
+        await db.Compras.Where(c => c.Id == compra.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.ExpiraEn, Clock.UtcNow.AddSeconds(-1)), Ct);
+
+        Assert.True((await Servicio(db, new FakePaymentGateway(new(), Clock)).ProcesarAsync(compra.Mensaje, Ct)).IsSuccess);
+
+        Assert.Equal("PENDIENTE", await db.Compras.Where(c => c.Id == compra.Id).Select(c => c.Estado).SingleAsync(Ct));
+        Assert.False(await db.Pagos.AnyAsync(p => p.CompraId == compra.Id, Ct));
+        Assert.False(await db.Boletos.AnyAsync(b => b.DetalleCompraId == compra.DetalleId, Ct));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
