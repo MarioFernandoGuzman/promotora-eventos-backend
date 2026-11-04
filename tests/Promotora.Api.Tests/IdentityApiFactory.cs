@@ -13,6 +13,7 @@ using Promotora.Infrastructure.Catalog;
 using Promotora.Infrastructure.Finance;
 using Promotora.Infrastructure.Identity;
 using Promotora.Infrastructure.Images;
+using Promotora.Infrastructure.Reporting;
 using Promotora.Infrastructure.Ticketing;
 using Promotora.Infrastructure.Venues;
 
@@ -44,6 +45,7 @@ public sealed class IdentityApiFactory(string connection, string? adminEmail = n
             services.AddPromotoraInfrastructure(connection);
             services.AddIdentityRegistration();
             services.AddCuentasFinancieras();
+            services.AddReporting();
             Promotora.Infrastructure.Reviews.ReviewsRegistration.AddReviews(services);
             services.AddReembolsos();
             services.AddIdentitySessions(Key, "promotora", "promotora-api", new SesionOptions());

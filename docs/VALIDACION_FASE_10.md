@@ -8,6 +8,10 @@ F10-01–05 y F10-07 completados: 15 reportes en `/api/v1/reportes/{codigo}`, JS
 
 ## Evidencia del backend
 
+Corrección posterior al CI [41697659525](https://github.com/MarioFernandoGuzman/promotora-eventos-backend/actions/runs/41697659525): cinco casos de ReportesApiTests devolvían HTTP 500 porque IdentityApiFactory omitía AddReporting. Los secretos de desarrollo del equipo hacían que Program registrara el módulo localmente; el runner limpio no lo registraba. Se añadió el registro explícito en la fábrica, siguiendo el patrón de los otros módulos. No cambian adaptadores ni reglas de producción.
+
+Reproducción aislada con `-p:UserSecretsId=promotora-reporting-ci-validation`: un caso falló antes del cambio con el mismo 500. Después, los cinco casos afectados aprobaron (5/5, 0 omitidos, 50s). El primer intento posterior fue interrumpido durante la preparación de Docker; no ejecutó casos de API y no se atribuye al producto. TRX final: `TestResults/reportes-ci-validacion-final.trx`. Compilación habitual restaurada con Release/warnaserror (0 warnings/errores), y formato del archivo comprobado. No se repite la suite completa; CI remoto validará la rama de corrección.
+
 - `dotnet build -c Release --no-restore -warnaserror -m:1`: aprobado, cero warnings/errores.
 - `dotnet format --verify-no-changes --no-restore`: aprobado. Después solo cambiaron dos literales de expectativas de pruebas; no se cambió formato de código.
 - Una ejecución de `dotnet test -c Release --no-build --report-trx`: 534 casos, 532 aprobados y dos fallos de expectativas de prueba; 0 omitidos, 4m47s. Dominio, Application, arquitectura e infraestructura aprobaron. Los fallos fueron una acción de auditoría de prueba no admitida y el contador Swagger anterior (86).
