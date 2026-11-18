@@ -5,6 +5,10 @@ namespace Promotora.Application.AI.Ports;
 
 public sealed record SolicitudLlm(string Pregunta, string ContextoPublico, bool Presentarse = false);
 public sealed record RespuestaLlm(string Texto, string Modelo, int TokensEntrada, int TokensSalida);
+public sealed class ProgresoStreamingIa
+{
+    public Func<string, CancellationToken, Task>? EnviarAsync { get; set; }
+}
 public sealed record SeleccionHerramienta(int? PresentadorId, int TokensEntrada, int TokensSalida);
 public sealed record EmbeddingsGenerados(IReadOnlyList<float[]> Vectores, string Modelo, int? TokensEntrada);
 public enum FinalidadEmbedding { Documento, Consulta }

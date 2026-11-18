@@ -47,6 +47,7 @@ public static class AIRegistration
         services.AddScoped<IVectorSearchPort>(provider => new EfVectorSearchAdapter(provider.GetRequiredService<PromotoraDbContext>(), GeminiEmbeddingOptions.Modelo));
         services.AddSingleton(rag);
         services.AddSingleton<RespuestaFundamentada>();
+        services.AddScoped<ProgresoStreamingIa>();
         services.AddScoped<RecuperarContexto>();
         services.AddScoped<IInformacionPublicaPort, EfInformacionPublicaPort>();
         services.AddScoped<ICalificacionPublicaPort, EfCalificacionPublicaPort>();
