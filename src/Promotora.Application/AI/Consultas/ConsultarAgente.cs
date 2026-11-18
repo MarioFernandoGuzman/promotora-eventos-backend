@@ -24,7 +24,7 @@ public sealed class ConsultarAgenteValidator : AbstractValidator<ConsultarAgente
     }
 }
 public sealed class ConsultarAgenteHandler(RecuperarContexto recuperar, RespuestaFundamentada fundamento, ILlmPort llm,
-    IEnumerable<IInformacionPublicaPort> datosPublicos, ISelectorHerramientaPort selector, ICalificacionPublicaPort calificacion) : ICommandHandler<ConsultarAgenteCommand, ConsultaIaDto>
+    IEnumerable<IInformacionPublicaPort> datosPublicos, ISelectorHerramientaPort selector, ICalificacionPublicaPort calificacion, RestriccionTema? restriccion = null) : ICommandHandler<ConsultarAgenteCommand, ConsultaIaDto>
 {
     public const string HerramientaCalificacion = "consultar_calificacion_presentador";
     private static readonly SemaphoreSlim Capacidad = new(2, 2);
@@ -38,6 +38,8 @@ public sealed class ConsultarAgenteHandler(RecuperarContexto recuperar, Respuest
     {
         Guid session = request.SessionId ?? Guid.NewGuid();
         int tokensSelectorEntrada = 0, tokensSelectorSalida = 0;
+        if ((restriccion ?? new RestriccionTema()).Incluye(request.Pregunta))
+            return Result<ConsultaIaDto>.Success(new(session, "Lo siento, no puedo responder consultas sobre ese tema. Puedo ayudarte con otros temas públicos de la promotora.", [], "RECHAZADA"));
         if (SeguridadAgente.Rechazo(request.Pregunta) is string rechazo)
             return Result<ConsultaIaDto>.Success(new(session, "Hola, soy José. " + rechazo, [], "RECHAZADA"));
         // Solo ofrecer esta herramienta cuando la consulta contiene un identificador explícito.
