@@ -1,7 +1,27 @@
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace Promotora.Application.AI;
+
+public sealed class RestriccionTema
+{
+    public string Tema { get; }
+
+    public RestriccionTema(string tema = "reembolso")
+    {
+        if (string.IsNullOrWhiteSpace(tema) || tema.Length > 60 || !Regex.IsMatch(tema, @"^[\p{L}\p{N} ]+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)))
+            throw new ArgumentException("El tema restringido debe tener de 1 a 60 letras, números o espacios.", nameof(tema));
+        Tema = tema.Trim();
+    }
+
+    public bool Incluye(string pregunta) => Regex.IsMatch(Normalizar(pregunta), @"(?<![\p{L}\p{N}])" + Regex.Escape(Normalizar(Tema)) + @"(?:s|es)?(?![\p{L}\p{N}])", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static string Normalizar(string texto) => new(texto.Normalize(NormalizationForm.FormD).Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).Select(char.ToLowerInvariant).ToArray());
+}
 
 public static class PoliticaAsistente
 {
+    public static string InstruccionesConRestriccion(RestriccionTema restriccion) => Instrucciones + $"\nNo respondas preguntas sobre {restriccion.Tema}; recházalas amablemente.";
     public const int Dimensiones = 1536;
     public const int MaxPreguntaCaracteres = 1000;
     public const int MaxContextoCaracteres = 6000;

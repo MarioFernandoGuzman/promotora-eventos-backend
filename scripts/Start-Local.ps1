@@ -14,7 +14,7 @@ foreach ($linea in Get-Content -LiteralPath $EnvPath -Encoding UTF8) {
     if ($texto -cnotmatch '^([A-Za-z_][A-Za-z0-9_]*)=(.*)$') { throw 'Formato .env inválido; usa NOMBRE=valor.' }
     $nombre = $Matches[1]
     $valor = $Matches[2].Trim()
-    if ($nombre -notmatch '^(POSTGRES_(USER|PASSWORD)|RABBITMQ_(USER|PASSWORD)|OLLAMA_API_KEY|GEMINI_API_KEY|ConnectionStrings__Promotora|Jwt__[A-Za-z0-9]+|Bootstrap__(AdminEmail|AdminPassword)|Boletos__[A-Za-z0-9]+|RabbitMQ__[A-Za-z0-9]+|Smtp__[A-Za-z0-9]+|Outbox__[A-Za-z0-9]+|Compras__[A-Za-z0-9]+|Notificaciones__[A-Za-z0-9]+|Expiracion__[A-Za-z0-9]+|Recuperacion__[A-Za-z0-9]+|IA__Habilitada|Ollama__[A-Za-z0-9]+|Gemini__TimeoutSegundos|DOTNET_ENVIRONMENT|ASPNETCORE_ENVIRONMENT)$') {
+    if ($nombre -notmatch '^(POSTGRES_(USER|PASSWORD)|RABBITMQ_(USER|PASSWORD)|OLLAMA_API_KEY|GEMINI_API_KEY|ConnectionStrings__Promotora|Jwt__[A-Za-z0-9]+|Bootstrap__(AdminEmail|AdminPassword)|Boletos__[A-Za-z0-9]+|RabbitMQ__[A-Za-z0-9]+|Smtp__[A-Za-z0-9]+|Outbox__[A-Za-z0-9]+|Compras__[A-Za-z0-9]+|Notificaciones__[A-Za-z0-9]+|Expiracion__[A-Za-z0-9]+|Recuperacion__[A-Za-z0-9]+|IA__(Habilitada|TemaRestringido)|Ollama__[A-Za-z0-9]+|Gemini__TimeoutSegundos|DOTNET_ENVIRONMENT|ASPNETCORE_ENVIRONMENT)$') {
         throw 'Variable no permitida en el archivo .env local.'
     }
     if ($valores.ContainsKey($nombre)) { throw 'Variable duplicada en el archivo .env local.' }

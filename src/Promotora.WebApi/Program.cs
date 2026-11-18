@@ -27,6 +27,7 @@ using Serilog.Events;
 var builder = WebApplication.CreateBuilder(args);
 if (builder.Configuration.GetValue("IA:Habilitada", false))
 {
+    builder.Services.AddSingleton(new Promotora.Application.AI.RestriccionTema(builder.Configuration["IA:TemaRestringido"] ?? "reembolso"));
     string? claveGemini = builder.Configuration["Gemini:ApiKey"] ?? builder.Configuration["GEMINI_API_KEY"];
     if (builder.Environment.IsDevelopment())
     {

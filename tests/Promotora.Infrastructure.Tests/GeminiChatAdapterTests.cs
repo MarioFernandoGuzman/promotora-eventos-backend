@@ -19,7 +19,7 @@ public sealed class GeminiChatAdapterTests
             Assert.Equal("clave-simulada-test", Assert.Single(request.Headers.GetValues("x-goog-api-key")));
             using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(Ct));
             var root = body.RootElement;
-            Assert.Equal(PoliticaAsistente.Instrucciones, root.GetProperty("systemInstruction").GetProperty("parts")[0].GetProperty("text").GetString());
+            Assert.Equal(PoliticaAsistente.InstruccionesConRestriccion(new()), root.GetProperty("systemInstruction").GetProperty("parts")[0].GetProperty("text").GetString());
             Assert.Equal("application/json", root.GetProperty("generationConfig").GetProperty("responseMimeType").GetString());
             Assert.False(root.TryGetProperty("tools", out _));
             return Json(new { candidates = new[] { new { finishReason = "STOP", content = new { parts = new[] { new { text = "{\"extractos\":[]}" } } } } }, usageMetadata = new { promptTokenCount = 12, candidatesTokenCount = 4, thoughtsTokenCount = 2 } });

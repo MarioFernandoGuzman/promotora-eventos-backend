@@ -7,7 +7,7 @@ using Promotora.Domain.Shared;
 
 namespace Promotora.Infrastructure.AI;
 
-public sealed class GeminiChatAdapter(HttpClient http, GeminiEmbeddingOptions options) : ILlmPort, ISelectorHerramientaPort
+public sealed class GeminiChatAdapter(HttpClient http, GeminiEmbeddingOptions options, RestriccionTema? restriccion = null) : ILlmPort, ISelectorHerramientaPort
 {
     public const string Modelo = "gemini-3.1-flash-lite";
     private const string Url = "https://generativelanguage.googleapis.com/v1beta/models/" + Modelo + ":generateContent";
@@ -20,7 +20,7 @@ public sealed class GeminiChatAdapter(HttpClient http, GeminiEmbeddingOptions op
             return Result<RespuestaLlm>.Failure(new Error("ia.longitud", "Pregunta o contexto exceden los límites de IA.", ErrorType.Validation));
         var body = new
         {
-            systemInstruction = new { parts = new[] { new { text = PoliticaAsistente.Instrucciones } } },
+            systemInstruction = new { parts = new[] { new { text = PoliticaAsistente.InstruccionesConRestriccion(restriccion ?? new RestriccionTema()) } } },
             contents = new[] { new { role = "user", parts = new[] { new { text = JsonSerializer.Serialize(solicitud, OllamaHttp.Json) } } } },
             generationConfig = new { maxOutputTokens = 1024, responseMimeType = "application/json", thinkingConfig = new { thinkingLevel = "MINIMAL" } }
         };
@@ -46,7 +46,7 @@ public sealed class GeminiChatAdapter(HttpClient http, GeminiEmbeddingOptions op
             return Result<SeleccionHerramienta>.Failure(new Error("ia.longitud", "Pregunta inválida.", ErrorType.Validation));
         var body = new
         {
-            systemInstruction = new { parts = new[] { new { text = InstruccionesHerramienta } } },
+            systemInstruction = new { parts = new[] { new { text = InstruccionesHerramienta + $" No respondas ni uses herramientas para consultas sobre {(restriccion ?? new RestriccionTema()).Tema}." } } },
             contents = new[] { new { role = "user", parts = new[] { new { text = JsonSerializer.Serialize(new { pregunta }, OllamaHttp.Json) } } } },
             generationConfig = new { maxOutputTokens = 1024, thinkingConfig = new { thinkingLevel = "MINIMAL" } },
             tools = new[] { new { functionDeclarations = new[] { new {

@@ -1,5 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Promotora.Application.AI;
 using Promotora.Application.AI.Consultas;
 using Promotora.Application.AI.Documentos;
 using Promotora.Application.AI.Ports;
@@ -35,6 +37,7 @@ public static class AIRegistration
 
     private static IServiceCollection AddServiciosIa(IServiceCollection services, GeminiEmbeddingOptions embeddings, RagOptions? rag)
     {
+        services.TryAddSingleton(new RestriccionTema());
         embeddings.Validar();
         rag ??= new RagOptions();
         rag.Validar();
