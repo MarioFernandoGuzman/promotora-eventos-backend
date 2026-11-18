@@ -7,7 +7,7 @@ using Promotora.Domain.Shared;
 
 namespace Promotora.Infrastructure.AI;
 
-public sealed class GeminiChatAdapter(HttpClient http, GeminiEmbeddingOptions options) : ILlmPort, ISelectorHerramientaPort
+public sealed class GeminiChatAdapter(HttpClient http, GeminiEmbeddingOptions options, ProgresoStreamingIa? progreso = null) : ILlmPort, ISelectorHerramientaPort
 {
     public const string Modelo = "gemini-3.1-flash-lite";
     private const string Url = "https://generativelanguage.googleapis.com/v1beta/models/" + Modelo + ":generateContent";
@@ -24,6 +24,8 @@ public sealed class GeminiChatAdapter(HttpClient http, GeminiEmbeddingOptions op
             contents = new[] { new { role = "user", parts = new[] { new { text = JsonSerializer.Serialize(solicitud, OllamaHttp.Json) } } } },
             generationConfig = new { maxOutputTokens = 1024, responseMimeType = "application/json", thinkingConfig = new { thinkingLevel = "MINIMAL" } }
         };
+        if (progreso?.EnviarAsync is not null)
+            return await new GeminiStreamingAdapter(http, options, progreso).ResponderAsync(body, solicitud, ct);
         var resultado = await EnviarAsync(body, ct);
         if (resultado.IsFailure) return Result<RespuestaLlm>.Failure(resultado.Errors);
         using var json = resultado.Value;

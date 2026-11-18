@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Promotora.Application.AI;
+using Promotora.Application.AI.Ports;
+using Promotora.Application.AI.Rag;
 using Promotora.Infrastructure.AI;
 
 namespace Promotora.Infrastructure.Tests;
@@ -9,6 +11,44 @@ public sealed class GeminiChatAdapterTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
     private static GeminiEmbeddingOptions Options => new() { ApiKey = "clave-simulada-test" };
+
+    [Fact]
+    public async Task StreamingEntregaSoloExtractosVerificados()
+    {
+        const string texto = "El evento comienza mañana en el recinto principal.";
+        var fuente = new FuenteContexto("evento:1", "Evento", null, null, null, null, texto);
+        string contexto = new RespuestaFundamentada().Preparar([fuente]).Json;
+        string salida = JsonSerializer.Serialize(new { extractos = new[] { new { fuente = fuente.Id, texto } } });
+        string frame1 = JsonSerializer.Serialize(new { candidates = new[] { new { content = new { parts = new[] { new { text = salida } } } } } });
+        string frame2 = JsonSerializer.Serialize(new { candidates = new[] { new { finishReason = "STOP" } }, usageMetadata = new { promptTokenCount = 12, candidatesTokenCount = 4 } });
+        using var http = new HttpClient(new Stub(request =>
+        {
+            Assert.Contains(":streamGenerateContent?alt=sse", request.RequestUri!.ToString());
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent($"data: {frame1}\n\ndata: {frame2}\n\n") });
+        }));
+        var recibidos = new List<string>();
+        var progreso = new ProgresoStreamingIa { EnviarAsync = (parte, _) => { recibidos.Add(parte); return Task.CompletedTask; } };
+        var result = await new GeminiChatAdapter(http, Options, progreso).ResponderAsync(new("¿Cuándo inicia el evento?", contexto), Ct);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(salida, result.Value.Texto);
+        Assert.Contains(texto, Assert.Single(recibidos));
+        Assert.Equal(12, result.Value.TokensEntrada);
+    }
+
+    [Fact]
+    public async Task StreamingNoPublicaExtractosInventados()
+    {
+        var fuente = new FuenteContexto("evento:1", "Evento", null, null, null, null, "El evento inicia a las 18 horas.");
+        string contexto = new RespuestaFundamentada().Preparar([fuente]).Json;
+        string salida = JsonSerializer.Serialize(new { extractos = new[] { new { fuente = fuente.Id, texto = "El evento inicia a las 20 horas." } } });
+        string frame = JsonSerializer.Serialize(new { candidates = new[] { new { finishReason = "STOP", content = new { parts = new[] { new { text = salida } } } } }, usageMetadata = new { promptTokenCount = 1 } });
+        using var http = new HttpClient(new Stub(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent($"data: {frame}\n\n") })));
+        var recibidos = new List<string>();
+        var progreso = new ProgresoStreamingIa { EnviarAsync = (parte, _) => { recibidos.Add(parte); return Task.CompletedTask; } };
+        var result = await new GeminiChatAdapter(http, Options, progreso).ResponderAsync(new("¿Cuándo inicia el evento?", contexto), Ct);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(recibidos);
+    }
 
     [Fact]
     public async Task RespuestaUsaGeminiConContextoDelimitadoYCuentaTokens()
