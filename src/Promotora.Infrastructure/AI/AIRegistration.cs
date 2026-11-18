@@ -22,6 +22,8 @@ public static class AIRegistration
         services.AddSingleton(embeddings);
         services.AddHttpClient<ILlmPort, OllamaLlmAdapter>(http => http.Timeout = TimeSpan.FromSeconds(options.TimeoutSegundos))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+        services.AddHttpClient<ISelectorHerramientaPort, OllamaSelectorHerramienta>(http => http.Timeout = TimeSpan.FromSeconds(options.TimeoutSegundos))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
         services.AddHttpClient<IEmbeddingPort, GeminiEmbeddingAdapter>(http => http.Timeout = TimeSpan.FromSeconds(embeddings.TimeoutSegundos))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
         services.AddScoped<IVectorSearchPort>(provider => new EfVectorSearchAdapter(provider.GetRequiredService<PromotoraDbContext>(), GeminiEmbeddingOptions.Modelo));
@@ -29,6 +31,7 @@ public static class AIRegistration
         services.AddSingleton<RespuestaFundamentada>();
         services.AddScoped<RecuperarContexto>();
         services.AddScoped<IInformacionPublicaPort, EfInformacionPublicaPort>();
+        services.AddScoped<ICalificacionPublicaPort, EfCalificacionPublicaPort>();
         services.AddScoped<IValidator<ConsultarAgenteCommand>, ConsultarAgenteValidator>();
         services.AddScoped<ConsultarAgenteHandler>();
         services.AddScoped<IConsultaIaLogPort, EfConsultaIaLogPort>();

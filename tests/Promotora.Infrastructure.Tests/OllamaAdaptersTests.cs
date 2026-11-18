@@ -12,6 +12,29 @@ public sealed class OllamaAdaptersTests
     private static OllamaOptions Options => new() { ApiKey = "credencial-simulada-no-real" };
 
     [Fact]
+    public async Task SelectorEnviaHerramientaYLeeLlamadaDelModelo()
+    {
+        using var http = new HttpClient(new Stub(async request =>
+        {
+            using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(Ct));
+            Assert.Equal("consultar_calificacion_presentador", body.RootElement.GetProperty("tools")[0].GetProperty("function").GetProperty("name").GetString());
+            return Json(new { model = "gpt-oss:120b", done = true, done_reason = "stop", message = new { tool_calls = new[] { new { function = new { name = "consultar_calificacion_presentador", arguments = new { presentador_id = 12 } } } } }, prompt_eval_count = 10, eval_count = 4 });
+        }));
+        var result = await new OllamaSelectorHerramienta(http, Options).SeleccionarAsync("Calificación del presentador 12", Ct);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(12, result.Value.PresentadorId);
+        Assert.Equal(10, result.Value.TokensEntrada);
+    }
+
+    [Fact]
+    public async Task SelectorRechazaHerramientaDesconocida()
+    {
+        using var http = new HttpClient(new Stub(_ => Task.FromResult(Json(new { model = "gpt-oss:120b", done = true, done_reason = "stop", message = new { tool_calls = new[] { new { function = new { name = "borrar", arguments = new { presentador_id = 12 } } } } }, prompt_eval_count = 10, eval_count = 4 }))));
+        var result = await new OllamaSelectorHerramienta(http, Options).SeleccionarAsync("Calificación del presentador 12", Ct);
+        Assert.True(result.IsFailure);
+    }
+
+    [Fact]
     public async Task ChatDelimitaDatosMantieneReglasFijasYAcotaConsumo()
     {
         using var http = new HttpClient(new Stub(async request =>
